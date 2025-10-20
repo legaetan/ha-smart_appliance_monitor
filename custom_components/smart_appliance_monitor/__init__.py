@@ -82,6 +82,10 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     
     # Créer le coordinator
     coordinator = SmartApplianceCoordinator(hass, entry)
+    
+    # Restaurer l'état depuis le stockage persistant
+    await coordinator.restore_state()
+    
     await coordinator.async_config_entry_first_refresh()
     
     # Stocker le coordinator
