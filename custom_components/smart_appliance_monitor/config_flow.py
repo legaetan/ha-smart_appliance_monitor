@@ -100,6 +100,87 @@ class SmartApplianceMonitorConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
             errors=errors,
         )
 
+    async def async_step_reconfigure(
+        self, user_input: dict[str, Any] | None = None
+    ) -> FlowResult:
+        """Handle reconfiguration of the integration."""
+        errors: dict[str, str] = {}
+        
+        # Récupérer l'entrée de configuration actuelle
+        entry = self.hass.config_entries.async_get_entry(self.context["entry_id"])
+        
+        if user_input is not None:
+            # Valider les capteurs
+            power_sensor = user_input[CONF_POWER_SENSOR]
+            if not self.hass.states.get(power_sensor):
+                errors["base"] = "invalid_sensor"
+            else:
+                # Mettre à jour la configuration
+                self.hass.config_entries.async_update_entry(
+                    entry,
+                    data=user_input,
+                    title=user_input[CONF_APPLIANCE_NAME],
+                )
+                # Recharger l'intégration
+                await self.hass.config_entries.async_reload(entry.entry_id)
+                return self.async_abort(reason="reconfigure_successful")
+        
+        # Pré-remplir avec les valeurs actuelles
+        data_schema = vol.Schema(
+            {
+                vol.Required(
+                    CONF_APPLIANCE_NAME,
+                    default=entry.data.get(CONF_APPLIANCE_NAME)
+                ): str,
+                vol.Required(
+                    CONF_APPLIANCE_TYPE,
+                    default=entry.data.get(CONF_APPLIANCE_TYPE)
+                ): selector.SelectSelector(
+                    selector.SelectSelectorConfig(
+                        options=APPLIANCE_TYPES,
+                        translation_key="appliance_type",
+                    )
+                ),
+                vol.Required(
+                    CONF_POWER_SENSOR,
+                    default=entry.data.get(CONF_POWER_SENSOR)
+                ): selector.EntitySelector(
+                    selector.EntitySelectorConfig(
+                        domain="sensor",
+                    )
+                ),
+                vol.Required(
+                    CONF_ENERGY_SENSOR,
+                    default=entry.data.get(CONF_ENERGY_SENSOR)
+                ): selector.EntitySelector(
+                    selector.EntitySelectorConfig(
+                        domain="sensor",
+                    )
+                ),
+                vol.Optional(
+                    CONF_PRICE_ENTITY,
+                    default=entry.data.get(CONF_PRICE_ENTITY)
+                ): selector.EntitySelector(
+                    selector.EntitySelectorConfig(
+                        domain=["sensor", "input_number"],
+                    )
+                ),
+                vol.Optional(
+                    CONF_PRICE_KWH,
+                    default=entry.data.get(CONF_PRICE_KWH, DEFAULT_PRICE_KWH)
+                ): cv.positive_float,
+            }
+        )
+        
+        return self.async_show_form(
+            step_id="reconfigure",
+            data_schema=data_schema,
+            errors=errors,
+            description_placeholders={
+                "appliance_name": entry.data.get(CONF_APPLIANCE_NAME, "")
+            },
+        )
+
     @staticmethod
     def async_get_options_flow(
         config_entry: config_entries.ConfigEntry,

@@ -20,6 +20,26 @@
           "price_entity": "Input_number or sensor entity for dynamic pricing (leave empty to use fixed value)",
           "price_kwh": "Cost of electricity per kWh (used if no entity is selected)"
         }
+      },
+      "reconfigure": {
+        "title": "Reconfigure {appliance_name}",
+        "description": "Modify the base settings for the appliance. Statistics will be preserved.",
+        "data": {
+          "appliance_name": "Appliance Name",
+          "appliance_type": "Appliance Type",
+          "power_sensor": "Power Sensor",
+          "energy_sensor": "Energy Sensor",
+          "price_entity": "Price Entity (optional)",
+          "price_kwh": "Price per kWh (€)"
+        },
+        "data_description": {
+          "appliance_name": "Descriptive name for your appliance (e.g. Oven, Dishwasher)",
+          "appliance_type": "Type of appliance - thresholds will adapt automatically",
+          "power_sensor": "Power sensor from the smart plug (W)",
+          "energy_sensor": "Energy sensor from the smart plug (kWh)",
+          "price_entity": "Input_number or sensor entity for dynamic pricing (leave empty to use fixed value)",
+          "price_kwh": "Cost of electricity per kWh (used if no entity is selected)"
+        }
       }
     },
     "error": {
@@ -28,7 +48,8 @@
       "unknown": "Unexpected error"
     },
     "abort": {
-      "already_configured": "Device is already configured"
+      "already_configured": "Device is already configured",
+      "reconfigure_successful": "Reconfiguration successful! The integration has been reloaded with the new settings."
     }
   },
   "options": {
