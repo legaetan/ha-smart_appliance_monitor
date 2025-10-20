@@ -197,16 +197,26 @@ async def async_setup_services(hass: HomeAssistant) -> None:
         
         icon = icon_map.get(appliance_type, "mdi:power-plug")
         
-        # Load template
-        templates_path = Path(__file__).parent.parent.parent / "dashboards" / "templates"
-        template_file = templates_path / f"{template_name}.yaml"
+        # Load template - check first in user custom templates
+        # then fallback to integration bundled templates
+        config_templates_path = Path(__file__).parent.parent.parent / "dashboards" / "templates"
+        integration_templates_path = Path(__file__).parent / "dashboards"
         
+        # Try user custom templates first
+        template_file = config_templates_path / f"{template_name}.yaml"
+        if not template_file.exists():
+            # Fallback to integration bundled templates
+            template_file = integration_templates_path / f"{template_name}.yaml"
+        
+        # If still not found, try generic
         if not template_file.exists():
             _LOGGER.warning(
-                "Template %s not found, using generic template",
+                "Template %s not found in config or integration, trying generic",
                 template_name
             )
-            template_file = templates_path / "generic.yaml"
+            template_file = config_templates_path / "generic.yaml"
+            if not template_file.exists():
+                template_file = integration_templates_path / "generic.yaml"
         
         try:
             with open(template_file, "r", encoding="utf-8") as f:

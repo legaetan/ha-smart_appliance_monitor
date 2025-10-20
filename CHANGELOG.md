@@ -5,6 +5,39 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.4.1] - 2025-10-20
+
+### Added
+- **Bundled Dashboard Templates** - Templates now included directly in the integration
+  - 7 templates embedded in `/custom_components/smart_appliance_monitor/dashboards/`
+  - Automatic installation, no manual setup required
+  - Users can override templates by creating `/config/dashboards/templates/`
+
+### Changed
+- **Template Loading Priority** - Smart template resolution
+  1. First checks `/config/dashboards/templates/` (user custom templates)
+  2. Then falls back to `/custom_components/smart_appliance_monitor/dashboards/` (bundled templates)
+  - Allows users to customize templates without modifying integration files
+  - Ensures templates always available out-of-the-box
+
+### Fixed
+- **Dashboard Generation Error** - Fixed "No such file or directory" error
+  - Templates no longer require manual creation in `/config/dashboards/templates/`
+  - Service `generate_dashboard_yaml` now works immediately after installation
+  - Better error handling with clear fallback mechanism
+
+### Improved
+- **User Experience** - Zero configuration for dashboard templates
+  - No need to read installation docs for basic usage
+  - Templates "just work" after integration installation
+  - Advanced users can still customize by placing templates in `/config/dashboards/templates/`
+
+### Technical Details
+- Templates location: `/custom_components/smart_appliance_monitor/dashboards/*.yaml`
+- Custom templates location: `/config/dashboards/templates/*.yaml` (optional)
+- Priority: custom → bundled → generic
+- Backward compatible with existing custom template setups
+
 ## [0.4.0] - 2025-10-20
 
 ### Added

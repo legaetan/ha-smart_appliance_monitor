@@ -58,6 +58,7 @@ Will be available through HACS custom repositories.
 ### Basic Configuration
 
 1. **Add Integration**: Settings → Devices & Services → Add Integration → Smart Appliance Monitor
+   - Dashboard templates are automatically installed with the integration
 2. **Configure Appliance**:
    - Name: "Washing Machine"
    - Type: Select from dropdown (washing_machine, dishwasher, etc.)
