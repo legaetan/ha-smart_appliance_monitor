@@ -55,31 +55,57 @@
   "options": {
     "step": {
       "init": {
-        "title": "Configuration avancée",
-        "description": "Configurer les seuils de détection et les alertes",
+        "title": "Seuils de détection",
+        "description": "Configurez les seuils de puissance pour détecter le démarrage et l'arrêt de votre appareil. Ces valeurs dépendent du type d'appareil.",
         "data": {
           "start_threshold": "Seuil de démarrage (W)",
-          "stop_threshold": "Seuil d'arrêt (W)",
-          "start_delay": "Délai de démarrage (secondes)",
-          "stop_delay": "Délai d'arrêt (secondes)",
-          "enable_alert_duration": "Activer l'alerte de durée",
-          "alert_duration": "Durée d'alerte (secondes)",
-          "unplugged_timeout": "Délai de détection débranché (secondes)",
-          "notification_services": "Services de notification",
-          "notification_types": "Types de notifications",
-          "custom_notify_service": "Nom du service personnalisé"
+          "stop_threshold": "Seuil d'arrêt (W)"
         },
         "data_description": {
-          "start_threshold": "Puissance minimale pour détecter un démarrage",
-          "stop_threshold": "Puissance maximale pour détecter un arrêt",
-          "start_delay": "Durée pendant laquelle la puissance doit rester élevée avant de confirmer le démarrage",
-          "stop_delay": "Durée pendant laquelle la puissance doit rester faible avant de confirmer l'arrêt",
-          "enable_alert_duration": "Recevoir une alerte si le cycle dure trop longtemps",
-          "alert_duration": "Durée maximale du cycle avant d'envoyer une alerte",
-          "unplugged_timeout": "Temps à 0W avant détection débranché (défaut: 300s = 5min)",
-          "notification_services": "Sélectionner les services à utiliser pour les notifications",
-          "notification_types": "Sélectionner les types de notifications à recevoir",
-          "custom_notify_service": "Nom du service de notification personnalisé (ex: notify.mon_service)"
+          "start_threshold": "Puissance minimale pour détecter le démarrage de l'appareil (ex: 100W pour un four, 10W pour un lave-linge)",
+          "stop_threshold": "Puissance maximale pour détecter l'arrêt de l'appareil (ex: 10W pour un four, 5W pour un lave-linge)"
+        }
+      },
+      "delays": {
+        "title": "Délais de détection et alertes",
+        "description": "Configurez combien de temps la puissance doit rester stable avant de confirmer un changement d'état, et les paramètres d'alerte.",
+        "data": {
+          "start_delay_minutes": "Délai de démarrage (minutes)",
+          "stop_delay_minutes": "Délai d'arrêt (minutes)",
+          "enable_alert_duration": "Activer l'alerte de durée",
+          "alert_duration_hours": "Durée d'alerte (heures)",
+          "expert_mode": "Activer le mode expert"
+        },
+        "data_description": {
+          "start_delay_minutes": "Temps pendant lequel la puissance doit rester au-dessus du seuil avant de confirmer le démarrage (0,5-10 min)",
+          "stop_delay_minutes": "Temps pendant lequel la puissance doit rester en-dessous du seuil avant de confirmer l'arrêt (0,5-30 min)",
+          "enable_alert_duration": "Être notifié si le cycle dure plus longtemps que prévu",
+          "alert_duration_hours": "Durée maximale du cycle avant de déclencher une alerte (0,5-24 heures)",
+          "expert_mode": "Accéder aux paramètres avancés (délai de détection débranché, service de notification personnalisé)"
+        }
+      },
+      "notifications": {
+        "title": "Notifications",
+        "description": "Choisissez les services de notification à utiliser et les événements pour lesquels vous souhaitez être notifié.",
+        "data": {
+          "notification_services": "Services de notification",
+          "notification_types": "Types de notifications"
+        },
+        "data_description": {
+          "notification_services": "Sélectionnez un ou plusieurs services : Application mobile, Telegram, Notification persistante ou Service personnalisé",
+          "notification_types": "Sélectionnez les événements qui déclenchent une notification : cycle démarré, terminé, alerte de durée ou débranché"
+        }
+      },
+      "expert": {
+        "title": "Paramètres experts",
+        "description": "Configuration avancée pour utilisateurs expérimentés. Ces paramètres sont optionnels et ont des valeurs par défaut appropriées.",
+        "data": {
+          "unplugged_timeout_minutes": "Délai de détection débranché (minutes)",
+          "custom_notify_service": "Nom du service de notification personnalisé"
+        },
+        "data_description": {
+          "unplugged_timeout_minutes": "Durée à 0W avant de considérer l'appareil comme débranché (1-60 min, défaut : 5 min)",
+          "custom_notify_service": "Nom complet du service pour notifications personnalisées (ex : notify.mon_service_perso)"
         }
       }
     }

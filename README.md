@@ -64,7 +64,11 @@ Will be available through HACS custom repositories.
    - Power Sensor: Select your smart plug's power sensor
    - Energy Sensor: Select your smart plug's energy sensor
    - Price: Enter fixed price or select an entity for dynamic pricing
-3. **Adjust Settings** (Optional): Click "Configure" → "Advanced Configuration" to fine-tune thresholds
+3. **Adjust Settings** (Optional): Click "Configure" → "Advanced Configuration (Multi-step)" to fine-tune thresholds
+   - **Step 1**: Detection thresholds (power levels)
+   - **Step 2**: Detection delays & alerts (in minutes/hours)
+   - **Step 3**: Notification settings
+   - **Step 4**: Expert settings (optional, activated via toggle)
 
 ### Appliance Type Profiles
 

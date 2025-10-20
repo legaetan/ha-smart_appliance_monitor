@@ -55,31 +55,57 @@
   "options": {
     "step": {
       "init": {
-        "title": "Advanced Configuration",
-        "description": "Configure detection thresholds and alerts",
+        "title": "Detection Thresholds",
+        "description": "Configure power thresholds to detect when your appliance starts and stops. These values depend on your appliance type.",
         "data": {
           "start_threshold": "Start Threshold (W)",
-          "stop_threshold": "Stop Threshold (W)",
-          "start_delay": "Start Delay (seconds)",
-          "stop_delay": "Stop Delay (seconds)",
+          "stop_threshold": "Stop Threshold (W)"
+        },
+        "data_description": {
+          "start_threshold": "Minimum power consumption to detect appliance starting (e.g., 100W for oven, 10W for washing machine)",
+          "stop_threshold": "Maximum power consumption to detect appliance stopping (e.g., 10W for oven, 5W for washing machine)"
+        }
+      },
+      "delays": {
+        "title": "Detection Delays & Alerts",
+        "description": "Configure how long the power must remain stable before confirming a state change, and alert settings.",
+        "data": {
+          "start_delay_minutes": "Start Delay (minutes)",
+          "stop_delay_minutes": "Stop Delay (minutes)",
           "enable_alert_duration": "Enable Duration Alert",
-          "alert_duration": "Alert Duration (seconds)",
-          "unplugged_timeout": "Unplugged Detection Timeout (seconds)",
+          "alert_duration_hours": "Alert Duration (hours)",
+          "expert_mode": "Enable Expert Mode"
+        },
+        "data_description": {
+          "start_delay_minutes": "How long power must stay above threshold before confirming start (0.5-10 min)",
+          "stop_delay_minutes": "How long power must stay below threshold before confirming stop (0.5-30 min)",
+          "enable_alert_duration": "Get notified if the cycle runs longer than expected",
+          "alert_duration_hours": "Maximum cycle duration before triggering an alert (0.5-24 hours)",
+          "expert_mode": "Access advanced settings (unplugged detection timeout, custom notification service)"
+        }
+      },
+      "notifications": {
+        "title": "Notifications",
+        "description": "Choose which notification services to use and which events to be notified about.",
+        "data": {
           "notification_services": "Notification Services",
-          "notification_types": "Notification Types",
+          "notification_types": "Notification Types"
+        },
+        "data_description": {
+          "notification_services": "Select one or more services: Mobile App, Telegram, Persistent notification, or Custom service",
+          "notification_types": "Select which events trigger notifications: cycle started, finished, duration alert, or unplugged"
+        }
+      },
+      "expert": {
+        "title": "Expert Settings",
+        "description": "Advanced configuration for power users. These settings are optional and have sensible defaults.",
+        "data": {
+          "unplugged_timeout_minutes": "Unplugged Detection Timeout (minutes)",
           "custom_notify_service": "Custom Notify Service Name"
         },
         "data_description": {
-          "start_threshold": "Minimum power to detect a start",
-          "stop_threshold": "Maximum power to detect a stop",
-          "start_delay": "Duration the power must remain high before confirming start",
-          "stop_delay": "Duration the power must remain low before confirming stop",
-          "enable_alert_duration": "Receive an alert if the cycle lasts too long",
-          "alert_duration": "Maximum cycle duration before sending an alert",
-          "unplugged_timeout": "Time at 0W before detecting as unplugged (default: 300s = 5min)",
-          "notification_services": "Select which services to use for notifications",
-          "notification_types": "Select which types of notifications to receive",
-          "custom_notify_service": "Name of custom notification service (e.g., notify.my_service)"
+          "unplugged_timeout_minutes": "Duration at 0W before considering appliance unplugged (1-60 min, default: 5 min)",
+          "custom_notify_service": "Full service name for custom notifications (e.g., notify.my_custom_service)"
         }
       }
     }

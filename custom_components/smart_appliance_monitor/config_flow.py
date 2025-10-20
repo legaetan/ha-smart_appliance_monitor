@@ -204,13 +204,17 @@ class SmartApplianceMonitorOptionsFlowHandler(config_entries.OptionsFlow):
     def __init__(self, config_entry: config_entries.ConfigEntry) -> None:
         """Initialize options flow."""
         self.config_entry = config_entry
+        self._options = dict(config_entry.options)
 
     async def async_step_init(
         self, user_input: dict[str, Any] | None = None
     ) -> FlowResult:
-        """Manage the options."""
+        """Manage the options - Step 1: Detection thresholds."""
         if user_input is not None:
-            return self.async_create_entry(title="", data=user_input)
+            # Sauvegarder les options de cette étape
+            self._options.update(user_input)
+            # Passer à l'étape suivante
+            return await self.async_step_delays()
 
         # Récupérer le profil de l'appareil pour les valeurs par défaut
         appliance_type = self.config_entry.data.get(CONF_APPLIANCE_TYPE, "other")
@@ -230,18 +234,66 @@ class SmartApplianceMonitorOptionsFlowHandler(config_entries.OptionsFlow):
                         CONF_STOP_THRESHOLD, profile["stop_threshold"]
                     ),
                 ): vol.All(vol.Coerce(int), vol.Range(min=1, max=100)),
+            }
+        )
+
+        return self.async_show_form(
+            step_id="init",
+            data_schema=options_schema,
+        )
+
+    async def async_step_delays(
+        self, user_input: dict[str, Any] | None = None
+    ) -> FlowResult:
+        """Step 2: Detection delays and alert duration."""
+        if user_input is not None:
+            # Convertir les minutes en secondes pour start_delay et stop_delay
+            if "start_delay_minutes" in user_input:
+                self._options[CONF_START_DELAY] = user_input["start_delay_minutes"] * 60
+            if "stop_delay_minutes" in user_input:
+                self._options[CONF_STOP_DELAY] = user_input["stop_delay_minutes"] * 60
+            
+            # Convertir les heures en secondes pour alert_duration
+            if "alert_duration_hours" in user_input:
+                self._options[CONF_ALERT_DURATION] = int(user_input["alert_duration_hours"] * 3600)
+            
+            # Sauvegarder enable_alert_duration et expert_mode
+            self._options[CONF_ENABLE_ALERT_DURATION] = user_input.get(CONF_ENABLE_ALERT_DURATION, False)
+            
+            # Si mode expert activé, aller à l'étape expert
+            if user_input.get("expert_mode", False):
+                self._options["expert_mode"] = True
+                return await self.async_step_expert()
+            else:
+                self._options["expert_mode"] = False
+                # Passer à l'étape notifications
+                return await self.async_step_notifications()
+
+        # Récupérer le profil de l'appareil pour les valeurs par défaut
+        appliance_type = self.config_entry.data.get(CONF_APPLIANCE_TYPE, "other")
+        profile = APPLIANCE_PROFILES.get(appliance_type, APPLIANCE_PROFILES["other"])
+
+        # Convertir les secondes en minutes/heures pour l'affichage
+        start_delay_minutes = self.config_entry.options.get(
+            CONF_START_DELAY, profile["start_delay"]
+        ) / 60
+        stop_delay_minutes = self.config_entry.options.get(
+            CONF_STOP_DELAY, profile["stop_delay"]
+        ) / 60
+        alert_duration_hours = self.config_entry.options.get(
+            CONF_ALERT_DURATION, profile["alert_duration"]
+        ) / 3600
+
+        options_schema = vol.Schema(
+            {
                 vol.Optional(
-                    CONF_START_DELAY,
-                    default=self.config_entry.options.get(
-                        CONF_START_DELAY, profile["start_delay"]
-                    ),
-                ): vol.All(vol.Coerce(int), vol.Range(min=10, max=600)),
+                    "start_delay_minutes",
+                    default=start_delay_minutes,
+                ): vol.All(vol.Coerce(float), vol.Range(min=0.5, max=10)),
                 vol.Optional(
-                    CONF_STOP_DELAY,
-                    default=self.config_entry.options.get(
-                        CONF_STOP_DELAY, profile["stop_delay"]
-                    ),
-                ): vol.All(vol.Coerce(int), vol.Range(min=10, max=1800)),
+                    "stop_delay_minutes",
+                    default=stop_delay_minutes,
+                ): vol.All(vol.Coerce(float), vol.Range(min=0.5, max=30)),
                 vol.Optional(
                     CONF_ENABLE_ALERT_DURATION,
                     default=self.config_entry.options.get(
@@ -249,17 +301,42 @@ class SmartApplianceMonitorOptionsFlowHandler(config_entries.OptionsFlow):
                     ),
                 ): cv.boolean,
                 vol.Optional(
-                    CONF_ALERT_DURATION,
-                    default=self.config_entry.options.get(
-                        CONF_ALERT_DURATION, profile["alert_duration"]
-                    ),
-                ): vol.All(vol.Coerce(int), vol.Range(min=1800, max=21600)),
+                    "alert_duration_hours",
+                    default=alert_duration_hours,
+                ): vol.All(vol.Coerce(float), vol.Range(min=0.5, max=24)),
                 vol.Optional(
-                    CONF_UNPLUGGED_TIMEOUT,
-                    default=self.config_entry.options.get(
-                        CONF_UNPLUGGED_TIMEOUT, DEFAULT_UNPLUGGED_TIMEOUT
-                    ),
-                ): vol.All(vol.Coerce(int), vol.Range(min=60, max=3600)),
+                    "expert_mode",
+                    default=False,
+                ): cv.boolean,
+            }
+        )
+
+        return self.async_show_form(
+            step_id="delays",
+            data_schema=options_schema,
+        )
+
+    async def async_step_notifications(
+        self, user_input: dict[str, Any] | None = None
+    ) -> FlowResult:
+        """Step 3: Notification settings."""
+        if user_input is not None:
+            # Sauvegarder les options de notifications
+            self._options[CONF_NOTIFICATION_SERVICES] = user_input.get(
+                CONF_NOTIFICATION_SERVICES, DEFAULT_NOTIFICATION_SERVICES
+            )
+            self._options[CONF_NOTIFICATION_TYPES] = user_input.get(
+                CONF_NOTIFICATION_TYPES, DEFAULT_NOTIFICATION_TYPES
+            )
+            
+            # Nettoyer expert_mode de la configuration finale
+            self._options.pop("expert_mode", None)
+            
+            # Créer l'entrée finale
+            return self.async_create_entry(title="", data=self._options)
+
+        options_schema = vol.Schema(
+            {
                 vol.Optional(
                     CONF_NOTIFICATION_SERVICES,
                     default=self.config_entry.options.get(
@@ -270,6 +347,7 @@ class SmartApplianceMonitorOptionsFlowHandler(config_entries.OptionsFlow):
                         options=NOTIFICATION_SERVICES,
                         multiple=True,
                         mode=selector.SelectSelectorMode.LIST,
+                        translation_key="notification_service",
                     )
                 ),
                 vol.Optional(
@@ -282,8 +360,45 @@ class SmartApplianceMonitorOptionsFlowHandler(config_entries.OptionsFlow):
                         options=NOTIFICATION_TYPES,
                         multiple=True,
                         mode=selector.SelectSelectorMode.LIST,
+                        translation_key="notification_type",
                     )
                 ),
+            }
+        )
+
+        return self.async_show_form(
+            step_id="notifications",
+            data_schema=options_schema,
+        )
+
+    async def async_step_expert(
+        self, user_input: dict[str, Any] | None = None
+    ) -> FlowResult:
+        """Step 4: Expert settings (optional)."""
+        if user_input is not None:
+            # Convertir les minutes en secondes pour unplugged_timeout
+            if "unplugged_timeout_minutes" in user_input:
+                self._options[CONF_UNPLUGGED_TIMEOUT] = user_input["unplugged_timeout_minutes"] * 60
+            
+            # Sauvegarder le service personnalisé
+            self._options[CONF_CUSTOM_NOTIFY_SERVICE] = user_input.get(
+                CONF_CUSTOM_NOTIFY_SERVICE, ""
+            )
+            
+            # Passer à l'étape notifications
+            return await self.async_step_notifications()
+
+        # Convertir les secondes en minutes pour l'affichage
+        unplugged_timeout_minutes = self.config_entry.options.get(
+            CONF_UNPLUGGED_TIMEOUT, DEFAULT_UNPLUGGED_TIMEOUT
+        ) / 60
+
+        options_schema = vol.Schema(
+            {
+                vol.Optional(
+                    "unplugged_timeout_minutes",
+                    default=unplugged_timeout_minutes,
+                ): vol.All(vol.Coerce(float), vol.Range(min=1, max=60)),
                 vol.Optional(
                     CONF_CUSTOM_NOTIFY_SERVICE,
                     default=self.config_entry.options.get(CONF_CUSTOM_NOTIFY_SERVICE, ""),
@@ -292,7 +407,7 @@ class SmartApplianceMonitorOptionsFlowHandler(config_entries.OptionsFlow):
         )
 
         return self.async_show_form(
-            step_id="init",
+            step_id="expert",
             data_schema=options_schema,
         )
 

@@ -310,9 +310,22 @@ async def async_setup_services(hass: HomeAssistant) -> None:
 
 def _get_coordinator_from_entity_id(hass: HomeAssistant, entity_id: str) -> SmartApplianceCoordinator | None:
     """Get coordinator from entity_id."""
-    # Extraire l'entry_id de l'entity_id (format: sensor.{entry_id}_{type})
+    # Extraire le nom de l'appareil de l'entity_id
+    # Format: sensor.{appliance_name}_{type} ou domain.{appliance_name}_{type}
+    parts = entity_id.split(".", 1)
+    if len(parts) != 2:
+        return None
+    
+    # Essayer de trouver le coordinator correspondant
     for entry_id, coordinator in hass.data.get(DOMAIN, {}).items():
         if isinstance(coordinator, SmartApplianceCoordinator):
+            # Vérifier si l'entity_id correspond à cet appareil
+            # On vérifie avec le nom de l'appareil (en minuscules et sans espaces)
+            appliance_slug = coordinator.appliance_name.lower().replace(" ", "_")
+            if parts[1].startswith(appliance_slug):
+                return coordinator
+            
+            # Fallback: vérifier si l'entry_id est dans l'entity_id (ancien comportement)
             if entry_id in entity_id or coordinator.entry.entry_id in entity_id:
                 return coordinator
     

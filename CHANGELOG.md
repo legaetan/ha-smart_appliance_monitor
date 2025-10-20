@@ -5,6 +5,120 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.4.0] - 2025-10-20
+
+### Added
+
+#### Multi-Step Configuration Flow
+- **4-Step Advanced Configuration** - Configuration divided into logical steps
+  - Step 1: Detection Thresholds (start/stop power thresholds)
+  - Step 2: Detection Delays & Alerts (with expert mode toggle)
+  - Step 3: Notifications (services and types selection)
+  - Step 4: Expert Settings (optional, only if expert mode enabled)
+- Better UX with focused screens instead of single overwhelming form
+- Progressive navigation through configuration process
+
+#### User-Friendly Time Units
+- **Minutes for delays** - Instead of seconds for better comprehension
+  - Start delay: 0.5-10 minutes (was 10-600 seconds)
+  - Stop delay: 0.5-30 minutes (was 10-1800 seconds)
+- **Hours for alerts** - Instead of seconds for duration alerts
+  - Alert duration: 0.5-24 hours (was 1800-86400 seconds)
+- **Minutes for unplugged timeout** - In expert settings
+  - Unplugged timeout: 1-60 minutes (was 60-3600 seconds)
+- Automatic bidirectional conversion (display ↔ storage)
+- Values still stored in seconds internally for full backward compatibility
+
+#### Expert Mode
+- **Optional Expert Settings** - Advanced parameters hidden by default
+  - Unplugged detection timeout
+  - Custom notification service name
+- Toggle in Step 2 to access expert settings
+- Simplified interface for standard users
+- Full power for advanced users when needed
+
+#### Enhanced Descriptions
+- **Detailed explanations** for every configuration field
+- **Concrete examples** adapted to appliance type
+  - "100W for oven, 10W for washing machine"
+- **Recommended value ranges** clearly indicated
+- **Contextual help** explaining what each parameter does
+
+### Changed
+
+#### Configuration Flow
+- Options flow completely refactored from single to multi-step
+- `async_step_init()` - Now handles only thresholds (step 1)
+- New `async_step_delays()` - Handles delays and alerts (step 2)
+- New `async_step_notifications()` - Handles notification settings (step 3)
+- New `async_step_expert()` - Handles expert parameters (step 4)
+- State persistence across steps with `self._options`
+
+#### Translation Files
+- English strings updated with 4 new step definitions
+- French translations updated with complete localization
+- All field labels updated to reflect new units
+- Descriptions significantly enhanced in both languages
+
+### Improved
+
+#### User Experience
+- **Reduced cognitive load** - 2-5 fields per screen instead of 10
+- **Clearer progression** - Logical flow from thresholds → delays → notifications
+- **Natural units** - Minutes and hours instead of seconds
+- **Better accessibility** - Expert options hidden by default
+- **Contextual guidance** - Each step has clear description and purpose
+
+#### Configuration Quality
+- **Easier to understand** - Natural time units (2 min vs 120 sec)
+- **Harder to make mistakes** - Smaller ranges with appropriate steps
+- **Better defaults visible** - Values make more sense to users
+- **Flexible validation** - Supports decimal values (1.5 minutes = 90 seconds)
+
+### Technical Details
+
+#### Files Modified
+- `config_flow.py` - 210+ lines refactored
+  - Multi-step flow implementation
+  - Automatic unit conversions (min↔sec, h↔sec)
+  - Conditional navigation (expert mode)
+  
+- `strings.json` - Complete restructuring
+  - 4 step definitions (init, delays, notifications, expert)
+  - New field names with unit suffixes
+  - Enhanced descriptions with examples
+  
+- `translations/fr.json` - Full French localization
+  - All 4 steps translated
+  - Natural French expressions
+  - Localized examples
+
+#### Backward Compatibility
+- ✅ **100% backward compatible**
+- Existing configurations load without modification
+- Old values in seconds automatically converted to minutes/hours for display
+- Modified values automatically converted back to seconds for storage
+- No migration script needed
+- Internal storage format unchanged
+
+#### Unit Conversions
+```python
+# Display conversion
+start_delay_minutes = config_value_seconds / 60
+
+# Storage conversion  
+config_value_seconds = user_input_minutes * 60
+```
+
+### Notes
+- Expert mode toggle is not persisted in configuration (UI-only flag)
+- All validation ranges adapted to new units
+- Decimal values supported (e.g., 1.5 hours = 5400 seconds)
+- Documentation updated with migration guide
+
+### Breaking Changes
+None - This is a UX improvement release with full backward compatibility.
+
 ## [0.3.0] - 2025-10-20
 
 ### Added
