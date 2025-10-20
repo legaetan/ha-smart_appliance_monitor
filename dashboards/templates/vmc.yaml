@@ -17,11 +17,11 @@ sections:
         secondary: |
           {% set state = states('sensor.{APPLIANCE_ID}_state') %}
           {% if state == 'running' %}
-            💨 Mode Boost - {{ states('sensor.{APPLIANCE_ID}_session_duration') }} min
+            💨 Boost Mode - {{ states('sensor.{APPLIANCE_ID}_session_duration') }} min
           {% elif state == 'finished' %}
-            ✅ Boost terminé
+            ✅ Boost complete
           {% else %}
-            💤 Mode normal
+            💤 Normal mode
           {% endif %}
         icon: mdi:fan
         icon_color: |
@@ -53,12 +53,12 @@ sections:
   # ============================================
   # SECTION 2: CURRENT BOOST SESSION
   # ============================================
-  - title: Session boost en cours
+  - title: Current Boost Session
     type: grid
     cards:
       - type: gauge
         entity: sensor.{APPLIANCE_ID}_session_duration
-        name: Durée du boost
+        name: Boost Duration
         needle: true
         severity:
           green: 0
@@ -70,20 +70,20 @@ sections:
 
       - type: statistic
         entity: sensor.{APPLIANCE_ID}_session_energy
-        name: Énergie (boost)
+        name: Energy (boost)
         icon: mdi:lightning-bolt
         stat_type: mean
 
       - type: statistic
         entity: sensor.{APPLIANCE_ID}_session_cost
-        name: Coût (boost)
+        name: Cost (boost)
         icon: mdi:currency-eur
         stat_type: mean
 
   # ============================================
   # SECTION 3: VENTILATION MONITORING
   # ============================================
-  - title: Surveillance
+  - title: Monitoring
     type: grid
     cards:
       - type: custom:mini-graph-card
@@ -91,7 +91,7 @@ sections:
           - entity: sensor.{APPLIANCE_ID}_power
             name: Puissance
             color: '#1abc9c'
-        name: Consommation (24h) - Détection mode boost
+        name: Consumption (24h) - Boost Mode Detection
         hours_to_show: 24
         points_per_hour: 4
         line_width: 2
@@ -110,11 +110,11 @@ sections:
             content: |
               {% set power = states('sensor.{APPLIANCE_ID}_power') | float(0) %}
               {% if power > 20 %}
-                Mode Boost
+                Boost Mode
               {% elif power > 10 %}
-                Mode Normal
+                Normal Mode
               {% else %}
-                Arrêté
+                Off
               {% endif %}
             icon: mdi:fan
             icon_color: |
@@ -130,13 +130,13 @@ sections:
   # ============================================
   # SECTION 4: CONTROLS
   # ============================================
-  - title: Contrôles
+  - title: Controls
     type: grid
     cards:
       - type: entities
         entities:
           - entity: switch.{APPLIANCE_ID}_monitoring
-            name: Surveillance des boost
+            name: Boost Monitoring
             icon: mdi:eye
           - entity: switch.{APPLIANCE_ID}_notifications
             name: Notifications
@@ -144,32 +144,32 @@ sections:
           - type: section
             label: Notifications par type
           - entity: switch.{APPLIANCE_ID}_notification_cycle_started
-            name: Boost activé
+            name: Boost Activated
             icon: mdi:fan-plus
           - entity: switch.{APPLIANCE_ID}_notification_cycle_finished
-            name: Boost terminé
+            name: Boost Complete
             icon: mdi:fan-check
           - entity: switch.{APPLIANCE_ID}_notification_alert_duration
-            name: Boost très long
+            name: Very Long Boost
             icon: mdi:clock-alert
           - entity: switch.{APPLIANCE_ID}_notification_unplugged
-            name: VMC arrêtée
+            name: VMC Off
             icon: mdi:fan-off
           - type: section
             label: Actions
           - entity: button.{APPLIANCE_ID}_reset_stats
-            name: Réinitialiser stats
+            name: Reset Stats
             icon: mdi:restart
 
   # ============================================
   # SECTION 5: BOOST STATISTICS
   # ============================================
-  - title: Statistiques
+  - title: Statistics
     type: grid
     cards:
       # Last Boost Session
       - type: entities
-        title: Dernier boost
+        title: Last Boost
         icon: mdi:history
         entities:
           - entity: sensor.{APPLIANCE_ID}_last_session_duration
@@ -185,39 +185,39 @@ sections:
       # Daily Boosts
       - type: custom:mushroom-entity-card
         entity: sensor.{APPLIANCE_ID}_daily_sessions
-        name: Boost du jour
+        name: Boosts Today
         icon: mdi:counter
         icon_color: cyan
 
       # Energy costs
       - type: custom:mushroom-entity-card
         entity: sensor.{APPLIANCE_ID}_daily_cost
-        name: Coût quotidien
+        name: Daily Cost
         icon: mdi:currency-eur
         icon_color: green
 
       - type: custom:mushroom-entity-card
         entity: sensor.{APPLIANCE_ID}_monthly_cost
-        name: Coût mensuel
+        name: Monthly Cost
         icon: mdi:calendar-month
         icon_color: green
 
   # ============================================
   # SECTION 6: AIR QUALITY IMPACT
   # ============================================
-  - title: Impact & Efficacité
+  - title: Impact & Efficiency
     type: grid
     cards:
       # Average boost duration
       - type: custom:mushroom-template-card
         primary: |
           {% set sessions = states('sensor.{APPLIANCE_ID}_daily_sessions') | int(0) %}
-          {% if sessions > 0 %}
-            {{ sessions }} boost{% if sessions > 1 %}s{% endif %} aujourd'hui
-          {% else %}
-            Aucun boost aujourd'hui
+              {% if sessions > 0 %}
+                {{ sessions }} boost{% if sessions > 1 %}s{% endif %} today
+              {% else %}
+                No boosts today
           {% endif %}
-        secondary: Fréquence d'activation du mode boost
+        secondary: Boost mode activation frequency
         icon: mdi:counter
         icon_color: purple
 
@@ -226,27 +226,27 @@ sections:
         primary: |
           {% set energy = states('sensor.{APPLIANCE_ID}_last_session_energy') | float(0) %}
           {{ (energy * 1000) | round(0) }} Wh
-        secondary: Énergie par boost (moyenne)
+        secondary: Energy per boost (average)
         icon: mdi:lightning-bolt-circle
         icon_color: amber
 
   # ============================================
   # SECTION 7: SYSTEM STATUS
   # ============================================
-  - title: État du système
+  - title: System Status
     type: grid
     cards:
       # VMC status
       - type: custom:mushroom-template-card
         primary: |
           {% if is_state('binary_sensor.{APPLIANCE_ID}_unplugged', 'off') %}
-            ✅ VMC en fonctionnement
+            ✅ VMC Operating
           {% else %}
-            ⚠️ VMC arrêtée
+            ⚠️ VMC Off
           {% endif %}
         secondary: |
           {% if is_state('binary_sensor.{APPLIANCE_ID}_unplugged', 'on') %}
-            Aucune consommation détectée
+            No power consumption detected
           {% else %}
             Ventilation active
           {% endif %}
@@ -269,7 +269,7 @@ sections:
       # Current consumption
       - type: custom:mushroom-entity-card
         entity: sensor.{APPLIANCE_ID}_power
-        name: Consommation actuelle
+        name: Current Consumption
         icon: mdi:flash
         icon_color: |
           {% set power = states('sensor.{APPLIANCE_ID}_power') | float(0) %}
@@ -286,7 +286,7 @@ sections:
   # ============================================
   # SECTION 8: ALERTS
   # ============================================
-  - title: Alertes
+  - title: Alerts
     type: grid
     cards:
       - type: conditional
@@ -295,8 +295,8 @@ sections:
             state: 'on'
         card:
           type: custom:mushroom-template-card
-          primary: ⚠️ VMC arrêtée
-          secondary: La ventilation ne fonctionne pas
+          primary: ⚠️ VMC Off
+          secondary: Ventilation not operating
           icon: mdi:fan-off
           icon_color: red
           tap_action:
@@ -309,8 +309,8 @@ sections:
             state: 'on'
         card:
           type: custom:mushroom-template-card
-          primary: 💨 Mode boost prolongé
-          secondary: Le boost est actif depuis longtemps
+          primary: 💨 Extended Boost Mode
+          secondary: Boost has been active for a long time
           icon: mdi:fan-alert
           icon_color: orange
           tap_action:

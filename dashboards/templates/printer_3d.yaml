@@ -17,11 +17,11 @@ sections:
         secondary: |
           {% set state = states('sensor.{APPLIANCE_ID}_state') %}
           {% if state == 'running' %}
-            🖨️ Impression en cours - {{ states('sensor.{APPLIANCE_ID}_cycle_duration') }} min
+            🖨️ Print in progress - {{ states('sensor.{APPLIANCE_ID}_cycle_duration') }} min
           {% elif state == 'finished' %}
-            ✅ Impression terminée!
+            ✅ Print complete!
           {% else %}
-            ⚪ Prêt à imprimer
+            ⚪ Ready to print
           {% endif %}
         icon: mdi:printer-3d
         icon_color: |
@@ -49,13 +49,13 @@ sections:
   # ============================================
   # SECTION 2: CURRENT PRINT JOB
   # ============================================
-  - title: Impression en cours
+  - title: Current Print
     type: grid
     cards:
       # Duration with extended range for long prints
       - type: gauge
         entity: sensor.{APPLIANCE_ID}_cycle_duration
-        name: Durée d'impression
+        name: Print Duration
         needle: true
         severity:
           green: 0
@@ -67,20 +67,20 @@ sections:
 
       - type: statistic
         entity: sensor.{APPLIANCE_ID}_cycle_energy
-        name: Énergie consommée
+        name: Energy Consumed
         icon: mdi:lightning-bolt
         stat_type: mean
 
       - type: statistic
         entity: sensor.{APPLIANCE_ID}_cycle_cost
-        name: Coût de l'impression
+        name: Print Cost
         icon: mdi:currency-eur
         stat_type: mean
 
   # ============================================
   # SECTION 3: PRINT MONITORING
   # ============================================
-  - title: Surveillance
+  - title: Monitoring
     type: grid
     cards:
       - type: custom:mini-graph-card
@@ -88,7 +88,7 @@ sections:
           - entity: sensor.{APPLIANCE_ID}_power
             name: Puissance
             color: '#e67e22'
-        name: Consommation (dernières 24h)
+        name: Consumption (last 24h)
         hours_to_show: 24
         points_per_hour: 4
         line_width: 2
@@ -126,13 +126,13 @@ sections:
   # ============================================
   # SECTION 4: CONTROLS
   # ============================================
-  - title: Contrôles
+  - title: Controls
     type: grid
     cards:
       - type: entities
         entities:
           - entity: switch.{APPLIANCE_ID}_monitoring
-            name: Surveillance automatique
+            name: Automatic Monitoring
             icon: mdi:eye
           - entity: switch.{APPLIANCE_ID}_notifications
             name: Notifications
@@ -140,32 +140,32 @@ sections:
           - type: section
             label: Notifications par type
           - entity: switch.{APPLIANCE_ID}_notification_cycle_started
-            name: Impression démarrée
+            name: Print Started
             icon: mdi:printer-3d-nozzle
           - entity: switch.{APPLIANCE_ID}_notification_cycle_finished
-            name: Impression terminée
+            name: Print Complete
             icon: mdi:check-circle
           - entity: switch.{APPLIANCE_ID}_notification_alert_duration
-            name: Impression très longue
+            name: Very Long Print
             icon: mdi:clock-alert
           - entity: switch.{APPLIANCE_ID}_notification_unplugged
-            name: Imprimante éteinte
+            name: Printer Off
             icon: mdi:power-plug-off
           - type: section
             label: Actions
           - entity: button.{APPLIANCE_ID}_reset_stats
-            name: Réinitialiser statistiques
+            name: Reset Statistics
             icon: mdi:restart
 
   # ============================================
   # SECTION 5: PRINT STATISTICS
   # ============================================
-  - title: Statistiques d'impression
+  - title: Print Statistics
     type: grid
     cards:
       # Last Print
       - type: entities
-        title: Dernière impression
+        title: Last Print
         icon: mdi:history
         entities:
           - type: custom:mushroom-chips-card
@@ -193,27 +193,27 @@ sections:
       # Daily Prints
       - type: custom:mushroom-entity-card
         entity: sensor.{APPLIANCE_ID}_daily_cycles
-        name: Impressions du jour
+        name: Prints Today
         icon: mdi:counter
         icon_color: blue
 
       # Costs
       - type: custom:mushroom-entity-card
         entity: sensor.{APPLIANCE_ID}_daily_cost
-        name: Coût quotidien
+        name: Daily Cost
         icon: mdi:currency-eur
         icon_color: green
 
       - type: custom:mushroom-entity-card
         entity: sensor.{APPLIANCE_ID}_monthly_cost
-        name: Coût mensuel
+        name: Monthly Cost
         icon: mdi:calendar-month
         icon_color: green
 
   # ============================================
   # SECTION 6: EFFICIENCY ANALYSIS
   # ============================================
-  - title: Analyse d'efficacité
+  - title: Efficiency Analysis
     type: grid
     cards:
       # Average power during print
@@ -223,7 +223,7 @@ sections:
           {% set duration = states('sensor.{APPLIANCE_ID}_last_cycle_duration') | float(1) %}
           {% set avg_power = (energy * 1000 / duration * 60) | round(1) if duration > 0 else 0 %}
           {{ avg_power }} W
-        secondary: Puissance moyenne (dernière impression)
+        secondary: Average Power (last print)
         icon: mdi:gauge
         icon_color: orange
 
@@ -232,14 +232,14 @@ sections:
         primary: |
           {% set energy = states('sensor.{APPLIANCE_ID}_last_cycle_energy') | float(0) %}
           {{ (energy * 1000) | round(0) }} Wh
-        secondary: Énergie consommée (dernière impression)
+        secondary: Energy consumed (last print)
         icon: mdi:lightning-bolt-circle
         icon_color: amber
 
   # ============================================
   # SECTION 7: ALERTS & STATUS
   # ============================================
-  - title: Alertes
+  - title: Alerts
     type: grid
     cards:
       - type: conditional
@@ -248,8 +248,8 @@ sections:
             state: 'on'
         card:
           type: custom:mushroom-template-card
-          primary: 🔌 Imprimante éteinte
-          secondary: Aucune consommation détectée
+          primary: 🔌 Printer Off
+          secondary: No power consumption detected
           icon: mdi:printer-3d-off
           icon_color: red
           tap_action:
@@ -266,8 +266,8 @@ sections:
           primary: |
             {% set duration = states('sensor.{APPLIANCE_ID}_cycle_duration') | int %}
             {% set hours = (duration / 60) | round(1) %}
-            🖨️ Impression en cours ({{ hours }}h)
-          secondary: L'imprimante fonctionne actuellement
+            🖨️ Print in progress ({{ hours }}h)
+          secondary: Printer is currently running
           icon: mdi:printer-3d-nozzle
           icon_color: blue
           tap_action:
