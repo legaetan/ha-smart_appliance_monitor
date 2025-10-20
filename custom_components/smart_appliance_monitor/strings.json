@@ -1,0 +1,42 @@
+{
+  "config": {
+    "step": {
+      "user": {
+        "title": "Add Smart Appliance Monitor",
+        "description": "Configure monitoring for your appliance",
+        "data": {
+          "appliance_name": "Appliance Name",
+          "appliance_type": "Appliance Type",
+          "power_sensor": "Power Sensor",
+          "energy_sensor": "Energy Sensor",
+          "price_kwh": "Price per kWh (€)"
+        }
+      }
+    },
+    "error": {
+      "invalid_sensor": "Invalid sensor entity",
+      "cannot_connect": "Failed to connect",
+      "unknown": "Unexpected error"
+    },
+    "abort": {
+      "already_configured": "Device is already configured"
+    }
+  },
+  "options": {
+    "step": {
+      "init": {
+        "title": "Advanced Configuration",
+        "description": "Configure detection thresholds and alerts",
+        "data": {
+          "start_threshold": "Start Threshold (W)",
+          "stop_threshold": "Stop Threshold (W)",
+          "start_delay": "Start Delay (seconds)",
+          "stop_delay": "Stop Delay (seconds)",
+          "enable_alert_duration": "Enable Duration Alert",
+          "alert_duration": "Alert Duration (seconds)"
+        }
+      }
+    }
+  }
+}
+

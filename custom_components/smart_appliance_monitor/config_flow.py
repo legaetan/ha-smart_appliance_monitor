@@ -1,0 +1,163 @@
+"""Config flow for Smart Appliance Monitor integration."""
+from __future__ import annotations
+
+import logging
+from typing import Any
+
+import voluptuous as vol
+
+from homeassistant import config_entries
+from homeassistant.const import CONF_NAME
+from homeassistant.core import HomeAssistant
+from homeassistant.data_entry_flow import FlowResult
+import homeassistant.helpers.config_validation as cv
+from homeassistant.helpers import selector
+
+from .const import (
+    DOMAIN,
+    CONF_APPLIANCE_NAME,
+    CONF_APPLIANCE_TYPE,
+    CONF_POWER_SENSOR,
+    CONF_ENERGY_SENSOR,
+    CONF_PRICE_KWH,
+    CONF_START_THRESHOLD,
+    CONF_STOP_THRESHOLD,
+    CONF_START_DELAY,
+    CONF_STOP_DELAY,
+    CONF_ENABLE_ALERT_DURATION,
+    CONF_ALERT_DURATION,
+    APPLIANCE_TYPES,
+    DEFAULT_PRICE_KWH,
+    DEFAULT_START_THRESHOLD,
+    DEFAULT_STOP_THRESHOLD,
+    DEFAULT_START_DELAY,
+    DEFAULT_STOP_DELAY,
+    DEFAULT_ALERT_DURATION,
+)
+
+_LOGGER = logging.getLogger(__name__)
+
+
+class SmartApplianceMonitorConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
+    """Handle a config flow for Smart Appliance Monitor."""
+
+    VERSION = 1
+
+    async def async_step_user(
+        self, user_input: dict[str, Any] | None = None
+    ) -> FlowResult:
+        """Handle the initial step."""
+        errors: dict[str, str] = {}
+
+        if user_input is not None:
+            # Validate the input
+            power_sensor = user_input[CONF_POWER_SENSOR]
+            
+            # Check if sensor exists
+            if not self.hass.states.get(power_sensor):
+                errors["base"] = "invalid_sensor"
+            else:
+                # Create the config entry
+                return self.async_create_entry(
+                    title=user_input[CONF_APPLIANCE_NAME],
+                    data=user_input,
+                )
+
+        # Build the config schema
+        data_schema = vol.Schema(
+            {
+                vol.Required(CONF_APPLIANCE_NAME): str,
+                vol.Required(CONF_APPLIANCE_TYPE): selector.SelectSelector(
+                    selector.SelectSelectorConfig(
+                        options=APPLIANCE_TYPES,
+                        translation_key="appliance_type",
+                    )
+                ),
+                vol.Required(CONF_POWER_SENSOR): selector.EntitySelector(
+                    selector.EntitySelectorConfig(
+                        domain="sensor",
+                    )
+                ),
+                vol.Required(CONF_ENERGY_SENSOR): selector.EntitySelector(
+                    selector.EntitySelectorConfig(
+                        domain="sensor",
+                    )
+                ),
+                vol.Optional(CONF_PRICE_KWH, default=DEFAULT_PRICE_KWH): cv.positive_float,
+            }
+        )
+
+        return self.async_show_form(
+            step_id="user",
+            data_schema=data_schema,
+            errors=errors,
+        )
+
+    @staticmethod
+    def async_get_options_flow(
+        config_entry: config_entries.ConfigEntry,
+    ) -> config_entries.OptionsFlow:
+        """Get the options flow for this handler."""
+        return SmartApplianceMonitorOptionsFlowHandler(config_entry)
+
+
+class SmartApplianceMonitorOptionsFlowHandler(config_entries.OptionsFlow):
+    """Handle options flow for Smart Appliance Monitor."""
+
+    def __init__(self, config_entry: config_entries.ConfigEntry) -> None:
+        """Initialize options flow."""
+        self.config_entry = config_entry
+
+    async def async_step_init(
+        self, user_input: dict[str, Any] | None = None
+    ) -> FlowResult:
+        """Manage the options."""
+        if user_input is not None:
+            return self.async_create_entry(title="", data=user_input)
+
+        options_schema = vol.Schema(
+            {
+                vol.Optional(
+                    CONF_START_THRESHOLD,
+                    default=self.config_entry.options.get(
+                        CONF_START_THRESHOLD, DEFAULT_START_THRESHOLD
+                    ),
+                ): vol.All(vol.Coerce(int), vol.Range(min=1, max=5000)),
+                vol.Optional(
+                    CONF_STOP_THRESHOLD,
+                    default=self.config_entry.options.get(
+                        CONF_STOP_THRESHOLD, DEFAULT_STOP_THRESHOLD
+                    ),
+                ): vol.All(vol.Coerce(int), vol.Range(min=1, max=100)),
+                vol.Optional(
+                    CONF_START_DELAY,
+                    default=self.config_entry.options.get(
+                        CONF_START_DELAY, DEFAULT_START_DELAY
+                    ),
+                ): vol.All(vol.Coerce(int), vol.Range(min=10, max=600)),
+                vol.Optional(
+                    CONF_STOP_DELAY,
+                    default=self.config_entry.options.get(
+                        CONF_STOP_DELAY, DEFAULT_STOP_DELAY
+                    ),
+                ): vol.All(vol.Coerce(int), vol.Range(min=10, max=1800)),
+                vol.Optional(
+                    CONF_ENABLE_ALERT_DURATION,
+                    default=self.config_entry.options.get(
+                        CONF_ENABLE_ALERT_DURATION, False
+                    ),
+                ): cv.boolean,
+                vol.Optional(
+                    CONF_ALERT_DURATION,
+                    default=self.config_entry.options.get(
+                        CONF_ALERT_DURATION, DEFAULT_ALERT_DURATION
+                    ),
+                ): vol.All(vol.Coerce(int), vol.Range(min=1800, max=21600)),
+            }
+        )
+
+        return self.async_show_form(
+            step_id="init",
+            data_schema=options_schema,
+        )
+

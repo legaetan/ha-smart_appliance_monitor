@@ -1,0 +1,57 @@
+{
+  "config": {
+    "step": {
+      "user": {
+        "title": "Ajouter Smart Appliance Monitor",
+        "description": "Configurer la surveillance de votre appareil",
+        "data": {
+          "appliance_name": "Nom de l'appareil",
+          "appliance_type": "Type d'appareil",
+          "power_sensor": "Capteur de puissance",
+          "energy_sensor": "Capteur d'énergie",
+          "price_kwh": "Prix du kWh (€)"
+        },
+        "data_description": {
+          "appliance_name": "Nom descriptif de votre appareil (ex: Four, Lave-vaisselle)",
+          "appliance_type": "Type d'appareil électroménager",
+          "power_sensor": "Capteur de puissance de la prise connectée (W)",
+          "energy_sensor": "Capteur d'énergie de la prise connectée (kWh)",
+          "price_kwh": "Coût de l'électricité par kWh"
+        }
+      }
+    },
+    "error": {
+      "invalid_sensor": "L'entité capteur est invalide",
+      "cannot_connect": "Impossible de se connecter",
+      "unknown": "Erreur inattendue"
+    },
+    "abort": {
+      "already_configured": "Cet appareil est déjà configuré"
+    }
+  },
+  "options": {
+    "step": {
+      "init": {
+        "title": "Configuration avancée",
+        "description": "Configurer les seuils de détection et les alertes",
+        "data": {
+          "start_threshold": "Seuil de démarrage (W)",
+          "stop_threshold": "Seuil d'arrêt (W)",
+          "start_delay": "Délai de démarrage (secondes)",
+          "stop_delay": "Délai d'arrêt (secondes)",
+          "enable_alert_duration": "Activer l'alerte de durée",
+          "alert_duration": "Durée d'alerte (secondes)"
+        },
+        "data_description": {
+          "start_threshold": "Puissance minimale pour détecter un démarrage",
+          "stop_threshold": "Puissance maximale pour détecter un arrêt",
+          "start_delay": "Durée pendant laquelle la puissance doit rester élevée avant de confirmer le démarrage",
+          "stop_delay": "Durée pendant laquelle la puissance doit rester faible avant de confirmer l'arrêt",
+          "enable_alert_duration": "Recevoir une alerte si le cycle dure trop longtemps",
+          "alert_duration": "Durée maximale du cycle avant d'envoyer une alerte"
+        }
+      }
+    }
+  }
+}
+
