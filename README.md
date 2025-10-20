@@ -4,21 +4,30 @@
 [![GitHub Release](https://img.shields.io/github/release/yourusername/ha-smart_appliance_monitor.svg)](https://github.com/yourusername/ha-smart_appliance_monitor/releases)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 
-> **⚠️ Projet en développement** - Cette intégration est actuellement en phase de concept et développement initial.
+> **✅ MVP Implémenté** - Le MVP est fonctionnel avec toutes les fonctionnalités de base !
 
 ## 🎯 Vision
 
-Une intégration HACS complète qui transforme n'importe quelle prise connectée en système de surveillance intelligent d'appareil électroménager, **sans configuration manuelle** !
+Une intégration HACS complète qui transforme n'importe quelle prise connectée en système de surveillance intelligent d'appareil électroménager.
 
-## ✨ Fonctionnalités (Prévues)
+## ✨ Fonctionnalités Implémentées
 
-- 🔌 **Surveillance automatique** - Détection intelligente des cycles de démarrage/arrêt
-- 📊 **Statistiques détaillées** - Durée, consommation, coût par cycle
-- 🤖 **Apprentissage automatique** - Calibration automatique des seuils
-- 🔔 **Notifications enrichies** - Alertes avec statistiques et graphiques
-- 📈 **Dashboard intégré** - Interface complète générée automatiquement
-- 💰 **Suivi des coûts** - Calcul du coût par cycle et totaux journaliers/mensuels
-- 🌍 **Multi-langue** - Support français et anglais (extensible)
+### ✅ Disponible maintenant (v0.1.0)
+
+- 🔌 **Surveillance automatique** - Détection des cycles de démarrage/arrêt avec seuils configurables
+- 📊 **Statistiques complètes** - Durée, consommation, coût par cycle + historiques
+- 🎛️ **Seuils optimisés par appareil** - Profils pré-configurés pour chaque type d'appareil
+- 💰 **Prix dynamique** - Support des entités pour tarifs variables (HC/HP, Tempo)
+- 🔧 **Reconfiguration flexible** - Modifier tous les paramètres sans perdre les statistiques
+- 🔔 **Notifications intelligentes** - Alertes de début/fin de cycle et durée excessive
+- 🌍 **Multi-langue** - Interface complète en français et anglais
+- 🧪 **Tests unitaires** - Couverture complète du code
+
+### 🚧 À venir
+
+- 🤖 **Machine Learning** - Calibration automatique des seuils (Phase 2)
+- 📈 **Dashboard intégré** - Interface générée automatiquement (Phase 2)
+- 📉 **Graphiques** - Visualisations avancées dans les notifications (Phase 2)
 
 ## 🚀 Installation
 
@@ -60,6 +69,16 @@ L'intégration peut surveiller tout appareil électroménager connecté via une 
 
 ## 📚 Documentation
 
+### Guides Utilisateur
+- **[Guide de Reconfiguration](RECONFIGURE_GUIDE.md)** - Comment modifier les paramètres sans perdre les données
+- **[Améliorations Récentes](IMPROVEMENTS.md)** - Prix dynamique et seuils adaptés
+
+### Documentation Développeur
+- **[Résumé d'implémentation](IMPLEMENTATION_SUMMARY.md)** - Architecture du MVP
+- **[Guide de développement](DEVELOPMENT.md)** - Contribuer au projet
+- **[Fichiers créés](FILES_CREATED.md)** - Liste complète des composants
+
+### Documentation Complète
 - **[Concept complet](CONCEPT_INTEGRATION_HACS.md)** - Vision et fonctionnalités détaillées
 - **[Spécifications techniques](SPECS_TECHNIQUES_INTEGRATION.md)** - Architecture et code
 - **[Ressources développement](RESSOURCES_DEVELOPPEMENT.md)** - Guide pour contribuer
@@ -67,38 +86,59 @@ L'intégration peut surveiller tout appareil électroménager connecté via une 
 
 ## 🛠️ État du Projet
 
-### Phase Actuelle : Initialisation
+### Phase Actuelle : MVP Complet ✅
 
 - [x] Concept et spécifications
 - [x] Documentation complète
-- [ ] Structure du projet
-- [ ] Intégration de base
-- [ ] Config flow
-- [ ] Entités (sensors, binary_sensors, etc.)
-- [ ] Mode apprentissage
-- [ ] Dashboard automatique
-- [ ] Tests unitaires
+- [x] Structure du projet
+- [x] Intégration de base avec coordinator
+- [x] Config flow (création + reconfiguration)
+- [x] State Machine pour détection de cycles
+- [x] Entités complètes :
+  - [x] Binary Sensors (running, alert_duration)
+  - [x] Sensors (state, cycle_*, last_cycle_*, daily_*, monthly_cost)
+  - [x] Buttons (reset_stats)
+  - [x] Switches (monitoring, notifications)
+- [x] Services personnalisés
+- [x] Système de notifications
+- [x] Tests unitaires complets
+- [x] Prix dynamique via entité
+- [x] Seuils optimisés par type d'appareil
+- [x] Flux de reconfiguration
 - [ ] Publication HACS
+- [ ] Mode apprentissage ML
+- [ ] Dashboard automatique
 
 ### Roadmap
 
-#### v0.1.0 - MVP (Prévu : T1 2026)
-- Configuration via UI
-- Détection cycle démarrage/arrêt
-- Capteurs de base (état, durée, consommation, coût)
-- Notifications simples
+#### ✅ v0.1.0 - MVP (Octobre 2025)
+- ✅ Configuration via UI avec sélecteurs intelligents
+- ✅ Détection cycle démarrage/arrêt avec machine à états
+- ✅ 10 capteurs (état, cycle en cours, dernier cycle, statistiques)
+- ✅ Notifications avec détails du cycle
+- ✅ Services personnalisés (start_cycle, stop_monitoring, reset_stats)
+- ✅ Prix dynamique via entité input_number/sensor
+- ✅ Seuils adaptés par type d'appareil (7 profils)
+- ✅ Flux de reconfiguration sans perte de données
 
-#### v0.5.0 - Fonctionnalités avancées (Prévu : T2 2026)
-- Mode apprentissage automatique
-- Profils d'appareils pré-configurés
-- Dashboard automatique
-- Statistiques avancées
+#### 🚧 v0.2.0 - Améliorations (Prévu : Q1 2026)
+- [ ] Publication sur HACS
+- [ ] Intégration Energy Dashboard
+- [ ] Support des automations avancées
+- [ ] Export des données (CSV, JSON)
+- [ ] Graphiques dans les notifications
 
-#### v1.0.0 - Version production (Prévu : T3 2026)
-- ML pour détection intelligente
-- Intégration Energy Dashboard
-- Multi-langue complet
-- Documentation utilisateur complète
+#### 🔮 v0.5.0 - Machine Learning (Prévu : Q2 2026)
+- [ ] Mode apprentissage automatique
+- [ ] Détection intelligente des cycles
+- [ ] Ajustement automatique des seuils
+- [ ] Prédictions de durée/consommation
+
+#### 🎯 v1.0.0 - Version production (Prévu : Q3 2026)
+- [ ] Dashboard intégré automatique
+- [ ] ML complet pour tous types d'appareils
+- [ ] Multi-appareil avec groupes
+- [ ] API complète pour intégrations tierces
 
 ## 🤝 Contribution
 
