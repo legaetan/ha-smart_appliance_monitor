@@ -1,136 +1,135 @@
 # Release Summary v0.5.1
 
-**Date**: 20 octobre 2025  
+**Date**: October 20, 2025  
 **Type**: Patch Release (Bug Fix + Feature)
 
-## 🎯 Objectif Principal
+## 🎯 Main Objective
 
-Résoudre la **perte de données lors du redémarrage de Home Assistant** en implémentant un système complet de persistance des états.
+Resolve **data loss during Home Assistant restarts** by implementing a complete state persistence system.
 
-## ✨ Nouveauté Clé
+## ✨ Key Feature
 
-### État de Persistance (State Persistence)
+### State Persistence
 
-Système automatique de sauvegarde et restauration qui préserve :
-- ✅ Cycles en cours (état, heure de début, énergie, puissance)
-- ✅ Dernier cycle terminé (durée, énergie, coût)
-- ✅ Statistiques journalières (date, compteur, énergie, coût)
-- ✅ Statistiques mensuelles (année, mois, énergie, coût)
-- ✅ Historique des cycles (pour détection d'anomalies)
+Automatic save and restore system that preserves:
+- ✅ Running cycles (state, start time, energy, power)
+- ✅ Last completed cycle (duration, energy, cost)
+- ✅ Daily statistics (date, counter, energy, cost)
+- ✅ Monthly statistics (year, month, energy, cost)
+- ✅ Cycle history (for anomaly detection)
 - ✅ Configuration (monitoring, notifications)
 
-## 📊 Statistiques
+## 📊 Statistics
 
 ### Code
-- **3 fichiers créés** : `docs/PERSISTENCE.md`, `RESUME_PERSISTANCE.md`, `tests/test_persistence.py`
-- **2 fichiers modifiés** : `__init__.py` (+4 lignes), `coordinator.py` (+186 lignes)
-- **612 lignes ajoutées** au total
-- **11 tests unitaires** ajoutés
+- **3 files created**: `docs/PERSISTENCE.md`, `RESUME_PERSISTANCE.md`, `tests/test_persistence.py`
+- **2 files modified**: `__init__.py` (+4 lines), `coordinator.py` (+186 lines)
+- **612 lines added** in total
+- **11 unit tests** added
 
 ### Documentation
-- **README.md** : Ajout section "State Persistence" dans Advanced Features
-- **CHANGELOG.md** : Version 0.5.1 avec détails complets
-- **Wiki** : 
-  - `Home.md` : Version mise à jour vers 0.5.1
-  - `Features.md` : Section persistance + mise à jour comptage entités
-- **RELEASE_NOTES_v0.5.1.md** : Notes de release complètes (350 lignes)
+- **README.md**: Added "State Persistence" section in Advanced Features
+- **CHANGELOG.md**: Version 0.5.1 with complete details
+- **Wiki**: 
+  - `Home.md`: Version updated to 0.5.1
+  - `Features.md`: Persistence section + entity count update
+- **RELEASE_NOTES_v0.5.1.md**: Complete release notes (353 lines)
 
-## 🔧 Implémentation
+## 🔧 Implementation
 
-### Sauvegarde Automatique
-- Au démarrage d'un cycle
-- À la fin d'un cycle
-- Toutes les 30 secondes (pendant un cycle)
+### Automatic Save
+- At cycle start
+- At cycle end
+- Every 30 seconds (during cycle)
 
-### Restauration Intelligente
-- Au démarrage de Home Assistant
-- Validation des données (reset si obsolètes)
-- Gestion d'erreurs robuste
+### Smart Restore
+- At Home Assistant startup
+- Data validation (reset if obsolete)
+- Robust error handling
 
-### Stockage
-- Emplacement : `.storage/smart_appliance_monitor.<entry_id>.json`
-- Format : JSON avec sérialisation ISO 8601
-- Version : 1 (préparé pour migrations futures)
-- Taille : < 5 KB par appareil
+### Storage
+- Location: `.storage/smart_appliance_monitor.<entry_id>.json`
+- Format: JSON with ISO 8601 serialization
+- Version: 1 (prepared for future migrations)
+- Size: < 5 KB per appliance
 
-## 🎯 Bénéfices Utilisateur
+## 🎯 User Benefits
 
-1. **Aucune perte de données** lors de redémarrages HA
-2. **Statistiques précises** même après interruptions
-3. **Transparence totale** : fonctionnement automatique invisible
-4. **Fiabilité accrue** : détection d'anomalies préservée
+1. **No data loss** during HA restarts
+2. **Accurate statistics** even after interruptions
+3. **Total transparency**: automatic invisible operation
+4. **Increased reliability**: anomaly detection preserved
 
-## ✅ Compatibilité
+## ✅ Compatibility
 
-- ✅ **100% rétrocompatible** avec v0.5.0
-- ✅ **Aucune action requise** de l'utilisateur
-- ✅ **Migration automatique** : fonctionne immédiatement
-- ✅ **Pas de breaking changes**
+- ✅ **100% backward compatible** with v0.5.0
+- ✅ **No user action required**
+- ✅ **Automatic migration**: works immediately
+- ✅ **No breaking changes**
 
-## 📦 Livrable
+## 📦 Deliverable
 
-- **Archive** : `smart_appliance_monitor-0.5.1.zip`
-- **Taille** : 60 KB
-- **SHA256** : `a040c5b0ff758ff78d368a6c727806f3e017277368efea676bb359b3f0740512`
+- **Archive**: `smart_appliance_monitor-0.5.1.zip`
+- **Size**: 60 KB
+- **SHA256**: `a040c5b0ff758ff78d368a6c727806f3e017277368efea676bb359b3f0740512`
 
 ## 🔍 Tests
 
 ### Test Suite
-- ✅ 11 tests de persistance
-- ✅ Tests de sérialisation/désérialisation
-- ✅ Tests de sauvegarde/restauration
-- ✅ Tests de validation de données
-- ✅ Tests de déclenchement automatique
+- ✅ 11 persistence tests
+- ✅ Serialization/deserialization tests
+- ✅ Save/restore tests
+- ✅ Data validation tests
+- ✅ Automatic trigger tests
 
-### Test Manuel
-Scénarios validés :
-1. ✅ Cycle interrompu par redémarrage HA → Restauration correcte
-2. ✅ Statistiques préservées après redémarrage → OK
-3. ✅ Historique maintenu pour anomalies → OK
-4. ✅ Reset automatique des stats obsolètes → OK
+### Manual Testing
+Validated scenarios:
+1. ✅ Cycle interrupted by HA restart → Correct restoration
+2. ✅ Statistics preserved after restart → OK
+3. ✅ History maintained for anomalies → OK
+4. ✅ Automatic reset of obsolete stats → OK
 
-## 📝 Documentation Créée
+## 📝 Documentation Created
 
-### Technique
-- **docs/PERSISTENCE.md** (183 lignes) - Documentation complète du système
+### Technical
+- **docs/PERSISTENCE.md** (183 lines) - Complete system documentation
 
-### Utilisateur
-- **RELEASE_NOTES_v0.5.1.md** (350 lignes) - Notes de release détaillées
-- **RESUME_PERSISTANCE.md** (150 lignes) - Résumé d'implémentation en français
+### User
+- **RELEASE_NOTES_v0.5.1.md** (353 lines) - Detailed release notes
+- **RESUME_PERSISTANCE.md** (150 lines) - Implementation summary in French
 
-### Mise à jour
-- **README.md** - Section persistance ajoutée
-- **CHANGELOG.md** - Version 0.5.1 documentée
-- **Wiki** - Home.md et Features.md mis à jour
+### Updates
+- **README.md** - Persistence section added
+- **CHANGELOG.md** - Version 0.5.1 documented
+- **Wiki** - Home.md and Features.md updated
 
-## 🐛 Bugs Résolus
+## 🐛 Bugs Fixed
 
-| Bug | Statut |
+| Bug | Status |
 |-----|--------|
-| Perte de cycles en cours lors de redémarrage HA | ✅ Résolu |
-| Durées incorrectes après redémarrage | ✅ Résolu |
-| Statistiques réinitialisées lors de redémarrage | ✅ Résolu |
-| Historique perdu pour détection d'anomalies | ✅ Résolu |
+| Lost running cycles during HA restart | ✅ Fixed |
+| Incorrect durations after restart | ✅ Fixed |
+| Reset statistics during restart | ✅ Fixed |
+| Lost history for anomaly detection | ✅ Fixed |
 
-## 🚀 Prochaines Étapes
+## 🚀 Next Steps
 
 ### v0.6.0 (Q4 2025)
 - Custom Lovelace cards
-- Mode strict pour scheduling
-- Graphiques avancés
-- Multi-tarifs automatiques
+- Strict mode for scheduling
+- Advanced graphs
+- Automatic multi-tariff
 
-## 📞 Liens
+## 📞 Links
 
-- **Repository** : https://github.com/legaetan/ha-smart_appliance_monitor
-- **Issues** : https://github.com/legaetan/ha-smart_appliance_monitor/issues
-- **Wiki** : https://github.com/legaetan/ha-smart_appliance_monitor/wiki
-- **Releases** : https://github.com/legaetan/ha-smart_appliance_monitor/releases
+- **Repository**: https://github.com/legaetan/ha-smart_appliance_monitor
+- **Issues**: https://github.com/legaetan/ha-smart_appliance_monitor/issues
+- **Wiki**: https://github.com/legaetan/ha-smart_appliance_monitor/wiki
+- **Releases**: https://github.com/legaetan/ha-smart_appliance_monitor/releases
 
 ## 🎉 Conclusion
 
-La v0.5.1 est une **release de stabilité critique** qui résout un problème majeur de perte de données. Elle améliore significativement la fiabilité de l'intégration sans aucun impact sur l'expérience utilisateur existante.
+v0.5.1 is a **critical stability release** that resolves a major data loss issue. It significantly improves integration reliability without any impact on existing user experience.
 
-**Status** : ✅ Prêt pour production  
-**Recommandation** : Mise à jour recommandée pour tous les utilisateurs v0.5.0
-
+**Status**: ✅ Ready for production  
+**Recommendation**: Update recommended for all v0.5.0 users

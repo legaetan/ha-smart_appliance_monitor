@@ -1,101 +1,101 @@
 # Smart Appliance Monitor v0.5.1 - Release Notes
 
-**Date de Release**: 20 octobre 2025
+**Release Date**: October 20, 2025
 
-## 🎯 Focus de cette Version
+## 🎯 Focus of This Release
 
-Cette version **0.5.1** résout un problème critique : **la perte de données lors du redémarrage de Home Assistant**. Désormais, tous vos cycles en cours et vos statistiques sont automatiquement sauvegardés et restaurés.
+This version **0.5.1** resolves a critical issue: **data loss during Home Assistant restarts**. Now, all your running cycles and statistics are automatically saved and restored.
 
-## 🔒 Nouveauté Majeure : Persistance des États
+## 🔒 Major Feature: State Persistence
 
-### Le Problème Résolu
+### The Problem Solved
 
-**Avant v0.5.1** :
-- ❌ Un cycle de lave-linge en cours lors d'un redémarrage de HA était perdu
-- ❌ Les statistiques de durée et d'énergie étaient incorrectes
-- ❌ L'historique des cycles était réinitialisé
-- ❌ Les utilisateurs perdaient leurs données lors de mises à jour ou redémarrages
+**Before v0.5.1**:
+- ❌ A washing machine cycle in progress during an HA restart was lost
+- ❌ Duration and energy statistics were incorrect
+- ❌ Cycle history was reset
+- ❌ Users lost their data during updates or restarts
 
-**Avec v0.5.1** :
-- ✅ Les cycles en cours continuent automatiquement après le redémarrage
-- ✅ Les statistiques sont préservées et restent précises
-- ✅ L'historique est sauvegardé pour la détection d'anomalies
-- ✅ Aucune intervention manuelle nécessaire
+**With v0.5.1**:
+- ✅ Running cycles automatically continue after restart
+- ✅ Statistics are preserved and remain accurate
+- ✅ History is saved for anomaly detection
+- ✅ No manual intervention required
 
-### Comment ça Marche ?
+### How Does It Work?
 
-Le système de persistance est **entièrement automatique** :
+The persistence system is **fully automatic**:
 
-#### Sauvegarde Automatique
-- ✅ **Au démarrage d'un cycle** : État initial sauvegardé
-- ✅ **À la fin d'un cycle** : Statistiques complètes enregistrées
-- ✅ **Toutes les 30 secondes** : Mise à jour pendant le cycle
+#### Automatic Save
+- ✅ **At cycle start**: Initial state saved
+- ✅ **At cycle end**: Complete statistics recorded
+- ✅ **Every 30 seconds**: Updates during cycle
 
-#### Restauration Intelligente
-- ✅ **Au démarrage de HA** : Tous les états sont restaurés
-- ✅ **Validation des données** : Les statistiques obsolètes sont réinitialisées
-  - Stats journalières d'un autre jour → Remises à zéro
-  - Stats mensuelles d'un autre mois → Remises à zéro
-  - Cycles en cours → Toujours restaurés
+#### Smart Restore
+- ✅ **At HA startup**: All states are restored
+- ✅ **Data validation**: Obsolete statistics are reset
+  - Daily stats from another day → Reset to zero
+  - Monthly stats from another month → Reset to zero
+  - Running cycles → Always restored
 
-#### Emplacement de Stockage
+#### Storage Location
 ```
 /config/.storage/smart_appliance_monitor.<entry_id>.json
 ```
 
-### Exemple Concret
+### Concrete Example
 
-#### Scénario : Lave-Linge + Redémarrage HA
+#### Scenario: Washing Machine + HA Restart
 
-1. **21:00** - Démarrage du lave-linge
-   - 💾 Sauvegarde : Cycle démarré à 21:00, énergie initiale 1.234 kWh
+1. **9:00 PM** - Washing machine starts
+   - 💾 Save: Cycle started at 9:00 PM, initial energy 1.234 kWh
 
-2. **21:30** - Vous redémarrez Home Assistant (mise à jour, etc.)
-   - 📂 Chargement automatique du fichier de sauvegarde
-   - ♻️ Restauration : État `running`, cycle commencé à 21:00
+2. **9:30 PM** - You restart Home Assistant (update, etc.)
+   - 📂 Automatic load of save file
+   - ♻️ Restore: State `running`, cycle started at 9:00 PM
 
-3. **21:45** - Le lave-linge se termine
-   - ✅ Détection correcte de la fin
-   - 📊 **Durée calculée : 45 minutes** (depuis 21:00, pas depuis 21:30 !)
-   - 💰 **Énergie et coût corrects**
-   - 🔔 Notification avec les bonnes valeurs
+3. **9:45 PM** - Washing machine finishes
+   - ✅ Correct end detection
+   - 📊 **Duration calculated: 45 minutes** (from 9:00 PM, not 9:30 PM!)
+   - 💰 **Correct energy and cost**
+   - 🔔 Notification with accurate values
 
-### Ce qui est Sauvegardé
+### What Is Saved
 
-Le système préserve toutes les données importantes :
+The system preserves all important data:
 
-1. **État du Cycle**
-   - État actuel (`idle`, `running`, `finished`)
-   - Heure de démarrage
-   - Énergie initiale
-   - Puissance de pic
+1. **Cycle State**
+   - Current state (`idle`, `running`, `finished`)
+   - Start time
+   - Initial energy
+   - Peak power
 
-2. **Dernier Cycle Terminé**
-   - Durée complète
-   - Énergie consommée
-   - Coût calculé
+2. **Last Completed Cycle**
+   - Total duration
+   - Energy consumed
+   - Calculated cost
 
-3. **Statistiques Journalières**
+3. **Daily Statistics**
    - Date
-   - Nombre de cycles
-   - Énergie totale
-   - Coût total
+   - Number of cycles
+   - Total energy
+   - Total cost
 
-4. **Statistiques Mensuelles**
-   - Année et mois
-   - Énergie totale
-   - Coût total
+4. **Monthly Statistics**
+   - Year and month
+   - Total energy
+   - Total cost
 
-5. **Historique des Cycles**
-   - 10 derniers cycles pour la détection d'anomalies
+5. **Cycle History**
+   - Last 10 cycles for anomaly detection
 
 6. **Configuration**
-   - Monitoring activé/désactivé
-   - Notifications activées/désactivées
+   - Monitoring enabled/disabled
+   - Notifications enabled/disabled
 
-## 📁 Format de Stockage
+## 📁 Storage Format
 
-Les données sont stockées en JSON :
+Data is stored in JSON:
 
 ```json
 {
@@ -129,225 +129,224 @@ Les données sont stockées en JSON :
 }
 ```
 
-## 🔧 Implémentation Technique
+## 🔧 Technical Implementation
 
-### Fichiers Créés
+### Files Created
 
-1. **`docs/PERSISTENCE.md`** (183 lignes)
-   - Documentation technique complète
-   - Format de stockage
-   - Exemples d'utilisation
+1. **`docs/PERSISTENCE.md`** (183 lines)
+   - Complete technical documentation
+   - Storage format
+   - Usage examples
    - Maintenance
 
-2. **`RESUME_PERSISTANCE.md`** (150 lignes)
-   - Résumé d'implémentation en français
-   - Problème et solution
-   - Modifications apportées
+2. **`RESUME_PERSISTANCE.md`** (150 lines)
+   - Implementation summary in French
+   - Problem and solution
+   - Changes made
 
-3. **`tests/test_persistence.py`** (279 lignes)
-   - Suite de tests complète (11 tests)
-   - Tests de sérialisation/désérialisation
-   - Tests de sauvegarde/restauration
-   - Tests de validation des données
+3. **`tests/test_persistence.py`** (279 lines)
+   - Complete test suite (11 tests)
+   - Serialization/deserialization tests
+   - Save/restore tests
+   - Data validation tests
 
-### Fichiers Modifiés
+### Files Modified
 
-1. **`custom_components/smart_appliance_monitor/__init__.py`** (+4 lignes)
-   - Appel de `restore_state()` au setup
+1. **`custom_components/smart_appliance_monitor/__init__.py`** (+4 lines)
+   - Call to `restore_state()` at setup
 
-2. **`custom_components/smart_appliance_monitor/coordinator.py`** (+186 lignes)
-   - Système complet de persistance
-   - Méthodes de sérialisation/désérialisation
-   - Sauvegarde automatique dans les événements
-   - Restauration avec validation
+2. **`custom_components/smart_appliance_monitor/coordinator.py`** (+186 lines)
+   - Complete persistence system
+   - Serialization/deserialization methods
+   - Automatic save in events
+   - Restore with validation
 
-## ✅ Compatibilité et Migration
+## ✅ Compatibility and Migration
 
-### Rétrocompatibilité
+### Backward Compatibility
 
-✅ **100% rétrocompatible** avec v0.5.0 :
-- Aucune modification de configuration nécessaire
-- Les configurations existantes fonctionnent immédiatement
-- Première sauvegarde automatique lors du prochain cycle
+✅ **100% backward compatible** with v0.5.0:
+- No configuration changes required
+- Existing configurations work immediately
+- First save happens automatically during next cycle
 
 ### Migration
 
-**Aucune action requise** de la part des utilisateurs :
-1. Installez v0.5.1
-2. Redémarrez Home Assistant
-3. Le système commence automatiquement à sauvegarder
+**No user action required**:
+1. Install v0.5.1
+2. Restart Home Assistant
+3. System automatically starts saving
 
-**Note** : Le premier redémarrage après installation ne restaurera rien (aucune sauvegarde existante), mais tous les redémarrages suivants bénéficieront de la persistance.
+**Note**: First restart after installation won't restore anything (no existing save), but all subsequent restarts will benefit from persistence.
 
-## 🎉 Bénéfices Utilisateur
+## 🎉 User Benefits
 
-### 1. Aucune Perte de Données
-- Vos cycles ne sont plus interrompus par les redémarrages
-- Les statistiques restent fiables et précises
-- L'historique est préservé
+### 1. No Data Loss
+- Your cycles are no longer interrupted by restarts
+- Statistics remain reliable and accurate
+- History is preserved
 
-### 2. Meilleure Expérience
-- Transparence totale : vous ne remarquez aucune différence
-- Fiabilité accrue : vos données sont toujours là
-- Confiance : plus de crainte de redémarrer HA
+### 2. Better Experience
+- Complete transparency: you notice no difference
+- Increased reliability: your data is always there
+- Confidence: no fear of restarting HA
 
-### 3. Détection d'Anomalies Fiable
-- L'historique des cycles est préservé
-- L'analyse ML reste pertinente
-- Les patterns sont correctement identifiés
+### 3. Reliable Anomaly Detection
+- Cycle history is preserved
+- ML analysis remains relevant
+- Patterns are correctly identified
 
-### 4. Statistiques Précises
-- Durées calculées depuis le vrai début du cycle
-- Énergie et coûts exacts
-- Notifications avec les bonnes valeurs
+### 4. Accurate Statistics
+- Durations calculated from actual cycle start
+- Exact energy and costs
+- Notifications with correct values
 
 ## 📊 Performance
 
-Le système de persistance est optimisé :
+The persistence system is optimized:
 
-- ⚡ **Sauvegarde asynchrone** : Non bloquante, n'impacte pas les performances
-- ⚡ **Fichiers légers** : < 5 Ko typiquement par appareil
-- ⚡ **Impact minimal** : Sauvegarde toutes les 30s seulement si cycle en cours
-- ⚡ **Restauration rapide** : Chargement instantané au démarrage
+- ⚡ **Asynchronous save**: Non-blocking, no performance impact
+- ⚡ **Lightweight files**: < 5 KB typically per appliance
+- ⚡ **Minimal impact**: Saves every 30s only if cycle running
+- ⚡ **Fast restore**: Instant loading at startup
 
-## 🔍 Gestion des Erreurs
+## 🔍 Error Handling
 
-Le système est **résilient** :
+The system is **resilient**:
 
-- **Fichier corrompu** : L'intégration démarre avec valeurs par défaut
-- **Fichier manquant** : Première initialisation normale
-- **Échec de sauvegarde** : Erreur loggée, fonctionnement continue
-- **Échec de restauration** : Démarrage propre sans données restaurées
+- **Corrupted file**: Integration starts with default values
+- **Missing file**: Normal first initialization
+- **Save failure**: Error logged, operation continues
+- **Restore failure**: Clean start without restored data
 
 ## 📚 Documentation
 
-### Documentation Technique
+### Technical Documentation
 
-- **[docs/PERSISTENCE.md](docs/PERSISTENCE.md)** - Documentation complète du système
-  - Vue d'ensemble
-  - Format de stockage
-  - Fonctionnement détaillé
-  - Exemples d'usage
+- **[docs/PERSISTENCE.md](docs/PERSISTENCE.md)** - Complete system documentation
+  - Overview
+  - Storage format
+  - Detailed operation
+  - Usage examples
   - Maintenance
 
-### Documentation Utilisateur (Wiki)
+### User Documentation (Wiki)
 
-- Mise à jour du wiki avec informations de persistance
-- Section "State Persistence" dans Features Guide
-- Mentions dans Home page
+- Wiki updated with persistence information
+- "State Persistence" section in Features Guide
+- Mentions on Home page
 
-## 🚀 Installation et Mise à Jour
+## 🚀 Installation and Upgrade
 
-### Nouveaux Utilisateurs
+### New Users
 
-1. Téléchargez `smart_appliance_monitor-0.5.1.zip`
-2. Décompressez dans `/config/custom_components/`
-3. Redémarrez Home Assistant
-4. Configurez vos appareils via l'interface
+1. Download `smart_appliance_monitor-0.5.1.zip`
+2. Extract to `/config/custom_components/`
+3. Restart Home Assistant
+4. Configure your appliances via UI
 
-### Mise à Jour depuis v0.5.0
+### Upgrade from v0.5.0
 
-1. Remplacez le contenu de `/config/custom_components/smart_appliance_monitor/`
-2. Redémarrez Home Assistant
-3. ✅ Vos configurations sont préservées
-4. ✅ La persistance commence automatiquement
+1. Replace contents of `/config/custom_components/smart_appliance_monitor/`
+2. Restart Home Assistant
+3. ✅ Your configurations are preserved
+4. ✅ Persistence starts automatically
 
-### Mise à Jour depuis v0.4.x ou antérieur
+### Upgrade from v0.4.x or Earlier
 
-1. Installez v0.5.1
-2. Redémarrez Home Assistant
-3. Vos appareils continuent de fonctionner
-4. Accédez aux nouvelles fonctionnalités v0.5.0 via **Options** si désiré
+1. Install v0.5.1
+2. Restart Home Assistant
+3. Your appliances continue to work
+4. Access new v0.5.0 features via **Options** if desired
 
-## 🐛 Corrections de Bugs
+## 🐛 Bug Fixes
 
-Cette version corrige :
-- ❌ **Perte de cycles en cours** lors de redémarrage HA → ✅ Résolu
-- ❌ **Durées incorrectes** après redémarrage → ✅ Résolu
-- ❌ **Statistiques réinitialisées** lors de redémarrage → ✅ Résolu
-- ❌ **Historique perdu** pour détection d'anomalies → ✅ Résolu
+This version fixes:
+- ❌ **Lost running cycles** during HA restart → ✅ Fixed
+- ❌ **Incorrect durations** after restart → ✅ Fixed
+- ❌ **Reset statistics** during restart → ✅ Fixed
+- ❌ **Lost history** for anomaly detection → ✅ Fixed
 
 ## ⚠️ Breaking Changes
 
-**Aucun breaking change** dans cette version !
+**No breaking changes** in this version!
 
-Toutes les configurations existantes continuent de fonctionner sans modification.
+All existing configurations continue to work without modification.
 
-## 🔮 Prochaines Étapes
+## 🔮 Next Steps
 
-### Version 0.6.0 (Prévue Q4 2025)
+### Version 0.6.0 (Planned Q4 2025)
 
-- **Custom Cards** : Cartes Lovelace dédiées
-- **Mode strict** : Blocage physique avec scheduling
-- **Graphiques avancés** : Historique de consommation
-- **Multi-tarifs** : Support tarifs HP/HC automatiques
+- **Custom Cards**: Dedicated Lovelace cards
+- **Strict mode**: Physical blocking with scheduling
+- **Advanced graphs**: Consumption history
+- **Multi-tariff**: Automatic peak/off-peak support
 
-## 💡 Exemples d'Utilisation
+## 💡 Usage Examples
 
-### Cas d'Usage 1 : Maintenance HA
-
-```
-Avant v0.5.1 :
-- Lave-linge démarre à 21:00
-- Mise à jour HA à 21:30
-- Cycle perdu, statistiques fausses ❌
-
-Avec v0.5.1 :
-- Lave-linge démarre à 21:00
-- Mise à jour HA à 21:30
-- Cycle continue, données exactes ✅
-```
-
-### Cas d'Usage 2 : Redémarrage Imprévu
+### Use Case 1: HA Maintenance
 
 ```
-Avant v0.5.1 :
-- Imprimante 3D en cours (8h d'impression)
-- Coupure électrique brève
-- HA redémarre, impression tracking perdu ❌
+Before v0.5.1:
+- Washing machine starts at 9:00 PM
+- HA update at 9:30 PM
+- Cycle lost, wrong statistics ❌
 
-Avec v0.5.1 :
-- Imprimante 3D en cours (8h d'impression)
-- Coupure électrique brève
-- HA redémarre, impression tracking restauré ✅
+With v0.5.1:
+- Washing machine starts at 9:00 PM
+- HA update at 9:30 PM
+- Cycle continues, accurate data ✅
 ```
 
-### Cas d'Usage 3 : Statistiques Mensuelles
+### Use Case 2: Unexpected Restart
 
 ```
-Avant v0.5.1 :
-- 15 cycles ce mois, 25€
-- Redémarrage HA
-- Statistiques mensuelles perdues ❌
+Before v0.5.1:
+- 3D printer running (8h print)
+- Brief power outage
+- HA restarts, print tracking lost ❌
 
-Avec v0.5.1 :
-- 15 cycles ce mois, 25€
-- Redémarrage HA
-- Statistiques mensuelles préservées ✅
+With v0.5.1:
+- 3D printer running (8h print)
+- Brief power outage
+- HA restarts, print tracking restored ✅
 ```
 
-## 🙏 Remerciements
+### Use Case 3: Monthly Statistics
 
-Merci à tous les utilisateurs qui ont signalé ce problème et aidé à identifier les cas d'usage critiques.
+```
+Before v0.5.1:
+- 15 cycles this month, $25
+- HA restart
+- Monthly statistics lost ❌
+
+With v0.5.1:
+- 15 cycles this month, $25
+- HA restart
+- Monthly statistics preserved ✅
+```
+
+## 🙏 Acknowledgments
+
+Thanks to all users who reported this issue and helped identify critical use cases.
 
 ## 📞 Support
 
-- **Issues** : [GitHub Issues](https://github.com/legaetan/ha-smart_appliance_monitor/issues)
-- **Discussions** : [GitHub Discussions](https://github.com/legaetan/ha-smart_appliance_monitor/discussions)
-- **Wiki** : [Documentation Complète](https://github.com/legaetan/ha-smart_appliance_monitor/wiki)
+- **Issues**: [GitHub Issues](https://github.com/legaetan/ha-smart_appliance_monitor/issues)
+- **Discussions**: [GitHub Discussions](https://github.com/legaetan/ha-smart_appliance_monitor/discussions)
+- **Wiki**: [Complete Documentation](https://github.com/legaetan/ha-smart_appliance_monitor/wiki)
 
-## 📥 Téléchargement
+## 📥 Download
 
-- **Archive ZIP** : `smart_appliance_monitor-0.5.1.zip`
-- **Taille** : 60 KB
-- **Checksum SHA256** : `a040c5b0ff758ff78d368a6c727806f3e017277368efea676bb359b3f0740512`
+- **ZIP Archive**: `smart_appliance_monitor-0.5.1.zip`
+- **Size**: 60 KB
+- **SHA256 Checksum**: `a040c5b0ff758ff78d368a6c727806f3e017277368efea676bb359b3f0740512`
 
 ---
 
-**Version** : 0.5.1  
-**Date** : 20 octobre 2025  
-**Compatibilité** : Home Assistant 2023.x+  
-**Licence** : MIT
+**Version**: 0.5.1  
+**Date**: October 20, 2025  
+**Compatibility**: Home Assistant 2023.x+  
+**License**: MIT
 
-**Changelog complet** : [CHANGELOG.md](CHANGELOG.md)
-
+**Full Changelog**: [CHANGELOG.md](CHANGELOG.md)
