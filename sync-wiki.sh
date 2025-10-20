@@ -4,14 +4,15 @@
 set -e
 
 REPO_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-WIKI_DIR="/tmp/ha-smart_appliance_monitor.wiki"
+WIKI_DIR="$REPO_DIR/docs/wiki-github"
 
 echo "🔄 Synchronizing documentation to GitHub Wiki..."
 
-# Clone wiki if not exists
-if [ ! -d "$WIKI_DIR" ]; then
-    echo "📥 Cloning wiki repository..."
-    git clone git@github.com:legaetan/ha-smart_appliance_monitor.wiki.git "$WIKI_DIR"
+# Initialize submodule if needed
+if [ ! -d "$WIKI_DIR/.git" ]; then
+    echo "📥 Initializing wiki submodule..."
+    cd "$REPO_DIR"
+    git submodule update --init --recursive
 fi
 
 # Update wiki repository
@@ -139,11 +140,12 @@ git commit -m "Sync documentation from main repository
 Updated: $(date '+%Y-%m-%d %H:%M:%S')"
 
 echo "⬆️  Pushing to GitHub..."
-git push origin master
+GH_TOKEN=$(gh auth token) && git -c credential.helper="!f() { echo \"username=legaetan\"; echo \"password=$GH_TOKEN\"; }; f" push origin master
 
 echo "✅ Wiki synchronized successfully!"
 echo "🌐 View at: https://github.com/legaetan/ha-smart_appliance_monitor/wiki"
 
-# Cleanup
+# Return to main repo
 cd "$REPO_DIR"
+echo "💡 Don't forget to commit the submodule reference in the main repo if needed"
 

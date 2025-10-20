@@ -1,0 +1,3 @@
+[submodule "docs/wiki-github"]
+	path = docs/wiki-github
+	url = https://github.com/legaetan/ha-smart_appliance_monitor.wiki.git
