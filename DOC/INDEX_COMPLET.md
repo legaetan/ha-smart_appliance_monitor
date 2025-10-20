@@ -1,59 +1,11 @@
 # 📚 Index Complet - Smart Appliance Monitor
 
-## 🎯 Vous êtes où ?
 
-Vous disposez maintenant d'un **système complet** pour surveiller vos appareils électroménagers, avec deux options :
 
-### Option 1 : Blueprint (ACTUEL) ⭐ Prêt à l'emploi !
-✅ Fonctionne maintenant  
-✅ Configuration en 10 minutes  
-✅ Blueprint réutilisable pour 4 appareils
-
-### Option 2 : Intégration HACS (FUTUR) 🚀 Vision
+### Intégration HACS (FUTUR) 🚀 Vision
 💡 Concept complet documenté  
 📋 Spécifications techniques prêtes  
 🛠️ Ressources de développement disponibles
-
----
-
-## 📂 Fichiers Disponibles
-
-### 🟢 Pour les UTILISATEURS (Blueprint actuel)
-
-#### 1️⃣ DÉMARRAGE RAPIDE ⭐ **COMMENCEZ ICI**
-**Fichier** : `GUIDE_INSTALLATION.md`  
-**Contenu** :
-- Installation en 5 étapes simples
-- Configuration détaillée pour chaque appareil
-- Tests et vérification
-- Exemples concrets avec captures textuelles
-- **Temps de lecture** : 10 minutes
-
-#### 2️⃣ Documentation Technique
-**Fichier** : `README_surveillance_appareil.md`  
-**Contenu** :
-- Prérequis complets (matériel, logiciel)
-- Guide de création des helpers
-- Personnalisation des seuils
-- Dépannage et aide
-- **Temps de lecture** : 15 minutes
-
-#### 3️⃣ Exemples de Configuration
-**Fichier** : `exemple_helpers_appareils.yaml`  
-**Contenu** :
-- Template YAML complet
-- Tous les helpers nécessaires
-- Prêt à copier/coller
-- **Utilisation** : Référence
-
-#### 4️⃣ Vue d'Ensemble
-**Fichier** : `RECAPITULATIF.md`  
-**Contenu** :
-- Ce qui a été créé
-- Comparaison avant/après
-- Avantages du blueprint
-- Cas d'usage pratiques
-- **Temps de lecture** : 10 minutes
 
 ---
 

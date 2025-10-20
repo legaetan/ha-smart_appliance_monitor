@@ -40,7 +40,7 @@ HACS → Intégrations → Smart Appliance Monitor → Installer
 │                                                  │
 │  Prix du kWh (€)                                 │
 │  ┌─────────────────────────────────────────┐    │
-│  │ 0.2516                                   │    │
+│  │ input_number.edf_price_kwh              │    │
 │  └─────────────────────────────────────────┘    │
 │                                                  │
 │     [Annuler]              [Configuration avancée]     │
