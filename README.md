@@ -73,12 +73,15 @@ The integration automatically applies optimized thresholds based on appliance ty
 
 ## Documentation
 
-### User Guides
+### User Guides (GitHub Wiki)
 
-- [Installation Guide](docs/wiki/installation.md) - Detailed installation instructions
-- [Configuration Guide](docs/wiki/configuration.md) - Complete configuration reference
-- [Reconfiguration Guide](docs/wiki/reconfiguration.md) - How to modify settings without data loss
-- [Features Guide](docs/wiki/features.md) - Comprehensive feature documentation
+Complete documentation available on the GitHub Wiki:
+- [Installation Guide](https://github.com/legaetan/ha-smart_appliance_monitor/wiki/Installation) - Detailed installation instructions
+- [Configuration Guide](https://github.com/legaetan/ha-smart_appliance_monitor/wiki/Configuration) - Complete configuration reference
+- [Reconfiguration Guide](https://github.com/legaetan/ha-smart_appliance_monitor/wiki/Reconfiguration) - How to modify settings without data loss
+- [Features Guide](https://github.com/legaetan/ha-smart_appliance_monitor/wiki/Features) - Comprehensive feature documentation
+
+Or browse locally: [docs/wiki-github/](docs/wiki-github/)
 
 ### Developer Documentation
 

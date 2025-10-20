@@ -6,13 +6,13 @@ This directory contains all project documentation.
 
 ```
 docs/
-├── wiki/              # Source documentation (markdown files)
-│   ├── installation.md
-│   ├── configuration.md
-│   ├── reconfiguration.md
-│   └── features.md
-├── wiki-github/       # Git submodule: GitHub Wiki repository
-│   └── (auto-synced from wiki/)
+├── wiki-github/       # Git submodule: GitHub Wiki (source of truth)
+│   ├── Home.md
+│   ├── Installation.md
+│   ├── Configuration.md
+│   ├── Reconfiguration.md
+│   ├── Features.md
+│   └── _Sidebar.md
 └── archive/           # Historical design documents
     ├── CONCEPT_INTEGRATION_HACS.md
     ├── SPECS_TECHNIQUES_INTEGRATION.md
@@ -22,46 +22,60 @@ docs/
 
 ## Wiki Documentation
 
-### Source Files (`wiki/`)
-
-The `wiki/` directory contains the source markdown files for the user documentation:
-
-- **installation.md** - Complete installation guide (manual, HACS, troubleshooting)
-- **configuration.md** - Initial setup, appliance profiles, advanced settings
-- **reconfiguration.md** - How to modify settings without losing data
-- **features.md** - Complete reference for all entities and services
-
-These are the **source of truth** for documentation. Edit these files when updating documentation.
-
-### GitHub Wiki (`wiki-github/`)
-
-The `wiki-github/` directory is a **git submodule** that references the GitHub Wiki repository:
+The `wiki-github/` directory is a **git submodule** that contains the GitHub Wiki:
 - https://github.com/legaetan/ha-smart_appliance_monitor.wiki.git
 
-This directory is **automatically synced** from `wiki/` using the sync script.
+This is the **single source of truth** for user documentation. Edit files directly in this directory.
 
-**Do not edit files in `wiki-github/` directly** - changes will be overwritten during sync.
+### Available Pages
 
-## Synchronizing to GitHub Wiki
+- **Home.md** - Wiki home page with overview and quick links
+- **Installation.md** - Complete installation guide
+- **Configuration.md** - Setup and configuration reference
+- **Reconfiguration.md** - How to modify settings without data loss
+- **Features.md** - Complete entity and service reference
+- **_Sidebar.md** - Wiki navigation sidebar
 
-To sync documentation from `wiki/` to the GitHub Wiki:
+## Editing Documentation
 
+### Workflow
+
+1. **Navigate to wiki submodule**
+   ```bash
+   cd docs/wiki-github
+   ```
+
+2. **Edit documentation files**
+   ```bash
+   # Edit any markdown file
+   nano Installation.md
+   ```
+
+3. **Commit changes in the submodule**
+   ```bash
+   git add .
+   git commit -m "docs: update installation guide"
+   ```
+
+4. **Push to GitHub Wiki**
+   ```bash
+   GH_TOKEN=$(gh auth token) && git -c credential.helper="!f() { echo \"username=legaetan\"; echo \"password=$GH_TOKEN\"; }; f" push origin master
+   ```
+
+5. **Update submodule reference in main repo**
+   ```bash
+   cd ../..  # Back to repo root
+   git add docs/wiki-github
+   git commit -m "docs: update wiki submodule reference"
+   git push
+   ```
+
+### Quick Push Command
+
+From `docs/wiki-github/`:
 ```bash
-./sync-wiki.sh
+git add . && git commit -m "docs: update" && GH_TOKEN=$(gh auth token) && git -c credential.helper="!f() { echo \"username=legaetan\"; echo \"password=$GH_TOKEN\"; }; f" push origin master
 ```
-
-This script will:
-1. Update the wiki submodule
-2. Copy files from `wiki/` with proper naming (CamelCase)
-3. Generate Home and Sidebar pages
-4. Commit and push to GitHub Wiki
-
-The GitHub Wiki is accessible at:
-https://github.com/legaetan/ha-smart_appliance_monitor/wiki
-
-## Archive
-
-The `archive/` directory contains historical French design documents from the initial project phase. These are preserved for reference but are no longer actively maintained.
 
 ## Working with Submodules
 
@@ -75,18 +89,6 @@ cd ha-smart_appliance_monitor
 git submodule update --init --recursive
 ```
 
-### Updating Submodule
-
-To pull latest changes from the wiki submodule:
-
-```bash
-cd docs/wiki-github
-git pull origin master
-cd ../..
-git add docs/wiki-github
-git commit -m "Update wiki submodule reference"
-```
-
 ### One-Line Clone
 
 Clone repository with submodules in one command:
@@ -95,18 +97,33 @@ Clone repository with submodules in one command:
 git clone --recurse-submodules https://github.com/legaetan/ha-smart_appliance_monitor.git
 ```
 
-## Documentation Workflow
+### Pull Updates from Wiki
 
-1. **Edit** documentation in `docs/wiki/*.md`
-2. **Test** locally (view markdown)
-3. **Commit** changes to main repository
-4. **Sync** to GitHub Wiki: `./sync-wiki.sh`
-5. **Verify** on https://github.com/legaetan/ha-smart_appliance_monitor/wiki
+To get latest wiki changes:
 
-## Notes
+```bash
+cd docs/wiki-github
+git pull origin master
+cd ../..
+git add docs/wiki-github
+git commit -m "docs: update wiki submodule"
+git push
+```
 
-- The wiki submodule is a separate Git repository
-- Changes to `docs/wiki/` must be synced manually using the script
-- The GitHub Wiki has its own commit history (in the submodule)
-- Main repository tracks the submodule reference (commit hash)
+## Archive
 
+The `archive/` directory contains historical French design documents from the initial project phase. These are preserved for reference but are no longer actively maintained.
+
+## GitHub Wiki Access
+
+The documentation is also available online at:
+**https://github.com/legaetan/ha-smart_appliance_monitor/wiki**
+
+Changes pushed to the submodule appear immediately on the GitHub Wiki interface.
+
+## Important Notes
+
+- **Naming Convention**: GitHub Wiki requires CamelCase file names (Installation.md, not installation.md)
+- **Submodule Workflow**: Changes must be committed in the submodule first, then the reference updated in the main repo
+- **Single Source**: All documentation lives in `wiki-github/` - no duplication
+- **Auto-sync**: Changes pushed to the submodule appear instantly on GitHub Wiki
