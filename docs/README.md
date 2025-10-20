@@ -36,47 +36,6 @@ This is the **single source of truth** for user documentation. Edit files direct
 - **Features.md** - Complete entity and service reference
 - **_Sidebar.md** - Wiki navigation sidebar
 
-## Editing Documentation
-
-### Workflow
-
-1. **Navigate to wiki submodule**
-   ```bash
-   cd docs/wiki-github
-   ```
-
-2. **Edit documentation files**
-   ```bash
-   # Edit any markdown file
-   nano Installation.md
-   ```
-
-3. **Commit changes in the submodule**
-   ```bash
-   git add .
-   git commit -m "docs: update installation guide"
-   ```
-
-4. **Push to GitHub Wiki**
-   ```bash
-   GH_TOKEN=$(gh auth token) && git -c credential.helper="!f() { echo \"username=legaetan\"; echo \"password=$GH_TOKEN\"; }; f" push origin master
-   ```
-
-5. **Update submodule reference in main repo**
-   ```bash
-   cd ../..  # Back to repo root
-   git add docs/wiki-github
-   git commit -m "docs: update wiki submodule reference"
-   git push
-   ```
-
-### Quick Push Command
-
-From `docs/wiki-github/`:
-```bash
-git add . && git commit -m "docs: update" && GH_TOKEN=$(gh auth token) && git -c credential.helper="!f() { echo \"username=legaetan\"; echo \"password=$GH_TOKEN\"; }; f" push origin master
-```
-
 ## Working with Submodules
 
 ### First Time Clone
