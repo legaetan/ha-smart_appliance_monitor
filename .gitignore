@@ -136,3 +136,8 @@ Thumbs.db
 .storage/
 home-assistant.log
 home-assistant_v2.db
+
+# Release artifacts
+smart_appliance_monitor-*.zip
+RELEASE_NOTES_v*.md
+RELEASE_SUMMARY_v*.md
