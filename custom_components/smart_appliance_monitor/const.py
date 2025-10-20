@@ -18,6 +18,12 @@ CONF_START_DELAY = "start_delay"
 CONF_STOP_DELAY = "stop_delay"
 CONF_ENABLE_ALERT_DURATION = "enable_alert_duration"
 CONF_ALERT_DURATION = "alert_duration"
+CONF_UNPLUGGED_TIMEOUT = "unplugged_timeout"
+
+# Notification Configuration
+CONF_NOTIFICATION_SERVICES = "notification_services"
+CONF_NOTIFICATION_TYPES = "notification_types"
+CONF_CUSTOM_NOTIFY_SERVICE = "custom_notify_service"
 
 # Appliance Types
 APPLIANCE_TYPE_OVEN = "oven"
@@ -26,6 +32,10 @@ APPLIANCE_TYPE_WASHING_MACHINE = "washing_machine"
 APPLIANCE_TYPE_DRYER = "dryer"
 APPLIANCE_TYPE_WATER_HEATER = "water_heater"
 APPLIANCE_TYPE_COFFEE_MAKER = "coffee_maker"
+APPLIANCE_TYPE_MONITOR = "monitor"
+APPLIANCE_TYPE_NAS = "nas"
+APPLIANCE_TYPE_PRINTER_3D = "printer_3d"
+APPLIANCE_TYPE_VMC = "vmc"
 APPLIANCE_TYPE_OTHER = "other"
 
 APPLIANCE_TYPES = [
@@ -35,8 +45,15 @@ APPLIANCE_TYPES = [
     APPLIANCE_TYPE_DRYER,
     APPLIANCE_TYPE_WATER_HEATER,
     APPLIANCE_TYPE_COFFEE_MAKER,
+    APPLIANCE_TYPE_MONITOR,
+    APPLIANCE_TYPE_NAS,
+    APPLIANCE_TYPE_PRINTER_3D,
+    APPLIANCE_TYPE_VMC,
     APPLIANCE_TYPE_OTHER,
 ]
+
+# Types utilisant la terminologie "session" au lieu de "cycle"
+SESSION_BASED_TYPES = [APPLIANCE_TYPE_MONITOR, APPLIANCE_TYPE_NAS, APPLIANCE_TYPE_VMC]
 
 # States
 STATE_IDLE = "idle"
@@ -47,6 +64,33 @@ STATE_FINISHED = "finished"
 EVENT_CYCLE_STARTED = "cycle_started"
 EVENT_CYCLE_FINISHED = "cycle_finished"
 EVENT_ALERT_DURATION = "alert_duration"
+EVENT_UNPLUGGED = "unplugged"
+
+# Notification Types
+NOTIF_TYPE_CYCLE_STARTED = "cycle_started"
+NOTIF_TYPE_CYCLE_FINISHED = "cycle_finished"
+NOTIF_TYPE_ALERT_DURATION = "alert_duration"
+NOTIF_TYPE_UNPLUGGED = "unplugged"
+
+# Notification Services
+NOTIF_SERVICE_MOBILE_APP = "mobile_app"
+NOTIF_SERVICE_TELEGRAM = "telegram"
+NOTIF_SERVICE_PERSISTENT = "persistent_notification"
+NOTIF_SERVICE_CUSTOM = "custom"
+
+NOTIFICATION_SERVICES = [
+    NOTIF_SERVICE_MOBILE_APP,
+    NOTIF_SERVICE_TELEGRAM,
+    NOTIF_SERVICE_PERSISTENT,
+    NOTIF_SERVICE_CUSTOM,
+]
+
+NOTIFICATION_TYPES = [
+    NOTIF_TYPE_CYCLE_STARTED,
+    NOTIF_TYPE_CYCLE_FINISHED,
+    NOTIF_TYPE_ALERT_DURATION,
+    NOTIF_TYPE_UNPLUGGED,
+]
 
 # Sensor Types
 SENSOR_STATE = "state"
@@ -67,6 +111,14 @@ DEFAULT_STOP_THRESHOLD = 5
 DEFAULT_START_DELAY = 120
 DEFAULT_STOP_DELAY = 300
 DEFAULT_ALERT_DURATION = 7200
+DEFAULT_UNPLUGGED_TIMEOUT = 300  # 5 minutes
+DEFAULT_NOTIFICATION_SERVICES = [NOTIF_SERVICE_MOBILE_APP, NOTIF_SERVICE_PERSISTENT]
+DEFAULT_NOTIFICATION_TYPES = [
+    NOTIF_TYPE_CYCLE_STARTED,
+    NOTIF_TYPE_CYCLE_FINISHED,
+    NOTIF_TYPE_ALERT_DURATION,
+    NOTIF_TYPE_UNPLUGGED,
+]
 
 # Profils d'appareils avec seuils optimisés
 APPLIANCE_PROFILES = {
@@ -111,6 +163,34 @@ APPLIANCE_PROFILES = {
         "start_delay": 30,  # Très rapide
         "stop_delay": 60,  # Très rapide
         "alert_duration": 1800,  # 30min
+    },
+    APPLIANCE_TYPE_MONITOR: {
+        "start_threshold": 30,  # Écran: détection allumage
+        "stop_threshold": 5,  # Mode veille/éteint
+        "start_delay": 60,
+        "stop_delay": 120,
+        "alert_duration": 28800,  # 8h - sessions longues
+    },
+    APPLIANCE_TYPE_NAS: {
+        "start_threshold": 50,  # Activité intensive (baseline ~30W)
+        "stop_threshold": 20,  # Retour à idle ou arrêt
+        "start_delay": 180,  # Confirmer début backup/transfert
+        "stop_delay": 300,  # Fin d'activité confirmée
+        "alert_duration": 21600,  # 6h pour backups longs
+    },
+    APPLIANCE_TYPE_PRINTER_3D: {
+        "start_threshold": 50,  # Imprimante 3D: démarrage impression
+        "stop_threshold": 10,  # Certaines gardent ventilo actif
+        "start_delay": 120,
+        "stop_delay": 180,
+        "alert_duration": 86400,  # 24h - impressions très longues
+    },
+    APPLIANCE_TYPE_VMC: {
+        "start_threshold": 20,  # VMC: passage en mode boost
+        "stop_threshold": 10,  # Retour mode normal/arrêt
+        "start_delay": 60,
+        "stop_delay": 120,
+        "alert_duration": 7200,  # 2h pour un boost long
     },
     APPLIANCE_TYPE_OTHER: {
         "start_threshold": DEFAULT_START_THRESHOLD,

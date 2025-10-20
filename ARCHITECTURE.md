@@ -38,10 +38,10 @@ Smart Appliance Monitor is built as a Home Assistant custom integration using a 
 │    │  Update  │       │   System   │                        │
 │    └──────────┘       └────────────┘                        │
 │                                                             │
-│  Entities (15 per appliance):                               │
+│  Entities (19 per appliance):                               │
 │  • Sensors (10): state, duration, energy, cost, stats       │
-│  • Binary Sensors (2): running, alert                       │
-│  • Switches (2): monitoring, notifications                  │
+│  • Binary Sensors (3): running, alert, unplugged            │
+│  • Switches (6): monitoring, notifications, 4 notif types   │
 │  • Buttons (1): reset stats                                 │
 └─────────────────────────────────────────────────────────────┘
 ```
@@ -139,33 +139,50 @@ Pre-configured thresholds optimized per appliance type:
 | Dishwasher      | 20        | 5        | 120             | 300            | 10800     |
 | Washing Machine | 10        | 5        | 120             | 300            | 10800     |
 | Coffee Maker    | 50        | 5        | 30              | 60             | 1800      |
+| Monitor         | 30        | 5        | 60              | 120            | 28800     |
+| NAS             | 50        | 20       | 180             | 300            | 21600     |
+| 3D Printer      | 50        | 10       | 120             | 180            | 86400     |
+| VMC             | 20        | 10       | 60              | 120            | 7200      |
 | Other           | 50        | 5        | 120             | 300            | 7200      |
 
 ### Notification System (`notify.py`)
 
-Handles all user notifications with fallback mechanisms.
+Handles all user notifications with multi-service support and granular control.
 
-**Notification Types:**
+**Notification Types (v0.2.0):**
 
-1. **Cycle Started**
-   - Triggered when appliance begins cycle
+1. **Cycle/Session Started** (`NOTIF_TYPE_CYCLE_STARTED`)
+   - Triggered when appliance begins cycle/session
    - Includes appliance name and type
-   - Actions: Stop monitoring
+   - Can be toggled individually via switch
 
-2. **Cycle Finished**
-   - Triggered when cycle completes
+2. **Cycle/Session Finished** (`NOTIF_TYPE_CYCLE_FINISHED`)
+   - Triggered when cycle/session completes
    - Includes duration, energy consumption, cost
-   - Actions: View details, reset stats
+   - Can be toggled individually via switch
 
-3. **Duration Alert**
-   - Triggered when cycle exceeds expected duration
-   - Includes current duration and expected time
-   - Actions: Stop cycle, dismiss alert
+3. **Duration Alert** (`NOTIF_TYPE_ALERT_DURATION`)
+   - Triggered when cycle/session exceeds expected duration
+   - Includes current duration and threshold
+   - Can be toggled individually via switch
 
-**Delivery:**
-- Primary: `mobile_app` notification service
-- Fallback: `persistent_notification` if mobile_app unavailable
-- Respects notification enable/disable switch
+4. **Unplugged Alert** (`NOTIF_TYPE_UNPLUGGED`) - **NEW in v0.2.0**
+   - Triggered when appliance detected as disconnected
+   - Includes time at zero power
+   - Can be toggled individually via switch
+
+**Multi-Service Delivery (v0.2.0):**
+- **Mobile App**: Auto-detects available `mobile_app_*` services
+- **Telegram**: Markdown formatting with inline buttons
+- **Persistent Notification**: Fallback/alternative
+- **Custom Service**: User-configurable service name
+- Services configured in Options Flow
+- Simultaneous delivery to multiple services
+
+**Control Hierarchy:**
+1. Master notifications switch (global enable/disable)
+2. Configuration: Selected services and types (Options Flow)
+3. Individual switches per notification type (quick toggle)
 
 ## Entity Architecture
 
@@ -217,7 +234,7 @@ class SmartApplianceEntity(CoordinatorEntity):
 
 ### Binary Sensors (`binary_sensor.py`)
 
-2 binary sensor entities per appliance:
+3 binary sensor entities per appliance:
 
 **Running Sensor:**
 - `ON` when appliance is running
@@ -228,10 +245,18 @@ class SmartApplianceEntity(CoordinatorEntity):
 - `ON` when cycle exceeds expected duration
 - `OFF` otherwise
 - Device class: `problem`
+- Only created if alert duration is enabled in options
+
+**Unplugged Sensor:**
+- `ON` when appliance is detected as unplugged/disconnected
+- `OFF` otherwise
+- Device class: `problem`
+- Detects when power = 0W for configurable timeout (default: 5 minutes)
+- Extra attributes: `time_at_zero_power`, `unplugged_timeout`, `detection_progress`
 
 ### Switches (`switch.py`)
 
-2 switch entities per appliance:
+6 switch entities per appliance:
 
 **Monitoring Switch:**
 - Enable/disable cycle detection
@@ -239,9 +264,18 @@ class SmartApplianceEntity(CoordinatorEntity):
 - Updates coordinator monitoring state
 
 **Notifications Switch:**
-- Enable/disable notifications
+- Enable/disable all notifications (master switch)
 - Independent of monitoring
 - Updates notifier state
+
+**Notification Type Switches (4):**
+- `notification_cycle_started` - Toggle start notifications
+- `notification_cycle_finished` - Toggle completion notifications
+- `notification_alert_duration` - Toggle duration alerts
+- `notification_unplugged` - Toggle unplugged alerts
+- Work in conjunction with master notifications switch
+- Allow granular control without changing configuration
+- All enabled by default
 
 ### Buttons (`button.py`)
 
@@ -387,19 +421,31 @@ custom_components/smart_appliance_monitor/
 
 ## Statistics
 
-### Codebase
+### Codebase (v0.2.0)
 - **Python Files**: 12 production files
-- **Lines of Code**: ~2,500 lines
+- **Lines of Code**: ~3,500+ lines (was ~2,500)
 - **Test Files**: 9 test files
 - **Test Cases**: 75+ unit tests
 - **Code Coverage**: ~95%
 
-### Entities Per Appliance
-- Sensors: 10
-- Binary Sensors: 2
-- Switches: 2
-- Buttons: 1
-- **Total**: 15 entities
+### Entities Per Appliance (v0.2.0)
+- Sensors: 10 (adaptive naming based on appliance type)
+- Binary Sensors: 3 (running, alert_duration, unplugged)
+- Switches: 6 (monitoring, notifications, 4 notification type switches)
+- Buttons: 1 (reset statistics)
+- **Total**: 19 entities (was 15 in v0.1.0)
+
+### Appliance Types Supported
+- **Total**: 11 appliance types
+  - Cycle-based (7): Oven, Dishwasher, Washing Machine, Dryer, Water Heater, Coffee Maker, 3D Printer
+  - Session-based (3): Monitor, NAS, VMC
+  - Generic: Other
+
+### Notification Services Supported
+- Mobile App (auto-detection)
+- Telegram
+- Persistent Notification
+- Custom service (user-configurable)
 
 ## Testing Strategy
 

@@ -1,0 +1,253 @@
+# Smart Appliance Monitor - Monitor/Screen Dashboard Template
+# Version: 0.3.0
+# Optimized for monitors with session-based tracking
+# Uses "session" terminology instead of "cycle"
+
+title: {APPLIANCE_NAME}
+path: {APPLIANCE_ID}
+icon: mdi:monitor
+type: sections
+sections:
+  # ============================================
+  # SECTION 1: STATUS OVERVIEW
+  # ============================================
+  - type: grid
+    cards:
+      - type: custom:mushroom-template-card
+        primary: {APPLIANCE_NAME}
+        secondary: |
+          {% set state = states('sensor.{APPLIANCE_ID}_state') %}
+          {% if state == 'running' %}
+            🟢 Écran allumé - {{ states('sensor.{APPLIANCE_ID}_session_duration') }} min
+          {% elif state == 'finished' %}
+            ✅ Session terminée
+          {% else %}
+            ⚫ Écran éteint
+          {% endif %}
+        icon: mdi:monitor
+        icon_color: |
+          {% set state = states('sensor.{APPLIANCE_ID}_state') %}
+          {% if state == 'running' %}
+            green
+          {% elif state == 'finished' %}
+            blue
+          {% else %}
+            grey
+          {% endif %}
+        badge_icon: |
+          {% if is_state('binary_sensor.{APPLIANCE_ID}_alert_duration', 'on') %}
+            mdi:clock-alert
+          {% elif is_state('binary_sensor.{APPLIANCE_ID}_unplugged', 'on') %}
+            mdi:power-plug-off
+          {% endif %}
+        badge_color: |
+          {% if is_state('binary_sensor.{APPLIANCE_ID}_alert_duration', 'on') %}
+            orange
+          {% elif is_state('binary_sensor.{APPLIANCE_ID}_unplugged', 'on') %}
+            red
+          {% endif %}
+        tap_action:
+          action: more-info
+          entity: sensor.{APPLIANCE_ID}_state
+        fill_container: true
+
+  # ============================================
+  # SECTION 2: CURRENT SESSION
+  # ============================================
+  - title: Session en cours
+    type: grid
+    cards:
+      - type: gauge
+        entity: sensor.{APPLIANCE_ID}_session_duration
+        name: Durée d'utilisation
+        needle: true
+        severity:
+          green: 0
+          yellow: 240
+          red: 420
+        min: 0
+        max: 480  # 8h max
+        unit: min
+
+      - type: statistic
+        entity: sensor.{APPLIANCE_ID}_session_energy
+        name: Énergie de la session
+        icon: mdi:lightning-bolt
+        stat_type: mean
+
+      - type: statistic
+        entity: sensor.{APPLIANCE_ID}_session_cost
+        name: Coût de la session
+        icon: mdi:currency-eur
+        stat_type: mean
+
+  # ============================================
+  # SECTION 3: USAGE PATTERN
+  # ============================================
+  - title: Utilisation
+    type: grid
+    cards:
+      - type: custom:mini-graph-card
+        entities:
+          - entity: sensor.{APPLIANCE_ID}_power
+            name: Consommation
+            color: '#9b59b6'
+        name: Consommation (dernières 24h)
+        hours_to_show: 24
+        points_per_hour: 4
+        line_width: 2
+        animate: true
+        show:
+          labels: true
+          points: false
+          legend: true
+          fill: fade
+        icon: mdi:monitor-shimmer
+
+      # Session pattern indicator
+      - type: custom:mushroom-chips-card
+        chips:
+          - type: template
+            content: |
+              {% set sessions = states('sensor.{APPLIANCE_ID}_daily_sessions') | int %}
+              {{ sessions }} session{% if sessions > 1 %}s{% endif %} aujourd'hui
+            icon: mdi:counter
+            icon_color: purple
+
+  # ============================================
+  # SECTION 4: CONTROLS
+  # ============================================
+  - title: Contrôles
+    type: grid
+    cards:
+      - type: entities
+        entities:
+          - entity: switch.{APPLIANCE_ID}_monitoring
+            name: Surveillance des sessions
+            icon: mdi:eye
+          - entity: switch.{APPLIANCE_ID}_notifications
+            name: Notifications
+            icon: mdi:bell
+          - type: section
+            label: Notifications par type
+          - entity: switch.{APPLIANCE_ID}_notification_cycle_started
+            name: Écran allumé
+            icon: mdi:monitor-star
+          - entity: switch.{APPLIANCE_ID}_notification_cycle_finished
+            name: Session terminée
+            icon: mdi:monitor-off
+          - entity: switch.{APPLIANCE_ID}_notification_alert_duration
+            name: Session longue
+            icon: mdi:clock-alert
+          - entity: switch.{APPLIANCE_ID}_notification_unplugged
+            name: Écran débranché
+            icon: mdi:power-plug-off
+          - type: section
+            label: Actions
+          - entity: button.{APPLIANCE_ID}_reset_stats
+            name: Réinitialiser stats
+            icon: mdi:restart
+
+  # ============================================
+  # SECTION 5: STATISTICS
+  # ============================================
+  - title: Statistiques
+    type: grid
+    cards:
+      # Last Session
+      - type: entities
+        title: Dernière session
+        icon: mdi:history
+        entities:
+          - entity: sensor.{APPLIANCE_ID}_last_session_duration
+            name: Durée
+            icon: mdi:timer
+          - entity: sensor.{APPLIANCE_ID}_last_session_energy
+            name: Énergie
+            icon: mdi:lightning-bolt
+          - entity: sensor.{APPLIANCE_ID}_last_session_cost
+            name: Coût
+            icon: mdi:currency-eur
+
+      # Daily Summary
+      - type: custom:mushroom-entity-card
+        entity: sensor.{APPLIANCE_ID}_daily_sessions
+        name: Sessions du jour
+        icon: mdi:monitor-multiple
+        icon_color: purple
+        primary_info: state
+        secondary_info: name
+
+      # Costs
+      - type: custom:mushroom-entity-card
+        entity: sensor.{APPLIANCE_ID}_daily_cost
+        name: Coût quotidien
+        icon: mdi:currency-eur
+        icon_color: green
+
+      - type: custom:mushroom-entity-card
+        entity: sensor.{APPLIANCE_ID}_monthly_cost
+        name: Coût mensuel
+        icon: mdi:calendar-month
+        icon_color: green
+
+  # ============================================
+  # SECTION 6: ENERGY EFFICIENCY
+  # ============================================
+  - title: Efficacité énergétique
+    type: grid
+    cards:
+      - type: custom:mushroom-template-card
+        primary: |
+          {% set energy = states('sensor.{APPLIANCE_ID}_last_session_energy') | float(0) %}
+          {% set duration = states('sensor.{APPLIANCE_ID}_last_session_duration') | float(1) %}
+          {% set avg_power = (energy * 1000 / duration * 60) | round(1) if duration > 0 else 0 %}
+          {{ avg_power }} W
+        secondary: Puissance moyenne (dernière session)
+        icon: mdi:gauge
+        icon_color: |
+          {% set energy = states('sensor.{APPLIANCE_ID}_last_session_energy') | float(0) %}
+          {% set duration = states('sensor.{APPLIANCE_ID}_last_session_duration') | float(1) %}
+          {% set avg_power = (energy * 1000 / duration * 60) if duration > 0 else 0 %}
+          {% if avg_power < 30 %}
+            green
+          {% elif avg_power < 50 %}
+            orange
+          {% else %}
+            red
+          {% endif %}
+
+  # ============================================
+  # SECTION 7: ALERTS
+  # ============================================
+  - title: Alertes
+    type: grid
+    cards:
+      - type: conditional
+        conditions:
+          - entity: binary_sensor.{APPLIANCE_ID}_alert_duration
+            state: 'on'
+        card:
+          type: custom:mushroom-template-card
+          primary: ⏰ Session très longue
+          secondary: L'écran est allumé depuis longtemps
+          icon: mdi:clock-alert
+          icon_color: orange
+          tap_action:
+            action: more-info
+            entity: binary_sensor.{APPLIANCE_ID}_alert_duration
+
+      - type: conditional
+        conditions:
+          - entity: binary_sensor.{APPLIANCE_ID}_unplugged
+            state: 'on'
+        card:
+          type: custom:mushroom-template-card
+          primary: 🔌 Écran débranché
+          secondary: Aucune consommation détectée
+          icon: mdi:power-plug-off
+          icon_color: red
+          tap_action:
+            action: more-info
+            entity: binary_sensor.{APPLIANCE_ID}_unplugged
+

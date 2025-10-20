@@ -1,50 +1,71 @@
-# Services pour Smart Appliance Monitor
+# Services for Smart Appliance Monitor
 
 start_cycle:
-  name: Démarrer un cycle manuellement
-  description: Force le démarrage d'un cycle de surveillance pour tester le système.
+  name: Start cycle manually
+  description: Forces the start of a monitoring cycle to test the system.
   target:
     entity:
       integration: smart_appliance_monitor
       domain: sensor
   fields:
     entity_id:
-      name: Entité
-      description: L'entité du moniteur d'appareil
+      name: Entity
+      description: The appliance monitor entity
       required: true
       selector:
         entity:
           integration: smart_appliance_monitor
 
 stop_monitoring:
-  name: Arrêter la surveillance
-  description: Arrête temporairement la surveillance de l'appareil.
+  name: Stop monitoring
+  description: Temporarily stops monitoring the appliance.
   target:
     entity:
       integration: smart_appliance_monitor
       domain: sensor
   fields:
     entity_id:
-      name: Entité
-      description: L'entité du moniteur d'appareil
+      name: Entity
+      description: The appliance monitor entity
       required: true
       selector:
         entity:
           integration: smart_appliance_monitor
 
 reset_statistics:
-  name: Réinitialiser les statistiques
-  description: Réinitialise toutes les statistiques (dernier cycle, journalier, mensuel).
+  name: Reset statistics
+  description: Resets all statistics (last cycle, daily, monthly).
   target:
     entity:
       integration: smart_appliance_monitor
       domain: sensor
   fields:
     entity_id:
-      name: Entité
-      description: L'entité du moniteur d'appareil
+      name: Entity
+      description: The appliance monitor entity
       required: true
       selector:
         entity:
           integration: smart_appliance_monitor
 
+generate_dashboard_yaml:
+  name: Generate dashboard YAML
+  description: Generates optimized dashboard YAML code for this appliance. The YAML is displayed in a notification and logged.
+  target:
+    entity:
+      integration: smart_appliance_monitor
+      domain: sensor
+  fields:
+    entity_id:
+      name: Entity
+      description: The appliance monitor entity
+      required: true
+      selector:
+        entity:
+          integration: smart_appliance_monitor
+    use_custom_cards:
+      name: Use custom cards
+      description: Include custom cards (mushroom, mini-graph-card) in the template. Requires HACS and card installation.
+      default: true
+      selector:
+        boolean:

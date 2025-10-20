@@ -63,7 +63,11 @@
           "start_delay": "Délai de démarrage (secondes)",
           "stop_delay": "Délai d'arrêt (secondes)",
           "enable_alert_duration": "Activer l'alerte de durée",
-          "alert_duration": "Durée d'alerte (secondes)"
+          "alert_duration": "Durée d'alerte (secondes)",
+          "unplugged_timeout": "Délai de détection débranché (secondes)",
+          "notification_services": "Services de notification",
+          "notification_types": "Types de notifications",
+          "custom_notify_service": "Nom du service personnalisé"
         },
         "data_description": {
           "start_threshold": "Puissance minimale pour détecter un démarrage",
@@ -71,7 +75,11 @@
           "start_delay": "Durée pendant laquelle la puissance doit rester élevée avant de confirmer le démarrage",
           "stop_delay": "Durée pendant laquelle la puissance doit rester faible avant de confirmer l'arrêt",
           "enable_alert_duration": "Recevoir une alerte si le cycle dure trop longtemps",
-          "alert_duration": "Durée maximale du cycle avant d'envoyer une alerte"
+          "alert_duration": "Durée maximale du cycle avant d'envoyer une alerte",
+          "unplugged_timeout": "Temps à 0W avant détection débranché (défaut: 300s = 5min)",
+          "notification_services": "Sélectionner les services à utiliser pour les notifications",
+          "notification_types": "Sélectionner les types de notifications à recevoir",
+          "custom_notify_service": "Nom du service de notification personnalisé (ex: notify.mon_service)"
         }
       }
     }
@@ -112,6 +120,27 @@
       },
       "monthly_cost": {
         "name": "Coût du mois"
+      },
+      "session_duration": {
+        "name": "Durée de session"
+      },
+      "session_energy": {
+        "name": "Énergie de session"
+      },
+      "session_cost": {
+        "name": "Coût de session"
+      },
+      "last_session_duration": {
+        "name": "Durée de la dernière session"
+      },
+      "last_session_energy": {
+        "name": "Énergie de la dernière session"
+      },
+      "last_session_cost": {
+        "name": "Coût de la dernière session"
+      },
+      "daily_sessions": {
+        "name": "Sessions du jour"
       }
     },
     "binary_sensor": {
@@ -120,6 +149,9 @@
       },
       "alert_duration": {
         "name": "Alerte durée"
+      },
+      "unplugged": {
+        "name": "Débranché"
       }
     },
     "button": {
@@ -133,6 +165,18 @@
       },
       "notifications": {
         "name": "Notifications"
+      },
+      "notification_cycle_started": {
+        "name": "Notifier cycle démarré"
+      },
+      "notification_cycle_finished": {
+        "name": "Notifier cycle terminé"
+      },
+      "notification_alert_duration": {
+        "name": "Notifier alerte durée"
+      },
+      "notification_unplugged": {
+        "name": "Notifier débranché"
       }
     }
   },
@@ -145,7 +189,27 @@
         "dryer": "Sèche-linge",
         "water_heater": "Chauffe-eau",
         "coffee_maker": "Machine à café",
+        "monitor": "Écran",
+        "nas": "NAS",
+        "printer_3d": "Imprimante 3D",
+        "vmc": "VMC",
         "other": "Autre"
+      }
+    },
+    "notification_service": {
+      "options": {
+        "mobile_app": "Application mobile",
+        "telegram": "Telegram",
+        "persistent_notification": "Notification persistante",
+        "custom": "Service personnalisé"
+      }
+    },
+    "notification_type": {
+      "options": {
+        "cycle_started": "Cycle démarré",
+        "cycle_finished": "Cycle terminé",
+        "alert_duration": "Alerte de durée",
+        "unplugged": "Alerte débranché"
       }
     }
   }

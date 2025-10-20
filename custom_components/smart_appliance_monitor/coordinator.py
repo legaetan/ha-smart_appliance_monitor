@@ -23,16 +23,24 @@ from .const import (
     CONF_STOP_DELAY,
     CONF_ENABLE_ALERT_DURATION,
     CONF_ALERT_DURATION,
+    CONF_UNPLUGGED_TIMEOUT,
+    CONF_NOTIFICATION_SERVICES,
+    CONF_NOTIFICATION_TYPES,
+    CONF_CUSTOM_NOTIFY_SERVICE,
     APPLIANCE_PROFILES,
     DEFAULT_START_THRESHOLD,
     DEFAULT_STOP_THRESHOLD,
     DEFAULT_START_DELAY,
     DEFAULT_STOP_DELAY,
     DEFAULT_ALERT_DURATION,
+    DEFAULT_UNPLUGGED_TIMEOUT,
     DEFAULT_PRICE_KWH,
+    DEFAULT_NOTIFICATION_SERVICES,
+    DEFAULT_NOTIFICATION_TYPES,
     EVENT_CYCLE_STARTED,
     EVENT_CYCLE_FINISHED,
     EVENT_ALERT_DURATION,
+    EVENT_UNPLUGGED,
 )
 from .state_machine import CycleStateMachine
 from .notify import SmartApplianceNotifier
@@ -85,6 +93,9 @@ class SmartApplianceCoordinator(DataUpdateCoordinator):
         alert_duration = entry.options.get(
             CONF_ALERT_DURATION, profile["alert_duration"]
         )
+        unplugged_timeout = entry.options.get(
+            CONF_UNPLUGGED_TIMEOUT, DEFAULT_UNPLUGGED_TIMEOUT
+        )
         
         # Machine à états
         self.state_machine = CycleStateMachine(
@@ -93,6 +104,7 @@ class SmartApplianceCoordinator(DataUpdateCoordinator):
             start_delay=self.start_delay,
             stop_delay=self.stop_delay,
             alert_duration=alert_duration if enable_alert else None,
+            unplugged_timeout=unplugged_timeout,
         )
         
         # Statistiques journalières et mensuelles
@@ -103,11 +115,23 @@ class SmartApplianceCoordinator(DataUpdateCoordinator):
         self.monitoring_enabled = True
         self.notifications_enabled = True
         
+        # Options de notification
+        notification_services = entry.options.get(
+            CONF_NOTIFICATION_SERVICES, DEFAULT_NOTIFICATION_SERVICES
+        )
+        notification_types = entry.options.get(
+            CONF_NOTIFICATION_TYPES, DEFAULT_NOTIFICATION_TYPES
+        )
+        custom_service = entry.options.get(CONF_CUSTOM_NOTIFY_SERVICE)
+        
         # Système de notifications
         self.notifier = SmartApplianceNotifier(
             hass=hass,
             appliance_name=self.appliance_name,
             appliance_type=self.appliance_type,
+            notification_services=notification_services,
+            notification_types=notification_types,
+            custom_service=custom_service,
             notifications_enabled=self.notifications_enabled,
         )
         
@@ -226,6 +250,8 @@ class SmartApplianceCoordinator(DataUpdateCoordinator):
             await self._on_cycle_finished()
         elif event == EVENT_ALERT_DURATION:
             await self._on_alert_duration()
+        elif event == EVENT_UNPLUGGED:
+            await self._on_unplugged()
     
     async def _on_cycle_started(self) -> None:
         """Appelé lorsqu'un cycle démarre."""
@@ -307,7 +333,27 @@ class SmartApplianceCoordinator(DataUpdateCoordinator):
         
         # Envoyer une notification d'alerte
         duration = self.state_machine.get_cycle_duration()
-        await self.notifier.notify_alert_duration(duration=duration)
+        threshold = self.state_machine.alert_duration / 60 if self.state_machine.alert_duration else 0
+        await self.notifier.notify_alert_duration(duration=duration, threshold=threshold)
+    
+    async def _on_unplugged(self) -> None:
+        """Appelé lorsque l'appareil est détecté comme débranché."""
+        _LOGGER.warning("Appareil débranché détecté pour '%s'", self.appliance_name)
+        
+        # Émission d'un événement
+        time_at_zero = self.state_machine.get_time_at_zero_power()
+        self.hass.bus.async_fire(
+            f"{DOMAIN}_unplugged",
+            {
+                "appliance_name": self.appliance_name,
+                "appliance_type": self.appliance_type,
+                "entry_id": self.entry.entry_id,
+                "time_at_zero": time_at_zero,
+            },
+        )
+        
+        # Envoyer une notification
+        await self.notifier.notify_unplugged(time_at_zero=time_at_zero)
     
     def _update_statistics(self) -> None:
         """Met à jour les statistiques journalières et mensuelles."""

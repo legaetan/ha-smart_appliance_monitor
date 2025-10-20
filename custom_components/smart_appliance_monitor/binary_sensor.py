@@ -29,6 +29,7 @@ async def async_setup_entry(
     
     entities = [
         SmartApplianceRunningBinarySensor(coordinator),
+        SmartApplianceUnpluggedBinarySensor(coordinator),
     ]
     
     # Ajouter le binary sensor d'alerte seulement si activé
@@ -120,4 +121,35 @@ class SmartApplianceAlertDurationBinarySensor(SmartApplianceEntity, BinarySensor
                 attributes["alert_threshold"] = self.coordinator.state_machine.alert_duration / 60
         
         return attributes
+
+
+class SmartApplianceUnpluggedBinarySensor(SmartApplianceEntity, BinarySensorEntity):
+    """Binary sensor pour détecter si l'appareil est débranché."""
+
+    _attr_device_class = BinarySensorDeviceClass.PROBLEM
+    _attr_translation_key = "unplugged"
+
+    def __init__(self, coordinator: SmartApplianceCoordinator) -> None:
+        """Initialize the binary sensor."""
+        super().__init__(coordinator, "unplugged")
+        self._attr_name = "Débranché"
+    
+    @property
+    def is_on(self) -> bool:
+        """Return True if the appliance is detected as unplugged."""
+        return self.coordinator.state_machine.is_unplugged()
+    
+    @property
+    def extra_state_attributes(self) -> dict[str, Any]:
+        """Return additional state attributes."""
+        from datetime import datetime
+        
+        time_at_zero = self.coordinator.state_machine.get_time_at_zero_power(datetime.now())
+        unplugged_timeout = self.coordinator.state_machine.unplugged_timeout
+        
+        return {
+            "time_at_zero_power": round(time_at_zero, 1),
+            "unplugged_timeout": unplugged_timeout,
+            "detection_progress": min(100, round((time_at_zero / unplugged_timeout) * 100, 1)),
+        }
 

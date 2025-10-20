@@ -1,0 +1,229 @@
+# Smart Appliance Monitor - Generic Dashboard Template
+# Version: 0.3.0
+# 
+# This template works for any appliance type.
+# Replace {APPLIANCE_ID} with your appliance entity ID (e.g., washing_machine, dishwasher)
+# Replace {APPLIANCE_NAME} with display name (e.g., "Washing Machine")
+# Replace {ICON} with appropriate MDI icon (e.g., mdi:washing-machine)
+
+title: {APPLIANCE_NAME}
+path: {APPLIANCE_ID}
+icon: {ICON}
+type: sections
+sections:
+  # ============================================
+  # SECTION 1: STATUS OVERVIEW
+  # ============================================
+  - type: grid
+    cards:
+      # Main Status Card
+      - type: custom:mushroom-template-card
+        primary: {APPLIANCE_NAME}
+        secondary: |
+          {% set state = states('sensor.{APPLIANCE_ID}_state') %}
+          {% if state == 'running' %}
+            🔵 Running - {{ states('sensor.{APPLIANCE_ID}_cycle_duration') }} min
+          {% elif state == 'finished' %}
+            ✅ Finished - {{ states('sensor.{APPLIANCE_ID}_last_cycle_duration') }} min
+          {% else %}
+            ⚪ Idle
+          {% endif %}
+        icon: {ICON}
+        icon_color: |
+          {% set state = states('sensor.{APPLIANCE_ID}_state') %}
+          {% if state == 'running' %}
+            blue
+          {% elif state == 'finished' %}
+            green
+          {% else %}
+            grey
+          {% endif %}
+        badge_icon: |
+          {% if is_state('binary_sensor.{APPLIANCE_ID}_alert_duration', 'on') %}
+            mdi:alert
+          {% elif is_state('binary_sensor.{APPLIANCE_ID}_unplugged', 'on') %}
+            mdi:power-plug-off
+          {% endif %}
+        badge_color: |
+          {% if is_state('binary_sensor.{APPLIANCE_ID}_alert_duration', 'on') or is_state('binary_sensor.{APPLIANCE_ID}_unplugged', 'on') %}
+            red
+          {% endif %}
+        tap_action:
+          action: more-info
+          entity: sensor.{APPLIANCE_ID}_state
+        fill_container: true
+
+  # ============================================
+  # SECTION 2: CURRENT CYCLE
+  # ============================================
+  - title: Current Cycle
+    type: grid
+    cards:
+      # Duration Gauge
+      - type: gauge
+        entity: sensor.{APPLIANCE_ID}_cycle_duration
+        name: Duration
+        needle: true
+        severity:
+          green: 0
+          yellow: 30
+          red: 60
+        min: 0
+        max: 120
+        unit: min
+
+      # Energy Card
+      - type: statistic
+        entity: sensor.{APPLIANCE_ID}_cycle_energy
+        name: Energy
+        icon: mdi:lightning-bolt
+        stat_type: mean
+        period:
+          calendar:
+            period: hour
+
+      # Cost Card
+      - type: statistic
+        entity: sensor.{APPLIANCE_ID}_cycle_cost
+        name: Cost
+        icon: mdi:currency-eur
+        stat_type: mean
+        period:
+          calendar:
+            period: hour
+
+  # ============================================
+  # SECTION 3: CONTROLS
+  # ============================================
+  - title: Controls
+    type: grid
+    cards:
+      # Main Switches
+      - type: entities
+        entities:
+          - entity: switch.{APPLIANCE_ID}_monitoring
+            name: Monitoring
+            icon: mdi:eye
+          - entity: switch.{APPLIANCE_ID}_notifications
+            name: Notifications
+            icon: mdi:bell
+          - type: divider
+          - entity: switch.{APPLIANCE_ID}_notification_cycle_started
+            name: Notif. Started
+            icon: mdi:bell-ring
+          - entity: switch.{APPLIANCE_ID}_notification_cycle_finished
+            name: Notif. Finished
+            icon: mdi:bell-check
+          - entity: switch.{APPLIANCE_ID}_notification_alert_duration
+            name: Notif. Duration
+            icon: mdi:bell-alert
+          - entity: switch.{APPLIANCE_ID}_notification_unplugged
+            name: Notif. Unplugged
+            icon: mdi:bell-off
+          - type: divider
+          - entity: button.{APPLIANCE_ID}_reset_stats
+            name: Reset Stats
+            icon: mdi:restart
+
+  # ============================================
+  # SECTION 4: POWER GRAPH
+  # ============================================
+  - title: Power Consumption
+    type: grid
+    cards:
+      - type: custom:mini-graph-card
+        entities:
+          - entity: sensor.{APPLIANCE_ID}_power
+            name: Power
+            color: '#3498db'
+        name: Power Consumption (24h)
+        hours_to_show: 24
+        points_per_hour: 4
+        line_width: 2
+        animate: true
+        show:
+          labels: true
+          points: false
+          legend: false
+          fill: fade
+          icon: true
+        icon: mdi:chart-line
+
+  # ============================================
+  # SECTION 5: STATISTICS
+  # ============================================
+  - title: Statistics
+    type: grid
+    cards:
+      # Last Cycle
+      - type: entities
+        title: Last Cycle
+        icon: mdi:history
+        entities:
+          - entity: sensor.{APPLIANCE_ID}_last_cycle_duration
+            name: Duration
+            icon: mdi:timer
+          - entity: sensor.{APPLIANCE_ID}_last_cycle_energy
+            name: Energy
+            icon: mdi:lightning-bolt
+          - entity: sensor.{APPLIANCE_ID}_last_cycle_cost
+            name: Cost
+            icon: mdi:currency-eur
+
+      # Daily Stats
+      - type: entities
+        title: Today
+        icon: mdi:calendar-today
+        entities:
+          - entity: sensor.{APPLIANCE_ID}_daily_cycles
+            name: Cycles
+            icon: mdi:counter
+          - entity: sensor.{APPLIANCE_ID}_daily_cost
+            name: Cost
+            icon: mdi:currency-eur
+
+      # Monthly Stats
+      - type: entities
+        title: This Month
+        icon: mdi:calendar-month
+        entities:
+          - entity: sensor.{APPLIANCE_ID}_monthly_cost
+            name: Total Cost
+            icon: mdi:currency-eur
+
+  # ============================================
+  # SECTION 6: ALERTS
+  # ============================================
+  - title: Alerts
+    type: grid
+    cards:
+      - type: conditional
+        conditions:
+          - entity: binary_sensor.{APPLIANCE_ID}_alert_duration
+            state: 'on'
+        card:
+          type: custom:mushroom-chips-card
+          chips:
+            - type: entity
+              entity: binary_sensor.{APPLIANCE_ID}_alert_duration
+              icon: mdi:alert-circle
+              icon_color: red
+              content_info: name
+              tap_action:
+                action: more-info
+
+      - type: conditional
+        conditions:
+          - entity: binary_sensor.{APPLIANCE_ID}_unplugged
+            state: 'on'
+        card:
+          type: custom:mushroom-chips-card
+          chips:
+            - type: entity
+              entity: binary_sensor.{APPLIANCE_ID}_unplugged
+              icon: mdi:power-plug-off
+              icon_color: red
+              content_info: name
+              tap_action:
+                action: more-info
+

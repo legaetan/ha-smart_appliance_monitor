@@ -9,6 +9,7 @@ from .const import (
     EVENT_CYCLE_STARTED,
     EVENT_CYCLE_FINISHED,
     EVENT_ALERT_DURATION,
+    EVENT_UNPLUGGED,
     STATE_IDLE,
     STATE_RUNNING,
     STATE_FINISHED,
@@ -27,6 +28,7 @@ class CycleStateMachine:
         start_delay: int,
         stop_delay: int,
         alert_duration: int | None = None,
+        unplugged_timeout: int = 300,
     ) -> None:
         """Initialise la machine à états.
         
@@ -36,12 +38,14 @@ class CycleStateMachine:
             start_delay: Délai de confirmation du démarrage (secondes)
             stop_delay: Délai de confirmation de l'arrêt (secondes)
             alert_duration: Durée maximale avant alerte (secondes, optionnel)
+            unplugged_timeout: Temps à 0W avant détection débranché (secondes)
         """
         self.start_threshold = start_threshold
         self.stop_threshold = stop_threshold
         self.start_delay = start_delay
         self.stop_delay = stop_delay
         self.alert_duration = alert_duration
+        self.unplugged_timeout = unplugged_timeout
         
         self.state = STATE_IDLE
         self.current_cycle: dict[str, Any] | None = None
@@ -50,6 +54,8 @@ class CycleStateMachine:
         self._high_power_since: datetime | None = None
         self._low_power_since: datetime | None = None
         self._alert_triggered = False
+        self._zero_power_since: datetime | None = None
+        self._unplugged = False
     
     def update(self, power: float, energy: float, now: datetime | None = None) -> str | None:
         """Met à jour l'état de la machine et retourne un événement si nécessaire.
@@ -66,6 +72,11 @@ class CycleStateMachine:
             now = datetime.now()
         
         event = None
+        
+        # Détection de l'appareil débranché (prioritaire)
+        unplugged_event = self._check_unplugged(power, now)
+        if unplugged_event:
+            return unplugged_event
         
         # État IDLE : détection du démarrage
         if self.state == STATE_IDLE:
@@ -245,6 +256,68 @@ class CycleStateMachine:
         
         energy = current_energy - self.current_cycle["start_energy"]
         return round(energy, 3)
+    
+    def _check_unplugged(self, power: float, now: datetime) -> str | None:
+        """Vérifie si l'appareil est débranché.
+        
+        Args:
+            power: Puissance actuelle (W)
+            now: Datetime actuel
+            
+        Returns:
+            EVENT_UNPLUGGED si l'appareil vient d'être détecté comme débranché, None sinon
+        """
+        # Si puissance > 0, réinitialiser
+        if power > 0:
+            if self._zero_power_since is not None:
+                _LOGGER.debug("Puissance détectée (%.1fW), réinitialisation timer débranché", power)
+            self._zero_power_since = None
+            
+            # Si l'appareil était marqué comme débranché, le remettre en ligne
+            if self._unplugged:
+                _LOGGER.info("Appareil rebranché (puissance: %.1fW)", power)
+                self._unplugged = False
+            
+            return None
+        
+        # Puissance = 0W
+        if self._zero_power_since is None:
+            self._zero_power_since = now
+            _LOGGER.debug("Début de période à 0W pour détection débranché")
+        else:
+            elapsed = (now - self._zero_power_since).total_seconds()
+            
+            # Si timeout dépassé et pas encore marqué comme débranché
+            if elapsed >= self.unplugged_timeout and not self._unplugged:
+                self._unplugged = True
+                _LOGGER.warning(
+                    "Appareil détecté comme débranché (0W depuis %.0f secondes)",
+                    elapsed,
+                )
+                return EVENT_UNPLUGGED
+        
+        return None
+    
+    def is_unplugged(self) -> bool:
+        """Retourne True si l'appareil est détecté comme débranché."""
+        return self._unplugged
+    
+    def get_time_at_zero_power(self, now: datetime | None = None) -> float:
+        """Retourne le temps passé à 0W en secondes.
+        
+        Args:
+            now: Datetime actuel (optionnel, pour les tests)
+            
+        Returns:
+            Temps en secondes, 0 si puissance > 0
+        """
+        if self._zero_power_since is None:
+            return 0.0
+        
+        if now is None:
+            now = datetime.now()
+        
+        return (now - self._zero_power_since).total_seconds()
     
     def reset_statistics(self) -> None:
         """Réinitialise les statistiques du dernier cycle."""

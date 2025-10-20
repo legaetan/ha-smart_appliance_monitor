@@ -12,12 +12,15 @@ Smart Appliance Monitor is a Home Assistant custom integration that automaticall
 ## Features
 
 - **Automatic Cycle Detection** - Intelligent start/stop detection with configurable thresholds
-- **Comprehensive Statistics** - Track duration, energy consumption, and cost per cycle
-- **Appliance Profiles** - Pre-configured thresholds optimized for different appliance types
+- **11 Appliance Types** - Optimized profiles for washing machines, dishwashers, dryers, ovens, water heaters, coffee makers, monitors, NAS, 3D printers, VMC, and more
+- **Smart Terminology** - Adaptive naming (cycle/session) based on appliance type for better UX
+- **Comprehensive Statistics** - Track duration, energy consumption, and cost per cycle/session
+- **Unplugged Detection** - Automatic detection when appliance is disconnected or powered off
+- **Advanced Notifications** - Multi-service support (Mobile App, Telegram, Persistent, Custom)
+- **Granular Notification Control** - Enable/disable by type (started, finished, alert, unplugged)
 - **Dynamic Pricing** - Support for variable electricity rates via Home Assistant entities
-- **Smart Notifications** - Alerts when cycles start, finish, or exceed expected duration
 - **Flexible Reconfiguration** - Modify all settings without losing historical data
-- **10 Sensors** - Real-time and historical data (current cycle, last cycle, daily/monthly stats)
+- **19 Entities per Appliance** - Sensors, binary sensors, switches for complete monitoring
 - **Custom Services** - Programmatic control via Home Assistant services
 - **Bilingual** - Full interface in English and French
 
@@ -31,6 +34,10 @@ Works with any appliance connected via a smart plug with power monitoring:
 - Water heaters
 - Ovens
 - Coffee makers
+- Screens/Monitors
+- NAS
+- 3D Printers
+- VMC (Ventilation)
 - And more!
 
 ## Quick Start
@@ -70,6 +77,10 @@ The integration automatically applies optimized thresholds based on appliance ty
 | Dishwasher     | 20W             | 5W             | 3h             |
 | Washing Machine| 10W             | 5W             | 3h             |
 | Coffee Maker   | 50W             | 5W             | 30min          |
+| Monitor        | 30W             | 5W             | 8h             |
+| NAS            | 50W             | 20W            | 6h             |
+| 3D Printer     | 50W             | 10W            | 24h            |
+| VMC            | 20W             | 10W            | 2h             |
 
 ## Documentation
 
@@ -91,27 +102,32 @@ Or browse locally: [docs/wiki-github/](docs/wiki-github/)
 
 ## Entities Created
 
-For each configured appliance, the integration creates:
+For each configured appliance, the integration creates **19 entities**:
 
 ### Sensors (10)
 - **State** - Current appliance state (idle/running/finished)
-- **Cycle Duration** - Duration of current cycle
-- **Cycle Energy** - Energy consumed in current cycle
-- **Cycle Cost** - Cost of current cycle
-- **Last Cycle Duration** - Duration of last completed cycle
-- **Last Cycle Energy** - Energy of last completed cycle
-- **Last Cycle Cost** - Cost of last completed cycle
-- **Daily Cycles** - Number of cycles today
+- **Cycle/Session Duration** - Duration of current cycle/session (adaptive naming)
+- **Cycle/Session Energy** - Energy consumed in current cycle/session
+- **Cycle/Session Cost** - Cost of current cycle/session
+- **Last Cycle/Session Duration** - Duration of last completed cycle/session
+- **Last Cycle/Session Energy** - Energy of last completed cycle/session
+- **Last Cycle/Session Cost** - Cost of last completed cycle/session
+- **Daily Cycles/Sessions** - Number of cycles/sessions today (adaptive naming)
 - **Daily Cost** - Total cost today
 - **Monthly Cost** - Total cost this month
 
-### Binary Sensors (2)
+### Binary Sensors (3)
 - **Running** - Is appliance currently running
-- **Duration Alert** - Has cycle exceeded expected duration
+- **Duration Alert** - Has cycle exceeded expected duration (optional)
+- **Unplugged** - Is appliance disconnected or powered off
 
-### Switches (2)
+### Switches (6)
 - **Monitoring** - Enable/disable cycle monitoring
-- **Notifications** - Enable/disable notifications
+- **Notifications** - Enable/disable all notifications
+- **Notify Cycle Started** - Enable/disable start notifications
+- **Notify Cycle Finished** - Enable/disable completion notifications
+- **Notify Alert Duration** - Enable/disable duration alerts
+- **Notify Unplugged** - Enable/disable unplugged alerts
 
 ### Buttons (1)
 - **Reset Statistics** - Clear all statistics and start fresh

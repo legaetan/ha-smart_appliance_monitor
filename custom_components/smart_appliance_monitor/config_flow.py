@@ -27,14 +27,23 @@ from .const import (
     CONF_STOP_DELAY,
     CONF_ENABLE_ALERT_DURATION,
     CONF_ALERT_DURATION,
+    CONF_UNPLUGGED_TIMEOUT,
+    CONF_NOTIFICATION_SERVICES,
+    CONF_NOTIFICATION_TYPES,
+    CONF_CUSTOM_NOTIFY_SERVICE,
     APPLIANCE_TYPES,
     APPLIANCE_PROFILES,
+    NOTIFICATION_SERVICES,
+    NOTIFICATION_TYPES,
     DEFAULT_PRICE_KWH,
     DEFAULT_START_THRESHOLD,
     DEFAULT_STOP_THRESHOLD,
     DEFAULT_START_DELAY,
     DEFAULT_STOP_DELAY,
     DEFAULT_ALERT_DURATION,
+    DEFAULT_UNPLUGGED_TIMEOUT,
+    DEFAULT_NOTIFICATION_SERVICES,
+    DEFAULT_NOTIFICATION_TYPES,
 )
 
 _LOGGER = logging.getLogger(__name__)
@@ -245,6 +254,40 @@ class SmartApplianceMonitorOptionsFlowHandler(config_entries.OptionsFlow):
                         CONF_ALERT_DURATION, profile["alert_duration"]
                     ),
                 ): vol.All(vol.Coerce(int), vol.Range(min=1800, max=21600)),
+                vol.Optional(
+                    CONF_UNPLUGGED_TIMEOUT,
+                    default=self.config_entry.options.get(
+                        CONF_UNPLUGGED_TIMEOUT, DEFAULT_UNPLUGGED_TIMEOUT
+                    ),
+                ): vol.All(vol.Coerce(int), vol.Range(min=60, max=3600)),
+                vol.Optional(
+                    CONF_NOTIFICATION_SERVICES,
+                    default=self.config_entry.options.get(
+                        CONF_NOTIFICATION_SERVICES, DEFAULT_NOTIFICATION_SERVICES
+                    ),
+                ): selector.SelectSelector(
+                    selector.SelectSelectorConfig(
+                        options=NOTIFICATION_SERVICES,
+                        multiple=True,
+                        mode=selector.SelectSelectorMode.LIST,
+                    )
+                ),
+                vol.Optional(
+                    CONF_NOTIFICATION_TYPES,
+                    default=self.config_entry.options.get(
+                        CONF_NOTIFICATION_TYPES, DEFAULT_NOTIFICATION_TYPES
+                    ),
+                ): selector.SelectSelector(
+                    selector.SelectSelectorConfig(
+                        options=NOTIFICATION_TYPES,
+                        multiple=True,
+                        mode=selector.SelectSelectorMode.LIST,
+                    )
+                ),
+                vol.Optional(
+                    CONF_CUSTOM_NOTIFY_SERVICE,
+                    default=self.config_entry.options.get(CONF_CUSTOM_NOTIFY_SERVICE, ""),
+                ): str,
             }
         )
 

@@ -17,7 +17,9 @@ from homeassistant.helpers.entity_platform import AddEntitiesCallback
 
 from .const import (
     DOMAIN,
+    CONF_APPLIANCE_TYPE,
     CONF_PRICE_KWH,
+    SESSION_BASED_TYPES,
     STATE_IDLE,
     STATE_RUNNING,
     STATE_FINISHED,
@@ -106,12 +108,17 @@ class SmartApplianceCycleDurationSensor(SmartApplianceEntity, SensorEntity):
     _attr_device_class = SensorDeviceClass.DURATION
     _attr_native_unit_of_measurement = UnitOfTime.MINUTES
     _attr_state_class = SensorStateClass.MEASUREMENT
-    _attr_translation_key = "cycle_duration"
 
     def __init__(self, coordinator: SmartApplianceCoordinator) -> None:
         """Initialize the sensor."""
-        super().__init__(coordinator, "cycle_duration")
-        self._attr_name = "Durée du cycle"
+        appliance_type = coordinator.entry.data.get(CONF_APPLIANCE_TYPE)
+        is_session_based = appliance_type in SESSION_BASED_TYPES
+        
+        entity_id = "session_duration" if is_session_based else "cycle_duration"
+        super().__init__(coordinator, entity_id)
+        
+        self._attr_translation_key = entity_id
+        self._attr_name = "Durée de session" if is_session_based else "Durée du cycle"
     
     @property
     def native_value(self) -> float:
@@ -133,12 +140,17 @@ class SmartApplianceCycleEnergySensor(SmartApplianceEntity, SensorEntity):
     _attr_device_class = SensorDeviceClass.ENERGY
     _attr_native_unit_of_measurement = UnitOfEnergy.WATT_HOUR
     _attr_state_class = SensorStateClass.TOTAL_INCREASING
-    _attr_translation_key = "cycle_energy"
 
     def __init__(self, coordinator: SmartApplianceCoordinator) -> None:
         """Initialize the sensor."""
-        super().__init__(coordinator, "cycle_energy")
-        self._attr_name = "Énergie du cycle"
+        appliance_type = coordinator.entry.data.get(CONF_APPLIANCE_TYPE)
+        is_session_based = appliance_type in SESSION_BASED_TYPES
+        
+        entity_id = "session_energy" if is_session_based else "cycle_energy"
+        super().__init__(coordinator, entity_id)
+        
+        self._attr_translation_key = entity_id
+        self._attr_name = "Énergie de session" if is_session_based else "Énergie du cycle"
     
     @property
     def native_value(self) -> float:
@@ -162,12 +174,17 @@ class SmartApplianceCycleCostSensor(SmartApplianceEntity, SensorEntity):
     _attr_device_class = SensorDeviceClass.MONETARY
     _attr_native_unit_of_measurement = "EUR"
     _attr_state_class = SensorStateClass.TOTAL
-    _attr_translation_key = "cycle_cost"
 
     def __init__(self, coordinator: SmartApplianceCoordinator) -> None:
         """Initialize the sensor."""
-        super().__init__(coordinator, "cycle_cost")
-        self._attr_name = "Coût du cycle"
+        appliance_type = coordinator.entry.data.get(CONF_APPLIANCE_TYPE)
+        is_session_based = appliance_type in SESSION_BASED_TYPES
+        
+        entity_id = "session_cost" if is_session_based else "cycle_cost"
+        super().__init__(coordinator, entity_id)
+        
+        self._attr_translation_key = entity_id
+        self._attr_name = "Coût de session" if is_session_based else "Coût du cycle"
     
     @property
     def native_value(self) -> float:
@@ -199,12 +216,17 @@ class SmartApplianceLastCycleDurationSensor(SmartApplianceEntity, SensorEntity):
     _attr_device_class = SensorDeviceClass.DURATION
     _attr_native_unit_of_measurement = UnitOfTime.MINUTES
     _attr_state_class = SensorStateClass.MEASUREMENT
-    _attr_translation_key = "last_cycle_duration"
 
     def __init__(self, coordinator: SmartApplianceCoordinator) -> None:
         """Initialize the sensor."""
-        super().__init__(coordinator, "last_cycle_duration")
-        self._attr_name = "Durée du dernier cycle"
+        appliance_type = coordinator.entry.data.get(CONF_APPLIANCE_TYPE)
+        is_session_based = appliance_type in SESSION_BASED_TYPES
+        
+        entity_id = "last_session_duration" if is_session_based else "last_cycle_duration"
+        super().__init__(coordinator, entity_id)
+        
+        self._attr_translation_key = entity_id
+        self._attr_name = "Durée de la dernière session" if is_session_based else "Durée du dernier cycle"
     
     @property
     def native_value(self) -> float | None:
@@ -240,12 +262,17 @@ class SmartApplianceLastCycleEnergySensor(SmartApplianceEntity, SensorEntity):
     _attr_device_class = SensorDeviceClass.ENERGY
     _attr_native_unit_of_measurement = UnitOfEnergy.WATT_HOUR
     _attr_state_class = SensorStateClass.TOTAL
-    _attr_translation_key = "last_cycle_energy"
 
     def __init__(self, coordinator: SmartApplianceCoordinator) -> None:
         """Initialize the sensor."""
-        super().__init__(coordinator, "last_cycle_energy")
-        self._attr_name = "Énergie du dernier cycle"
+        appliance_type = coordinator.entry.data.get(CONF_APPLIANCE_TYPE)
+        is_session_based = appliance_type in SESSION_BASED_TYPES
+        
+        entity_id = "last_session_energy" if is_session_based else "last_cycle_energy"
+        super().__init__(coordinator, entity_id)
+        
+        self._attr_translation_key = entity_id
+        self._attr_name = "Énergie de la dernière session" if is_session_based else "Énergie du dernier cycle"
     
     @property
     def native_value(self) -> float | None:
@@ -269,12 +296,17 @@ class SmartApplianceLastCycleCostSensor(SmartApplianceEntity, SensorEntity):
     _attr_device_class = SensorDeviceClass.MONETARY
     _attr_native_unit_of_measurement = "EUR"
     _attr_state_class = SensorStateClass.TOTAL
-    _attr_translation_key = "last_cycle_cost"
 
     def __init__(self, coordinator: SmartApplianceCoordinator) -> None:
         """Initialize the sensor."""
-        super().__init__(coordinator, "last_cycle_cost")
-        self._attr_name = "Coût du dernier cycle"
+        appliance_type = coordinator.entry.data.get(CONF_APPLIANCE_TYPE)
+        is_session_based = appliance_type in SESSION_BASED_TYPES
+        
+        entity_id = "last_session_cost" if is_session_based else "last_cycle_cost"
+        super().__init__(coordinator, entity_id)
+        
+        self._attr_translation_key = entity_id
+        self._attr_name = "Coût de la dernière session" if is_session_based else "Coût du dernier cycle"
     
     @property
     def native_value(self) -> float | None:
@@ -297,12 +329,17 @@ class SmartApplianceDailyCyclesSensor(SmartApplianceEntity, SensorEntity):
     """Sensor pour le nombre de cycles journaliers."""
 
     _attr_state_class = SensorStateClass.TOTAL
-    _attr_translation_key = "daily_cycles"
 
     def __init__(self, coordinator: SmartApplianceCoordinator) -> None:
         """Initialize the sensor."""
-        super().__init__(coordinator, "daily_cycles")
-        self._attr_name = "Cycles du jour"
+        appliance_type = coordinator.entry.data.get(CONF_APPLIANCE_TYPE)
+        is_session_based = appliance_type in SESSION_BASED_TYPES
+        
+        entity_id = "daily_sessions" if is_session_based else "daily_cycles"
+        super().__init__(coordinator, entity_id)
+        
+        self._attr_translation_key = entity_id
+        self._attr_name = "Sessions du jour" if is_session_based else "Cycles du jour"
     
     @property
     def native_value(self) -> int:

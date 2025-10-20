@@ -63,7 +63,11 @@
           "start_delay": "Start Delay (seconds)",
           "stop_delay": "Stop Delay (seconds)",
           "enable_alert_duration": "Enable Duration Alert",
-          "alert_duration": "Alert Duration (seconds)"
+          "alert_duration": "Alert Duration (seconds)",
+          "unplugged_timeout": "Unplugged Detection Timeout (seconds)",
+          "notification_services": "Notification Services",
+          "notification_types": "Notification Types",
+          "custom_notify_service": "Custom Notify Service Name"
         },
         "data_description": {
           "start_threshold": "Minimum power to detect a start",
@@ -71,7 +75,11 @@
           "start_delay": "Duration the power must remain high before confirming start",
           "stop_delay": "Duration the power must remain low before confirming stop",
           "enable_alert_duration": "Receive an alert if the cycle lasts too long",
-          "alert_duration": "Maximum cycle duration before sending an alert"
+          "alert_duration": "Maximum cycle duration before sending an alert",
+          "unplugged_timeout": "Time at 0W before detecting as unplugged (default: 300s = 5min)",
+          "notification_services": "Select which services to use for notifications",
+          "notification_types": "Select which types of notifications to receive",
+          "custom_notify_service": "Name of custom notification service (e.g., notify.my_service)"
         }
       }
     }
@@ -112,6 +120,27 @@
       },
       "monthly_cost": {
         "name": "Monthly Cost"
+      },
+      "session_duration": {
+        "name": "Session Duration"
+      },
+      "session_energy": {
+        "name": "Session Energy"
+      },
+      "session_cost": {
+        "name": "Session Cost"
+      },
+      "last_session_duration": {
+        "name": "Last Session Duration"
+      },
+      "last_session_energy": {
+        "name": "Last Session Energy"
+      },
+      "last_session_cost": {
+        "name": "Last Session Cost"
+      },
+      "daily_sessions": {
+        "name": "Daily Sessions"
       }
     },
     "binary_sensor": {
@@ -120,6 +149,9 @@
       },
       "alert_duration": {
         "name": "Duration Alert"
+      },
+      "unplugged": {
+        "name": "Unplugged"
       }
     },
     "button": {
@@ -133,6 +165,18 @@
       },
       "notifications": {
         "name": "Notifications"
+      },
+      "notification_cycle_started": {
+        "name": "Notify Cycle Started"
+      },
+      "notification_cycle_finished": {
+        "name": "Notify Cycle Finished"
+      },
+      "notification_alert_duration": {
+        "name": "Notify Alert Duration"
+      },
+      "notification_unplugged": {
+        "name": "Notify Unplugged"
       }
     }
   },
@@ -145,7 +189,27 @@
         "dryer": "Dryer",
         "water_heater": "Water Heater",
         "coffee_maker": "Coffee Maker",
+        "monitor": "Monitor",
+        "nas": "NAS",
+        "printer_3d": "3D Printer",
+        "vmc": "VMC",
         "other": "Other"
+      }
+    },
+    "notification_service": {
+      "options": {
+        "mobile_app": "Mobile App",
+        "telegram": "Telegram",
+        "persistent_notification": "Persistent Notification",
+        "custom": "Custom Service"
+      }
+    },
+    "notification_type": {
+      "options": {
+        "cycle_started": "Cycle Started",
+        "cycle_finished": "Cycle Finished",
+        "alert_duration": "Duration Alert",
+        "unplugged": "Unplugged Alert"
       }
     }
   }
