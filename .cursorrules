@@ -1,0 +1,243 @@
+# Smart Appliance Monitor - Cursor Rules
+
+## Project Overview
+
+This is a **Home Assistant custom integration** for monitoring appliances using smart plugs with power monitoring capabilities. The integration automatically detects and tracks appliance cycles (washing machines, dishwashers, dryers, etc.) and provides comprehensive statistics, notifications, and energy management features.
+
+**Type**: Python integration using Home Assistant framework
+**License**: MIT
+**Target**: Home Assistant 2023.x+
+
+## Language Rules
+
+### Documentation Language
+- **All documentation MUST be in English**:
+  - README.md
+  - CHANGELOG.md
+  - Wiki files (docs/wiki-github/)
+  - Release notes (RELEASE_NOTES_*.md)
+  - Technical documentation (docs/)
+  - Code comments and docstrings
+
+### User Interface Language
+- **English as primary language** in `strings.json`
+- **French translations** in `translations/fr.json`
+- Configuration flows support both English and French via translation system
+- Never hardcode French text in Python code - always use translation keys
+
+## Release Workflow
+
+Follow this exact workflow for creating releases (based on v0.5.1 experience):
+
+### Step 1: Update Version and Documentation
+
+1. Update version number in these files:
+   - `version` (single line with version number)
+   - `custom_components/smart_appliance_monitor/manifest.json` (version field)
+
+2. Update `CHANGELOG.md`:
+   - Add new version section at the top with format: `## [X.Y.Z] - YYYY-MM-DD`
+   - Document all changes under categories: Added, Changed, Fixed, etc.
+   - Include technical details, file modifications, and breaking changes
+
+3. Update `README.md`:
+   - Update "Recent Improvements" section if adding major features
+   - Update feature lists if applicable
+   - Keep version references current
+
+4. Update Wiki files if needed:
+   - `docs/wiki-github/Home.md` - Update version number and "What's New" section
+   - `docs/wiki-github/Features.md` - Document new entities or features
+   - Commit and push wiki changes FIRST (it's a submodule)
+
+### Step 2: Commit and Tag
+
+1. Stage all changes:
+   ```bash
+   git add version custom_components/smart_appliance_monitor/manifest.json CHANGELOG.md README.md docs/wiki-github
+   ```
+
+2. Commit with conventional format:
+   ```bash
+   git commit -m "Release vX.Y.Z - [Feature Name]
+
+   - Brief description of main changes
+   - Key features or fixes
+   - Important notes"
+   ```
+
+3. Create annotated tag:
+   ```bash
+   git tag -a vX.Y.Z -m "Release vX.Y.Z - [Title]
+
+   Key Features:
+   - Feature 1
+   - Feature 2
+
+   Bug Fixes:
+   - Fix 1
+   - Fix 2
+
+   Download: smart_appliance_monitor-vX.Y.Z.zip
+   SHA256: [will be added after creation]"
+   ```
+
+4. Push commits and tags:
+   ```bash
+   git push && git push --tags
+   ```
+
+### Step 3: Create GitHub Release
+
+1. Create temporary release notes file `RELEASE_NOTES_vX.Y.Z.md`:
+   - Write in English
+   - Include: overview, key features, installation instructions, bug fixes
+   - Keep it user-friendly and concise
+   - Reference full changelog
+
+2. Create ZIP archive:
+   ```bash
+   zip -r smart_appliance_monitor-vX.Y.Z.zip custom_components/smart_appliance_monitor/ -x "*.pyc" "*__pycache__*" "*.git*"
+   ```
+
+3. Create GitHub release:
+   ```bash
+   gh release create vX.Y.Z smart_appliance_monitor-vX.Y.Z.zip \
+     --title "vX.Y.Z - [Feature Name]" \
+     --notes-file RELEASE_NOTES_vX.Y.Z.md
+   ```
+
+### Step 4: Cleanup
+
+1. Delete temporary files:
+   ```bash
+   rm RELEASE_NOTES_vX.Y.Z.md smart_appliance_monitor-vX.Y.Z.zip
+   ```
+
+2. No commit needed - files are already in `.gitignore`
+3. Repository stays clean without release artifacts
+
+## Project Structure
+
+### Directory Layout
+```
+ha-smart_appliance_monitor/
+├── custom_components/
+│   └── smart_appliance_monitor/     # Integration code
+│       ├── __init__.py
+│       ├── manifest.json
+│       ├── coordinator.py           # Data coordinator with persistence
+│       ├── config_flow.py           # Configuration UI
+│       ├── sensor.py                # Sensor entities
+│       ├── binary_sensor.py         # Binary sensor entities
+│       ├── switch.py                # Switch entities
+│       ├── button.py                # Button entities
+│       ├── state_machine.py         # Cycle detection logic
+│       ├── notify.py                # Notification system
+│       ├── export.py                # Data export (CSV/JSON)
+│       ├── energy.py                # Energy dashboard helper
+│       ├── dashboards/              # Dashboard templates
+│       ├── translations/
+│       │   └── fr.json              # French translations
+│       └── strings.json             # English strings
+├── tests/                           # Unit tests
+├── docs/                            # Technical documentation
+│   ├── wiki-github/                 # User wiki (submodule)
+│   └── PERSISTENCE.md               # Technical docs
+├── CHANGELOG.md                     # Version history
+├── README.md                        # Main documentation
+├── version                          # Version number
+└── .cursorrules                     # This file
+```
+
+### File Naming Conventions
+
+**Permanent files:**
+- Python modules: lowercase with underscores (e.g., `state_machine.py`)
+- Documentation: UPPERCASE.md (e.g., `README.md`, `CHANGELOG.md`)
+- Version file: `version` (no extension)
+
+**Temporary files (gitignored):**
+- Release notes: `RELEASE_NOTES_vX.Y.Z.md`
+- Release summaries: `RELEASE_SUMMARY_vX.Y.Z.md`
+- Archives: `smart_appliance_monitor-vX.Y.Z.zip`
+
+## Git Commit Message Format
+
+Use conventional commits format:
+
+- `Release vX.Y.Z - [Feature Name]` - Version releases
+- `feat: Add feature description` - New features
+- `fix: Fix bug description` - Bug fixes
+- `docs: Update documentation` - Documentation changes
+- `chore: Maintenance task` - Chores (cleanup, dependencies)
+- `test: Add or update tests` - Test changes
+- `refactor: Code refactoring` - Code restructuring
+
+## Code Style
+
+### Python
+- Follow Home Assistant coding standards
+- Use type hints for all function parameters and return values
+- Document classes and public methods with docstrings
+- Keep functions focused and under 50 lines when possible
+- Use async/await for I/O operations
+
+### Imports
+```python
+"""Module docstring."""
+from __future__ import annotations
+
+# Standard library
+from datetime import datetime
+from typing import Any
+
+# Third-party
+from homeassistant.core import HomeAssistant
+
+# Local
+from .const import DOMAIN
+```
+
+## Important Rules
+
+### Never Commit
+- ZIP archives (`smart_appliance_monitor-*.zip`)
+- Release notes files (`RELEASE_NOTES_*.md`, `RELEASE_SUMMARY_*.md`)
+- Python cache files (`__pycache__/`, `*.pyc`)
+- IDE files (`.vscode/`, `.idea/`)
+
+### Always Remember
+- Wiki is a submodule - commit and push wiki changes separately FIRST
+- Release notes must be in English before publishing
+- Test persistence features after coordinator modifications
+- Update both English strings and French translations for UI changes
+- Version number must match in: `version`, `manifest.json`, and git tag
+
+### Testing
+- Run tests before committing: `pytest tests/`
+- Test on a real Home Assistant instance when possible
+- Verify persistence after restart for cycle-related changes
+- Check that notifications work for all configured services
+
+## Release Checklist
+
+Before creating a release, ensure:
+
+- [ ] Version updated in `version` and `manifest.json`
+- [ ] CHANGELOG.md updated with all changes
+- [ ] README.md updated if needed
+- [ ] Wiki updated if needed (and changes committed/pushed)
+- [ ] All tests passing
+- [ ] No linter errors
+- [ ] Release notes written in English
+- [ ] Code comments in English
+- [ ] French translations updated if UI changed
+
+## Questions?
+
+For more details:
+- Architecture: See `ARCHITECTURE.md` (if exists)
+- Contributing: See `CONTRIBUTING.md` (if exists)
+- Wiki: https://github.com/legaetan/ha-smart_appliance_monitor/wiki
+
