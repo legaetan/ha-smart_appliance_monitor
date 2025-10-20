@@ -98,6 +98,11 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     if not hass.services.has_service(DOMAIN, "start_cycle"):
         await async_setup_services(hass)
     
+    # Register frontend resources for custom Lovelace cards (once)
+    if not hasattr(hass.data[DOMAIN], "_frontend_registered"):
+        await _register_frontend_resources(hass)
+        hass.data[DOMAIN]["_frontend_registered"] = True
+    
     # Écouter les changements d'options
     entry.async_on_unload(entry.add_update_listener(async_reload_entry))
     
@@ -120,6 +125,36 @@ async def async_unload_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
 async def async_reload_entry(hass: HomeAssistant, entry: ConfigEntry) -> None:
     """Reload config entry when options change."""
     await hass.config_entries.async_reload(entry.entry_id)
+
+
+async def _register_frontend_resources(hass: HomeAssistant) -> None:
+    """Register frontend resources for custom Lovelace cards."""
+    # Get the path to the www directory (relative to config root)
+    www_path = Path(__file__).parent.parent.parent / "www" / "smart-appliance-cards" / "dist"
+    
+    if not www_path.exists():
+        _LOGGER.warning("Custom cards directory not found at %s", www_path)
+        return
+    
+    # Register static path for cards - HACS compatible path
+    hass.http.register_static_path(
+        "/hacsfiles/smart-appliance-cards",
+        str(www_path),
+        cache_headers=False
+    )
+    
+    # Verify card files exist
+    cards = [
+        "smart-appliance-cycle-card.js",
+        "smart-appliance-stats-card.js"
+    ]
+    
+    for card in cards:
+        card_path = www_path / card
+        if card_path.exists():
+            _LOGGER.info("Registered custom Lovelace card: %s", card)
+        else:
+            _LOGGER.warning("Card file not found: %s", card)
 
 
 async def async_setup_services(hass: HomeAssistant) -> None:

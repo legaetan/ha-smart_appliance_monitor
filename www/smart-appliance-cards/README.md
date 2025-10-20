@@ -58,38 +58,55 @@ That's it! The cards will auto-detect your appliance type, terminology, and all 
 
 ## 📦 Installation
 
-### Option 1: Via HACS (Coming Soon)
-1. Open HACS in Home Assistant
-2. Go to **Frontend**
-3. Click **Explore & Download Repositories**
-4. Search for "Smart Appliance Monitor Cards"
-5. Click **Download**
-6. Restart Home Assistant
+### Automatic Installation (Recommended)
 
-### Option 2: Manual Installation
+**Good news!** If you installed the Smart Appliance Monitor integration via HACS, the custom cards are **automatically available** after installation. No manual setup required!
+
+The cards are automatically registered at:
+- `/hacsfiles/smart-appliance-cards/smart-appliance-cycle-card.js`
+- `/hacsfiles/smart-appliance-cards/smart-appliance-stats-card.js`
+
+#### Add Resources to Lovelace
+
+After installing the integration, you just need to add the resources to Lovelace:
+
+1. Go to **Settings** → **Dashboards**
+2. Click the **⋮** menu → **Resources**
+3. Click **+ Add Resource**
+4. Add both cards:
+
+**Cycle Card:**
+- URL: `/hacsfiles/smart-appliance-cards/smart-appliance-cycle-card.js`
+- Resource type: **JavaScript Module**
+
+**Stats Card:**
+- URL: `/hacsfiles/smart-appliance-cards/smart-appliance-stats-card.js`
+- Resource type: **JavaScript Module**
+
+5. Clear browser cache (Ctrl+Shift+R)
+6. The cards are now ready to use!
+
+### Manual Installation (Advanced Users)
+
+If you want to install the cards separately or customize them:
 
 #### Step 1: Install Dependencies
 ```bash
-cd /workspace/www/smart-appliance-cards
-npm install
+cd /path/to/homeassistant/config/www/smart-appliance-cards
+npm install --no-bin-links  # Use --no-bin-links for remote filesystems
 ```
 
 #### Step 2: Build the Cards
 ```bash
-npm run build
+# If npm run build doesn't work due to symlink issues, use:
+node node_modules/rollup/dist/bin/rollup -c
 ```
 
 This creates the compiled files in the `dist/` folder:
 - `dist/smart-appliance-cycle-card.js`
 - `dist/smart-appliance-stats-card.js`
 
-#### Step 3: Copy to Home Assistant
-```bash
-# Copy the entire folder to your Home Assistant www directory
-cp -r /workspace/www/smart-appliance-cards /path/to/homeassistant/config/www/
-```
-
-#### Step 4: Add Resources
+#### Step 3: Add Resources
 In Home Assistant:
 1. Go to **Settings** → **Dashboards**
 2. Click the **⋮** menu → **Resources**
@@ -104,8 +121,7 @@ In Home Assistant:
 - URL: `/local/smart-appliance-cards/dist/smart-appliance-stats-card.js`
 - Resource type: **JavaScript Module**
 
-#### Step 5: Restart Home Assistant
-Clear browser cache (Ctrl+Shift+R) and restart Home Assistant.
+5. Restart Home Assistant and clear browser cache (Ctrl+Shift+R)
 
 ## 🎨 Configuration
 

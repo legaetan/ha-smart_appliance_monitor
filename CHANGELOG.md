@@ -5,6 +5,50 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.5.2] - 2025-10-20
+
+### Added
+
+#### Frontend Cards Auto-Installation
+- **Automatic Lovelace cards registration** - Custom cards now automatically available after HACS installation
+  - Cards registered at `/hacsfiles/smart-appliance-cards/` path
+  - Two cards included: `smart-appliance-cycle-card.js` and `smart-appliance-stats-card.js`
+  - Auto-detection and validation of card files at startup
+  - Informative logs for successful registration
+
+#### Build System
+- **Pre-compiled card assets** - Cards are now pre-built and versioned in Git
+  - Compiled JavaScript files included in `www/smart-appliance-cards/dist/`
+  - No manual build step required for users
+  - Cards ready to use immediately after installation
+
+### Changed
+
+#### Documentation
+- **Updated installation instructions** - Simplified setup process documented
+  - New "Automatic Installation" section in cards README
+  - Clear instructions for adding resources to Lovelace (one-time setup)
+  - Maintained "Manual Installation" section for advanced users
+
+#### Build Configuration
+- **Updated .gitignore** - Frontend build artifacts now properly managed
+  - `node_modules/` excluded from version control
+  - Compiled `dist/` files explicitly included for distribution
+
+### Technical Details
+
+**Files Modified:**
+- `custom_components/smart_appliance_monitor/__init__.py` - Added `_register_frontend_resources()` function
+- `.gitignore` - Added exceptions for compiled card files
+- `www/smart-appliance-cards/README.md` - Updated installation documentation
+- `www/smart-appliance-cards/dist/` - Added pre-compiled cards (38KB + 43KB)
+
+**Breaking Changes:** None
+
+**Migration Notes:** 
+- Existing installations: Cards will be automatically available after update
+- Users must add resources to Lovelace once (see documentation)
+
 ## [0.5.1] - 2025-10-20
 
 ### Added

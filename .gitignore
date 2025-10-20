@@ -141,3 +141,9 @@ home-assistant_v2.db
 smart_appliance_monitor-*.zip
 RELEASE_NOTES_v*.md
 RELEASE_SUMMARY_v*.md
+
+# Frontend cards - npm dependencies and build artifacts
+www/smart-appliance-cards/node_modules/
+www/smart-appliance-cards/package-lock.json
+# But keep compiled dist files for distribution
+!www/smart-appliance-cards/dist/
