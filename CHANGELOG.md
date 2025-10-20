@@ -5,6 +5,124 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.5.1] - 2025-10-20
+
+### Added
+
+#### State Persistence System
+- **Automatic state persistence** - All cycle data and statistics preserved across Home Assistant restarts
+  - Cycle state (`idle`, `running`, `finished`) saved automatically
+  - Current cycle data preserved (start time, start energy, peak power)
+  - Last completed cycle data retained (duration, energy, cost)
+  - Daily statistics saved (date, cycle count, total energy, total cost)
+  - Monthly statistics saved (year, month, total energy, total cost)
+  - Cycle history preserved for anomaly detection
+  - Configuration state saved (monitoring enabled, notifications enabled)
+  
+- **Smart validation** - Data integrity checks on restore
+  - Daily statistics reset if date has changed
+  - Monthly statistics reset if month has changed
+  - Current cycle always restored regardless of date
+  
+- **Storage system** - Using Home Assistant's native `.storage` system
+  - Location: `<config_dir>/.storage/smart_appliance_monitor.<entry_id>.json`
+  - Version: 1 (prepared for future migrations)
+  - Automatic save on: cycle start, cycle finish, every 30s during cycle
+  - Automatic restore on Home Assistant startup
+
+#### Documentation
+- **docs/PERSISTENCE.md** - Complete technical documentation
+  - Storage format and location
+  - Serialization details
+  - Error handling
+  - Examples and use cases
+  
+- **RESUME_PERSISTANCE.md** - Implementation summary in French
+  - Problem statement and solution
+  - Files modified and created
+  - Concrete usage examples
+
+#### Tests
+- **tests/test_persistence.py** - Comprehensive test suite (11 tests)
+  - Serialization/deserialization tests
+  - Save/restore cycle verification
+  - Obsolete data reset validation
+  - Automatic save trigger tests
+
+### Changed
+
+#### Coordinator (`coordinator.py`)
+- Added `Store` import from `homeassistant.helpers.storage`
+- New constants: `STORAGE_VERSION = 1`, `STORAGE_KEY = "state"`
+- New instance variable: `self._store` for persistent storage
+- New methods:
+  - `_save_state()` - Saves complete coordinator state
+  - `restore_state()` - Restores state from storage
+  - `_serialize_cycle()` / `_deserialize_cycle()` - Cycle data conversion
+  - `_serialize_stats()` / `_deserialize_stats()` - Statistics conversion
+- Enhanced event handlers to trigger automatic saves:
+  - `_on_cycle_started()` - Saves on cycle start
+  - `_on_cycle_finished()` - Saves on cycle completion
+- Enhanced `_async_update_data()` - Periodic save during running cycles
+
+#### Integration Init (`__init__.py`)
+- Added `restore_state()` call during coordinator setup
+- Ensures state restoration before first update
+
+### Fixed
+- **Data loss on restart** - Cycles and statistics no longer lost when Home Assistant restarts
+- **Incorrect duration calculation** - Cycles correctly track duration even across restarts
+- **Lost daily/monthly statistics** - All statistics properly preserved
+
+### Technical Details
+
+#### Files Created
+- `docs/PERSISTENCE.md` (183 lines) - Technical documentation
+- `RESUME_PERSISTANCE.md` (150 lines) - Implementation summary
+- `tests/test_persistence.py` (279 lines) - Test suite
+
+#### Files Modified
+- `custom_components/smart_appliance_monitor/__init__.py` (+4 lines) - State restoration
+- `custom_components/smart_appliance_monitor/coordinator.py` (+186 lines) - Complete persistence system
+
+#### Storage Format
+```json
+{
+  "state": "running",
+  "current_cycle": {...},
+  "last_cycle": {...},
+  "daily_stats": {...},
+  "monthly_stats": {...},
+  "cycle_history": [],
+  "monitoring_enabled": true,
+  "notifications_enabled": true
+}
+```
+
+### Benefits
+
+1. **No Data Loss** - Running cycles continue correctly after HA restart
+2. **Accurate Statistics** - Duration and energy calculations remain precise
+3. **Better UX** - Users don't lose tracking data during maintenance
+4. **Reliable Anomaly Detection** - Cycle history preserved for ML analysis
+
+### Breaking Changes
+
+None - This release is fully backward compatible. The persistence system gracefully handles missing storage files.
+
+### Migration Notes
+
+- No action required from users
+- Existing configurations will start saving state automatically
+- First restart after upgrade will not restore data (nothing saved yet)
+- Subsequent restarts will benefit from persistence
+
+### Known Limitations
+
+- Storage files are not automatically backed up (use HA backup system)
+- No migration system yet for future storage version changes
+- No service to manually trigger save operation
+
 ## [0.5.0] - 2025-10-21
 
 ### Added

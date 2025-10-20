@@ -25,13 +25,14 @@ Smart Appliance Monitor is a Home Assistant custom integration that automaticall
 - **Custom Services** - Programmatic control via Home Assistant services (7 services available)
 - **Bilingual** - Full interface in English and French
 
-### Advanced Features (v0.5.0)
+### Advanced Features (v0.5.0+)
 - **Auto-Shutdown** - Automatically turn off appliances after inactivity to save energy
 - **Energy Management** - Set limits and budgets for energy consumption (cycle, daily, monthly)
 - **Scheduling** - Define allowed usage hours and blocked days for optimal energy usage
 - **Anomaly Detection** - AI-powered detection of unusual consumption patterns
 - **Data Export** - Export statistics to CSV or JSON for external analysis
 - **Energy Dashboard Integration** - Native support for Home Assistant Energy Dashboard
+- **State Persistence** (v0.5.1) - Cycles and statistics are preserved across Home Assistant restarts
 
 ## Supported Appliances
 
@@ -113,6 +114,7 @@ Or browse locally: [docs/wiki-github/](docs/wiki-github/)
 - [Contributing Guide](CONTRIBUTING.md) - How to contribute to the project
 - [Architecture](ARCHITECTURE.md) - Technical architecture and component overview
 - [Changelog](CHANGELOG.md) - Version history and changes
+- [State Persistence](docs/PERSISTENCE.md) - Technical documentation on cycle persistence system (v0.5.1+)
 
 ## Entities Created
 
@@ -216,8 +218,15 @@ automation:
 
 Then select `input_number.electricity_price` when configuring the integration.
 
-## Implemented in v0.5.0 ✅
+## Recent Improvements
 
+### v0.5.1 (Latest) ✅
+- ✅ **State Persistence** - Cycles and statistics preserved across Home Assistant restarts
+  - No more lost data when restarting HA during a cycle
+  - Automatic save/restore of cycle state, statistics, and history
+  - Intelligent validation (daily/monthly stats reset when obsolete)
+
+### v0.5.0 ✅
 - ✅ **Energy Dashboard integration** - Native support with proper sensor configuration
 - ✅ **Data export** - CSV and JSON export with complete statistics
 - ✅ **Auto-shutdown** - Automatic power off after inactivity
