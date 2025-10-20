@@ -18,11 +18,11 @@ sections:
         secondary: |
           {% set state = states('sensor.{APPLIANCE_ID}_state') %}
           {% if state == 'running' %}
-            🔵 Activité intensive - {{ states('sensor.{APPLIANCE_ID}_session_duration') }} min
+            🔵 Intensive activity - {{ states('sensor.{APPLIANCE_ID}_session_duration') }} min
           {% elif state == 'finished' %}
-            ✅ Activité terminée
+            ✅ Activity complete
           {% else %}
-            💤 Idle (veille)
+            💤 Idle (standby)
           {% endif %}
         icon: mdi:nas
         icon_color: |
@@ -54,12 +54,12 @@ sections:
   # ============================================
   # SECTION 2: CURRENT ACTIVITY
   # ============================================
-  - title: Activité en cours
+  - title: Current Activity
     type: grid
     cards:
       - type: gauge
         entity: sensor.{APPLIANCE_ID}_session_duration
-        name: Durée d'activité
+        name: Activity Duration
         needle: true
         severity:
           green: 0
@@ -71,20 +71,20 @@ sections:
 
       - type: statistic
         entity: sensor.{APPLIANCE_ID}_session_energy
-        name: Énergie (session)
+        name: Energy (session)
         icon: mdi:lightning-bolt
         stat_type: mean
 
       - type: statistic
         entity: sensor.{APPLIANCE_ID}_session_cost
-        name: Coût (session)
+        name: Cost (session)
         icon: mdi:currency-eur
         stat_type: mean
 
   # ============================================
   # SECTION 3: POWER MONITORING
   # ============================================
-  - title: Surveillance de la consommation
+  - title: Power Monitoring
     type: grid
     cards:
       - type: custom:mini-graph-card
@@ -92,7 +92,7 @@ sections:
           - entity: sensor.{APPLIANCE_ID}_power
             name: Puissance
             color: '#e74c3c'
-        name: Consommation (24h) - Détection backup/transfert
+        name: Consumption (24h) - Backup/Transfer Detection
         hours_to_show: 24
         points_per_hour: 4
         line_width: 2
@@ -113,9 +113,9 @@ sections:
             content: |
               {% set power = states('sensor.{APPLIANCE_ID}_power') | float(0) %}
               {% if power > 50 %}
-                Activité intensive
+                Intensive activity
               {% elif power > 20 %}
-                Activité modérée
+                Moderate activity
               {% else %}
                 Idle
               {% endif %}
@@ -133,13 +133,13 @@ sections:
   # ============================================
   # SECTION 4: CONTROLS & MONITORING
   # ============================================
-  - title: Contrôles
+  - title: Controls
     type: grid
     cards:
       - type: entities
         entities:
           - entity: switch.{APPLIANCE_ID}_monitoring
-            name: Surveillance activité
+            name: Activity Monitoring
             icon: mdi:eye
           - entity: switch.{APPLIANCE_ID}_notifications
             name: Notifications
@@ -147,32 +147,32 @@ sections:
           - type: section
             label: Notifications par type
           - entity: switch.{APPLIANCE_ID}_notification_cycle_started
-            name: Début activité intensive
+            name: Intensive Activity Started
             icon: mdi:backup-restore
           - entity: switch.{APPLIANCE_ID}_notification_cycle_finished
-            name: Fin activité
+            name: Activity Finished
             icon: mdi:check-circle
           - entity: switch.{APPLIANCE_ID}_notification_alert_duration
-            name: Activité longue
+            name: Long Activity
             icon: mdi:clock-alert
           - entity: switch.{APPLIANCE_ID}_notification_unplugged
-            name: NAS éteint/débranché ⚠️
+            name: NAS Off/Unplugged ⚠️
             icon: mdi:server-off
           - type: section
             label: Actions
           - entity: button.{APPLIANCE_ID}_reset_stats
-            name: Réinitialiser statistiques
+            name: Reset Statistics
             icon: mdi:restart
 
   # ============================================
   # SECTION 5: STATISTICS & ANALYSIS
   # ============================================
-  - title: Statistiques
+  - title: Statistics
     type: grid
     cards:
       # Last Activity Session
       - type: entities
-        title: Dernière session intensive
+        title: Last Intensive Session
         icon: mdi:history
         entities:
           - entity: sensor.{APPLIANCE_ID}_last_session_duration
@@ -188,7 +188,7 @@ sections:
       # Daily Activity
       - type: custom:mushroom-entity-card
         entity: sensor.{APPLIANCE_ID}_daily_sessions
-        name: Sessions intensives (jour)
+        name: Intensive Sessions (day)
         icon: mdi:counter
         icon_color: blue
         primary_info: state
@@ -197,35 +197,35 @@ sections:
       # Energy costs
       - type: custom:mushroom-entity-card
         entity: sensor.{APPLIANCE_ID}_daily_cost
-        name: Coût quotidien
+        name: Daily Cost
         icon: mdi:currency-eur
         icon_color: green
 
       - type: custom:mushroom-entity-card
         entity: sensor.{APPLIANCE_ID}_monthly_cost
-        name: Coût mensuel
+        name: Monthly Cost
         icon: mdi:calendar-month
         icon_color: green
 
   # ============================================
   # SECTION 6: HEALTH & UPTIME
   # ============================================
-  - title: État & Disponibilité
+  - title: Status & Availability
     type: grid
     cards:
       # Unplugged detector (critical for NAS)
       - type: custom:mushroom-template-card
         primary: |
           {% if is_state('binary_sensor.{APPLIANCE_ID}_unplugged', 'off') %}
-            ✅ NAS en ligne
+            ✅ NAS Online
           {% else %}
-            ⚠️ NAS hors ligne
+            ⚠️ NAS Offline
           {% endif %}
         secondary: |
           {% if is_state('binary_sensor.{APPLIANCE_ID}_unplugged', 'on') %}
-            Aucune consommation détectée
+            No power consumption detected
           {% else %}
-            Alimenté et fonctionnel
+            Powered and functional
           {% endif %}
         icon: |
           {% if is_state('binary_sensor.{APPLIANCE_ID}_unplugged', 'off') %}
@@ -246,7 +246,7 @@ sections:
       # Current power consumption
       - type: custom:mushroom-entity-card
         entity: sensor.{APPLIANCE_ID}_power
-        name: Consommation actuelle
+        name: Current Consumption
         icon: mdi:flash
         icon_color: |
           {% set power = states('sensor.{APPLIANCE_ID}_power') | float(0) %}
@@ -261,7 +261,7 @@ sections:
   # ============================================
   # SECTION 7: ALERTS
   # ============================================
-  - title: Alertes
+  - title: Alerts
     type: grid
     cards:
       - type: conditional
@@ -270,8 +270,8 @@ sections:
             state: 'on'
         card:
           type: custom:mushroom-template-card
-          primary: 🚨 NAS HORS LIGNE
-          secondary: Vérifier l'alimentation immédiatement
+          primary: 🚨 NAS OFFLINE
+          secondary: Check power immediately
           icon: mdi:server-off
           icon_color: red
           tap_action:
@@ -284,8 +284,8 @@ sections:
             state: 'on'
         card:
           type: custom:mushroom-template-card
-          primary: ⏰ Activité intensive prolongée
-          secondary: Backup ou transfert très long en cours
+          primary: ⏰ Extended Intensive Activity
+          secondary: Very long backup or transfer in progress
           icon: mdi:clock-alert
           icon_color: orange
           tap_action:

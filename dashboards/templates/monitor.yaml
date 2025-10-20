@@ -18,11 +18,11 @@ sections:
         secondary: |
           {% set state = states('sensor.{APPLIANCE_ID}_state') %}
           {% if state == 'running' %}
-            🟢 Écran allumé - {{ states('sensor.{APPLIANCE_ID}_session_duration') }} min
+            🟢 Screen on - {{ states('sensor.{APPLIANCE_ID}_session_duration') }} min
           {% elif state == 'finished' %}
-            ✅ Session terminée
+            ✅ Session complete
           {% else %}
-            ⚫ Écran éteint
+            ⚫ Screen off
           {% endif %}
         icon: mdi:monitor
         icon_color: |
@@ -54,12 +54,12 @@ sections:
   # ============================================
   # SECTION 2: CURRENT SESSION
   # ============================================
-  - title: Session en cours
+  - title: Current Session
     type: grid
     cards:
       - type: gauge
         entity: sensor.{APPLIANCE_ID}_session_duration
-        name: Durée d'utilisation
+        name: Usage Duration
         needle: true
         severity:
           green: 0
@@ -71,20 +71,20 @@ sections:
 
       - type: statistic
         entity: sensor.{APPLIANCE_ID}_session_energy
-        name: Énergie de la session
+        name: Session Energy
         icon: mdi:lightning-bolt
         stat_type: mean
 
       - type: statistic
         entity: sensor.{APPLIANCE_ID}_session_cost
-        name: Coût de la session
+        name: Session Cost
         icon: mdi:currency-eur
         stat_type: mean
 
   # ============================================
   # SECTION 3: USAGE PATTERN
   # ============================================
-  - title: Utilisation
+  - title: Usage
     type: grid
     cards:
       - type: custom:mini-graph-card
@@ -123,7 +123,7 @@ sections:
       - type: entities
         entities:
           - entity: switch.{APPLIANCE_ID}_monitoring
-            name: Surveillance des sessions
+            name: Session Monitoring
             icon: mdi:eye
           - entity: switch.{APPLIANCE_ID}_notifications
             name: Notifications
@@ -131,16 +131,16 @@ sections:
           - type: section
             label: Notifications par type
           - entity: switch.{APPLIANCE_ID}_notification_cycle_started
-            name: Écran allumé
+            name: Screen On
             icon: mdi:monitor-star
           - entity: switch.{APPLIANCE_ID}_notification_cycle_finished
-            name: Session terminée
+            name: Session Complete
             icon: mdi:monitor-off
           - entity: switch.{APPLIANCE_ID}_notification_alert_duration
-            name: Session longue
+            name: Long Session
             icon: mdi:clock-alert
           - entity: switch.{APPLIANCE_ID}_notification_unplugged
-            name: Écran débranché
+            name: Screen Unplugged
             icon: mdi:power-plug-off
           - type: section
             label: Actions
@@ -156,7 +156,7 @@ sections:
     cards:
       # Last Session
       - type: entities
-        title: Dernière session
+        title: Last Session
         icon: mdi:history
         entities:
           - entity: sensor.{APPLIANCE_ID}_last_session_duration
@@ -172,7 +172,7 @@ sections:
       # Daily Summary
       - type: custom:mushroom-entity-card
         entity: sensor.{APPLIANCE_ID}_daily_sessions
-        name: Sessions du jour
+        name: Sessions Today
         icon: mdi:monitor-multiple
         icon_color: purple
         primary_info: state
@@ -181,20 +181,20 @@ sections:
       # Costs
       - type: custom:mushroom-entity-card
         entity: sensor.{APPLIANCE_ID}_daily_cost
-        name: Coût quotidien
+        name: Daily Cost
         icon: mdi:currency-eur
         icon_color: green
 
       - type: custom:mushroom-entity-card
         entity: sensor.{APPLIANCE_ID}_monthly_cost
-        name: Coût mensuel
+        name: Monthly Cost
         icon: mdi:calendar-month
         icon_color: green
 
   # ============================================
   # SECTION 6: ENERGY EFFICIENCY
   # ============================================
-  - title: Efficacité énergétique
+  - title: Energy Efficiency
     type: grid
     cards:
       - type: custom:mushroom-template-card
@@ -203,7 +203,7 @@ sections:
           {% set duration = states('sensor.{APPLIANCE_ID}_last_session_duration') | float(1) %}
           {% set avg_power = (energy * 1000 / duration * 60) | round(1) if duration > 0 else 0 %}
           {{ avg_power }} W
-        secondary: Puissance moyenne (dernière session)
+        secondary: Average Power (last session)
         icon: mdi:gauge
         icon_color: |
           {% set energy = states('sensor.{APPLIANCE_ID}_last_session_energy') | float(0) %}
@@ -220,7 +220,7 @@ sections:
   # ============================================
   # SECTION 7: ALERTS
   # ============================================
-  - title: Alertes
+  - title: Alerts
     type: grid
     cards:
       - type: conditional
@@ -229,8 +229,8 @@ sections:
             state: 'on'
         card:
           type: custom:mushroom-template-card
-          primary: ⏰ Session très longue
-          secondary: L'écran est allumé depuis longtemps
+          primary: ⏰ Very Long Session
+          secondary: Screen has been on for a long time
           icon: mdi:clock-alert
           icon_color: orange
           tap_action:
@@ -243,8 +243,8 @@ sections:
             state: 'on'
         card:
           type: custom:mushroom-template-card
-          primary: 🔌 Écran débranché
-          secondary: Aucune consommation détectée
+          primary: 🔌 Screen Unplugged
+          secondary: No power consumption detected
           icon: mdi:power-plug-off
           icon_color: red
           tap_action:
