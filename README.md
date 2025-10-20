@@ -1,190 +1,186 @@
-# 🏠 Smart Appliance Monitor
+# Smart Appliance Monitor
 
 [![hacs_badge](https://img.shields.io/badge/HACS-Custom-orange.svg)](https://github.com/custom-components/hacs)
-[![GitHub Release](https://img.shields.io/github/release/yourusername/ha-smart_appliance_monitor.svg)](https://github.com/yourusername/ha-smart_appliance_monitor/releases)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 
-> **✅ MVP Implémenté** - Le MVP est fonctionnel avec toutes les fonctionnalités de base !
+> Transform any smart plug into an intelligent appliance monitoring system for Home Assistant.
 
-## 🎯 Vision
+## Overview
 
-Une intégration HACS complète qui transforme n'importe quelle prise connectée en système de surveillance intelligent d'appareil électroménager.
+Smart Appliance Monitor is a Home Assistant custom integration that automatically detects and tracks appliance cycles (washing machines, dishwashers, dryers, water heaters, etc.) using power consumption data from smart plugs.
 
-## ✨ Fonctionnalités Implémentées
+## Features
 
-### ✅ Disponible maintenant (v0.1.0)
+- **Automatic Cycle Detection** - Intelligent start/stop detection with configurable thresholds
+- **Comprehensive Statistics** - Track duration, energy consumption, and cost per cycle
+- **Appliance Profiles** - Pre-configured thresholds optimized for different appliance types
+- **Dynamic Pricing** - Support for variable electricity rates via Home Assistant entities
+- **Smart Notifications** - Alerts when cycles start, finish, or exceed expected duration
+- **Flexible Reconfiguration** - Modify all settings without losing historical data
+- **10 Sensors** - Real-time and historical data (current cycle, last cycle, daily/monthly stats)
+- **Custom Services** - Programmatic control via Home Assistant services
+- **Bilingual** - Full interface in English and French
 
-- 🔌 **Surveillance automatique** - Détection des cycles de démarrage/arrêt avec seuils configurables
-- 📊 **Statistiques complètes** - Durée, consommation, coût par cycle + historiques
-- 🎛️ **Seuils optimisés par appareil** - Profils pré-configurés pour chaque type d'appareil
-- 💰 **Prix dynamique** - Support des entités pour tarifs variables (HC/HP, Tempo)
-- 🔧 **Reconfiguration flexible** - Modifier tous les paramètres sans perdre les statistiques
-- 🔔 **Notifications intelligentes** - Alertes de début/fin de cycle et durée excessive
-- 🌍 **Multi-langue** - Interface complète en français et anglais
-- 🧪 **Tests unitaires** - Couverture complète du code
+## Supported Appliances
 
-### 🚧 À venir
+Works with any appliance connected via a smart plug with power monitoring:
 
-- 🤖 **Machine Learning** - Calibration automatique des seuils (Phase 2)
-- 📈 **Dashboard intégré** - Interface générée automatiquement (Phase 2)
-- 📉 **Graphiques** - Visualisations avancées dans les notifications (Phase 2)
+- Washing machines
+- Dishwashers
+- Dryers
+- Water heaters
+- Ovens
+- Coffee makers
+- And more!
 
-## 🚀 Installation
+## Quick Start
 
-### HACS (Recommandé - À venir)
+### Installation
 
-1. Ouvrez HACS dans Home Assistant
-2. Allez dans "Intégrations"
-3. Cliquez sur "Explorer & télécharger des dépôts"
-4. Recherchez "Smart Appliance Monitor"
-5. Cliquez sur "Télécharger"
-6. Redémarrez Home Assistant
+#### Manual Installation
 
-### Installation Manuelle (Développement)
+1. Copy the `custom_components/smart_appliance_monitor` folder to your Home Assistant `config/custom_components` directory
+2. Restart Home Assistant
+3. Add the integration via Settings → Devices & Services → Add Integration
+4. Search for "Smart Appliance Monitor"
 
-1. Clonez ce dépôt dans votre dossier `custom_components` :
-```bash
-cd /config/custom_components
-git clone https://github.com/yourusername/ha-smart_appliance_monitor.git smart_appliance_monitor
+#### HACS Installation (Coming Soon)
+
+Will be available through HACS custom repositories.
+
+### Basic Configuration
+
+1. **Add Integration**: Settings → Devices & Services → Add Integration → Smart Appliance Monitor
+2. **Configure Appliance**:
+   - Name: "Washing Machine"
+   - Type: Select from dropdown (washing_machine, dishwasher, etc.)
+   - Power Sensor: Select your smart plug's power sensor
+   - Energy Sensor: Select your smart plug's energy sensor
+   - Price: Enter fixed price or select an entity for dynamic pricing
+3. **Adjust Settings** (Optional): Click "Configure" → "Advanced Configuration" to fine-tune thresholds
+
+### Appliance Type Profiles
+
+The integration automatically applies optimized thresholds based on appliance type:
+
+| Appliance Type | Start Threshold | Stop Threshold | Alert Duration |
+|----------------|-----------------|----------------|----------------|
+| Water Heater   | 1000W           | 50W            | 4h             |
+| Oven/Dryer     | 100W            | 10W            | 2h             |
+| Dishwasher     | 20W             | 5W             | 3h             |
+| Washing Machine| 10W             | 5W             | 3h             |
+| Coffee Maker   | 50W             | 5W             | 30min          |
+
+## Documentation
+
+### User Guides
+
+- [Installation Guide](docs/wiki/installation.md) - Detailed installation instructions
+- [Configuration Guide](docs/wiki/configuration.md) - Complete configuration reference
+- [Reconfiguration Guide](docs/wiki/reconfiguration.md) - How to modify settings without data loss
+- [Features Guide](docs/wiki/features.md) - Comprehensive feature documentation
+
+### Developer Documentation
+
+- [Contributing Guide](CONTRIBUTING.md) - How to contribute to the project
+- [Architecture](ARCHITECTURE.md) - Technical architecture and component overview
+- [Changelog](CHANGELOG.md) - Version history and changes
+
+## Entities Created
+
+For each configured appliance, the integration creates:
+
+### Sensors (10)
+- **State** - Current appliance state (idle/running/finished)
+- **Cycle Duration** - Duration of current cycle
+- **Cycle Energy** - Energy consumed in current cycle
+- **Cycle Cost** - Cost of current cycle
+- **Last Cycle Duration** - Duration of last completed cycle
+- **Last Cycle Energy** - Energy of last completed cycle
+- **Last Cycle Cost** - Cost of last completed cycle
+- **Daily Cycles** - Number of cycles today
+- **Daily Cost** - Total cost today
+- **Monthly Cost** - Total cost this month
+
+### Binary Sensors (2)
+- **Running** - Is appliance currently running
+- **Duration Alert** - Has cycle exceeded expected duration
+
+### Switches (2)
+- **Monitoring** - Enable/disable cycle monitoring
+- **Notifications** - Enable/disable notifications
+
+### Buttons (1)
+- **Reset Statistics** - Clear all statistics and start fresh
+
+## Services
+
+### `smart_appliance_monitor.start_cycle`
+Manually start a cycle (useful for testing or manual tracking).
+
+### `smart_appliance_monitor.stop_monitoring`
+Stop monitoring for a specific appliance.
+
+### `smart_appliance_monitor.reset_statistics`
+Reset all statistics for a specific appliance.
+
+## Dynamic Pricing
+
+Configure variable electricity rates:
+
+```yaml
+# configuration.yaml
+input_number:
+  electricity_price:
+    name: Current Electricity Price
+    min: 0
+    max: 1
+    step: 0.0001
+    unit_of_measurement: "€/kWh"
+
+# Update price based on time or tariff
+automation:
+  - alias: "Update Electricity Price"
+    trigger:
+      - platform: time
+        at: "07:00:00"  # Peak hours start
+      - platform: time
+        at: "22:00:00"  # Off-peak hours start
+    action:
+      - service: input_number.set_value
+        target:
+          entity_id: input_number.electricity_price
+        data:
+          value: >
+            {% if now().hour >= 22 or now().hour < 7 %}
+              0.1821  # Off-peak rate
+            {% else %}
+              0.2516  # Peak rate
+            {% endif %}
 ```
 
-2. Redémarrez Home Assistant
+Then select `input_number.electricity_price` when configuring the integration.
 
-3. Ajoutez l'intégration via l'interface :
-   - Paramètres → Appareils et services → Ajouter une intégration
-   - Recherchez "Smart Appliance Monitor"
+## Contributing
 
-## 📱 Appareils Supportés
+Contributions are welcome! See [CONTRIBUTING.md](CONTRIBUTING.md) for development setup and guidelines.
 
-L'intégration peut surveiller tout appareil électroménager connecté via une prise intelligente avec capteur de puissance :
+## License
 
-- 🔥 Four électrique
-- 🍽️ Lave-vaisselle
-- 🧺 Lave-linge
-- 👕 Sèche-linge
-- 💧 Chauffe-eau
-- ☕ Machine à café
-- 🍞 Grille-pain
-- Et bien plus !
+This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
 
-## 📚 Documentation
+## Support
 
-### Guides Utilisateur
-- **[Guide de Reconfiguration](RECONFIGURE_GUIDE.md)** - Comment modifier les paramètres sans perdre les données
-- **[Améliorations Récentes](IMPROVEMENTS.md)** - Prix dynamique et seuils adaptés
+- [Report a Bug](https://github.com/legaetan/ha-smart_appliance_monitor/issues)
+- [Request a Feature](https://github.com/legaetan/ha-smart_appliance_monitor/issues)
+- [Discussions](https://github.com/legaetan/ha-smart_appliance_monitor/discussions)
 
-### Documentation Développeur
-- **[Résumé d'implémentation](IMPLEMENTATION_SUMMARY.md)** - Architecture du MVP
-- **[Guide de développement](DEVELOPMENT.md)** - Contribuer au projet
-- **[Fichiers créés](FILES_CREATED.md)** - Liste complète des composants
+## Acknowledgments
 
-### Documentation Complète
-- **[Concept complet](CONCEPT_INTEGRATION_HACS.md)** - Vision et fonctionnalités détaillées
-- **[Spécifications techniques](SPECS_TECHNIQUES_INTEGRATION.md)** - Architecture et code
-- **[Ressources développement](RESSOURCES_DEVELOPPEMENT.md)** - Guide pour contribuer
-- **[Index complet](INDEX_COMPLET.md)** - Navigation dans la documentation
-
-## 🛠️ État du Projet
-
-### Phase Actuelle : MVP Complet ✅
-
-- [x] Concept et spécifications
-- [x] Documentation complète
-- [x] Structure du projet
-- [x] Intégration de base avec coordinator
-- [x] Config flow (création + reconfiguration)
-- [x] State Machine pour détection de cycles
-- [x] Entités complètes :
-  - [x] Binary Sensors (running, alert_duration)
-  - [x] Sensors (state, cycle_*, last_cycle_*, daily_*, monthly_cost)
-  - [x] Buttons (reset_stats)
-  - [x] Switches (monitoring, notifications)
-- [x] Services personnalisés
-- [x] Système de notifications
-- [x] Tests unitaires complets
-- [x] Prix dynamique via entité
-- [x] Seuils optimisés par type d'appareil
-- [x] Flux de reconfiguration
-- [ ] Publication HACS
-- [ ] Mode apprentissage ML
-- [ ] Dashboard automatique
-
-### Roadmap
-
-#### ✅ v0.1.0 - MVP (Octobre 2025)
-- ✅ Configuration via UI avec sélecteurs intelligents
-- ✅ Détection cycle démarrage/arrêt avec machine à états
-- ✅ 10 capteurs (état, cycle en cours, dernier cycle, statistiques)
-- ✅ Notifications avec détails du cycle
-- ✅ Services personnalisés (start_cycle, stop_monitoring, reset_stats)
-- ✅ Prix dynamique via entité input_number/sensor
-- ✅ Seuils adaptés par type d'appareil (7 profils)
-- ✅ Flux de reconfiguration sans perte de données
-
-#### 🚧 v0.2.0 - Améliorations (Prévu : Q1 2026)
-- [ ] Publication sur HACS
-- [ ] Intégration Energy Dashboard
-- [ ] Support des automations avancées
-- [ ] Export des données (CSV, JSON)
-- [ ] Graphiques dans les notifications
-
-#### 🔮 v0.5.0 - Machine Learning (Prévu : Q2 2026)
-- [ ] Mode apprentissage automatique
-- [ ] Détection intelligente des cycles
-- [ ] Ajustement automatique des seuils
-- [ ] Prédictions de durée/consommation
-
-#### 🎯 v1.0.0 - Version production (Prévu : Q3 2026)
-- [ ] Dashboard intégré automatique
-- [ ] ML complet pour tous types d'appareils
-- [ ] Multi-appareil avec groupes
-- [ ] API complète pour intégrations tierces
-
-## 🤝 Contribution
-
-Les contributions sont les bienvenues ! Consultez le fichier [RESSOURCES_DEVELOPPEMENT.md](RESSOURCES_DEVELOPPEMENT.md) pour commencer.
-
-### Environnement de Développement
-
-```bash
-# Cloner le dépôt
-git clone https://github.com/yourusername/ha-smart_appliance_monitor.git
-cd ha-smart_appliance_monitor
-
-# Créer un lien symbolique dans votre instance HA de développement
-ln -s $(pwd)/custom_components/smart_appliance_monitor /config/custom_components/
-
-# Installer les dépendances de développement
-pip install -r requirements-dev.txt
-
-# Lancer les tests
-pytest tests/
-```
-
-## 📝 Licence
-
-Ce projet est sous licence MIT - voir le fichier [LICENSE](LICENSE) pour plus de détails.
-
-## 👤 Auteur
-
-**Gaëtan (Lega)**
-
-- 🌐 Home Assistant : https://home.lega.wtf
-- 💬 Créé avec ❤️ pour la communauté Home Assistant
-
-## 🙏 Remerciements
-
-- La communauté Home Assistant
-- Les mainteneurs de HACS
-- Tous les contributeurs et testeurs
-
-## 📞 Support
-
-- 🐛 [Signaler un bug](https://github.com/yourusername/ha-smart_appliance_monitor/issues)
-- 💡 [Proposer une fonctionnalité](https://github.com/yourusername/ha-smart_appliance_monitor/issues)
-- 💬 [Discussions](https://github.com/yourusername/ha-smart_appliance_monitor/discussions)
+- Home Assistant community
+- HACS maintainers
+- All contributors and testers
 
 ---
 
-**⭐ Si ce projet vous plaît, n'hésitez pas à lui donner une étoile sur GitHub !**
-
+**If you find this project useful, please give it a star on GitHub!**
