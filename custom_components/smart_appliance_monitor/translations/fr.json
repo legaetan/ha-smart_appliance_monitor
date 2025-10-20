@@ -52,6 +52,79 @@
         }
       }
     }
+  },
+  "entity": {
+    "sensor": {
+      "state": {
+        "name": "État",
+        "state": {
+          "idle": "Arrêté",
+          "running": "En marche",
+          "finished": "Terminé"
+        }
+      },
+      "cycle_duration": {
+        "name": "Durée du cycle"
+      },
+      "cycle_energy": {
+        "name": "Énergie du cycle"
+      },
+      "cycle_cost": {
+        "name": "Coût du cycle"
+      },
+      "last_cycle_duration": {
+        "name": "Durée du dernier cycle"
+      },
+      "last_cycle_energy": {
+        "name": "Énergie du dernier cycle"
+      },
+      "last_cycle_cost": {
+        "name": "Coût du dernier cycle"
+      },
+      "daily_cycles": {
+        "name": "Cycles du jour"
+      },
+      "daily_cost": {
+        "name": "Coût du jour"
+      },
+      "monthly_cost": {
+        "name": "Coût du mois"
+      }
+    },
+    "binary_sensor": {
+      "running": {
+        "name": "En marche"
+      },
+      "alert_duration": {
+        "name": "Alerte durée"
+      }
+    },
+    "button": {
+      "reset_stats": {
+        "name": "Réinitialiser les statistiques"
+      }
+    },
+    "switch": {
+      "monitoring": {
+        "name": "Surveillance"
+      },
+      "notifications": {
+        "name": "Notifications"
+      }
+    }
+  },
+  "selector": {
+    "appliance_type": {
+      "options": {
+        "oven": "Four",
+        "dishwasher": "Lave-vaisselle",
+        "washing_machine": "Lave-linge",
+        "dryer": "Sèche-linge",
+        "water_heater": "Chauffe-eau",
+        "coffee_maker": "Machine à café",
+        "other": "Autre"
+      }
+    }
   }
 }
 

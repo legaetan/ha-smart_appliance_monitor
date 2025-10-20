@@ -1,0 +1,50 @@
+# Services pour Smart Appliance Monitor
+
+start_cycle:
+  name: Démarrer un cycle manuellement
+  description: Force le démarrage d'un cycle de surveillance pour tester le système.
+  target:
+    entity:
+      integration: smart_appliance_monitor
+      domain: sensor
+  fields:
+    entity_id:
+      name: Entité
+      description: L'entité du moniteur d'appareil
+      required: true
+      selector:
+        entity:
+          integration: smart_appliance_monitor
+
+stop_monitoring:
+  name: Arrêter la surveillance
+  description: Arrête temporairement la surveillance de l'appareil.
+  target:
+    entity:
+      integration: smart_appliance_monitor
+      domain: sensor
+  fields:
+    entity_id:
+      name: Entité
+      description: L'entité du moniteur d'appareil
+      required: true
+      selector:
+        entity:
+          integration: smart_appliance_monitor
+
+reset_statistics:
+  name: Réinitialiser les statistiques
+  description: Réinitialise toutes les statistiques (dernier cycle, journalier, mensuel).
+  target:
+    entity:
+      integration: smart_appliance_monitor
+      domain: sensor
+  fields:
+    entity_id:
+      name: Entité
+      description: L'entité du moniteur d'appareil
+      required: true
+      selector:
+        entity:
+          integration: smart_appliance_monitor
+

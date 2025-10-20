@@ -10,6 +10,13 @@
           "power_sensor": "Power Sensor",
           "energy_sensor": "Energy Sensor",
           "price_kwh": "Price per kWh (€)"
+        },
+        "data_description": {
+          "appliance_name": "Descriptive name for your appliance (e.g. Oven, Dishwasher)",
+          "appliance_type": "Type of appliance",
+          "power_sensor": "Power sensor from the smart plug (W)",
+          "energy_sensor": "Energy sensor from the smart plug (kWh)",
+          "price_kwh": "Cost of electricity per kWh"
         }
       }
     },
@@ -34,7 +41,88 @@
           "stop_delay": "Stop Delay (seconds)",
           "enable_alert_duration": "Enable Duration Alert",
           "alert_duration": "Alert Duration (seconds)"
+        },
+        "data_description": {
+          "start_threshold": "Minimum power to detect a start",
+          "stop_threshold": "Maximum power to detect a stop",
+          "start_delay": "Duration the power must remain high before confirming start",
+          "stop_delay": "Duration the power must remain low before confirming stop",
+          "enable_alert_duration": "Receive an alert if the cycle lasts too long",
+          "alert_duration": "Maximum cycle duration before sending an alert"
         }
+      }
+    }
+  },
+  "entity": {
+    "sensor": {
+      "state": {
+        "name": "State",
+        "state": {
+          "idle": "Idle",
+          "running": "Running",
+          "finished": "Finished"
+        }
+      },
+      "cycle_duration": {
+        "name": "Cycle Duration"
+      },
+      "cycle_energy": {
+        "name": "Cycle Energy"
+      },
+      "cycle_cost": {
+        "name": "Cycle Cost"
+      },
+      "last_cycle_duration": {
+        "name": "Last Cycle Duration"
+      },
+      "last_cycle_energy": {
+        "name": "Last Cycle Energy"
+      },
+      "last_cycle_cost": {
+        "name": "Last Cycle Cost"
+      },
+      "daily_cycles": {
+        "name": "Daily Cycles"
+      },
+      "daily_cost": {
+        "name": "Daily Cost"
+      },
+      "monthly_cost": {
+        "name": "Monthly Cost"
+      }
+    },
+    "binary_sensor": {
+      "running": {
+        "name": "Running"
+      },
+      "alert_duration": {
+        "name": "Duration Alert"
+      }
+    },
+    "button": {
+      "reset_stats": {
+        "name": "Reset Statistics"
+      }
+    },
+    "switch": {
+      "monitoring": {
+        "name": "Monitoring"
+      },
+      "notifications": {
+        "name": "Notifications"
+      }
+    }
+  },
+  "selector": {
+    "appliance_type": {
+      "options": {
+        "oven": "Oven",
+        "dishwasher": "Dishwasher",
+        "washing_machine": "Washing Machine",
+        "dryer": "Dryer",
+        "water_heater": "Water Heater",
+        "coffee_maker": "Coffee Maker",
+        "other": "Other"
       }
     }
   }
