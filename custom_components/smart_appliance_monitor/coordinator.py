@@ -8,6 +8,7 @@ from typing import Any
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.core import HomeAssistant
 from homeassistant.helpers.update_coordinator import DataUpdateCoordinator, UpdateFailed
+from homeassistant.helpers.storage import Store
 
 from .const import (
     DOMAIN,
@@ -54,6 +55,8 @@ from .const import (
     DEFAULT_NOTIFICATION_SERVICES,
     DEFAULT_NOTIFICATION_TYPES,
     SCHEDULING_MODE_STRICT,
+    STATE_IDLE,
+    STATE_RUNNING,
     EVENT_CYCLE_STARTED,
     EVENT_CYCLE_FINISHED,
     EVENT_ALERT_DURATION,
@@ -70,6 +73,8 @@ from .notify import SmartApplianceNotifier
 _LOGGER = logging.getLogger(__name__)
 
 UPDATE_INTERVAL = timedelta(seconds=30)
+STORAGE_VERSION = 1
+STORAGE_KEY = "smart_appliance_monitor.{entry_id}"
 
 
 class SmartApplianceCoordinator(DataUpdateCoordinator):
@@ -186,6 +191,10 @@ class SmartApplianceCoordinator(DataUpdateCoordinator):
         self._cycle_history: list[dict[str, Any]] = []
         self._max_history_size = 10
         
+        # Storage pour la persistance
+        storage_key = STORAGE_KEY.format(entry_id=entry.entry_id)
+        self._store = Store(hass, STORAGE_VERSION, storage_key)
+        
         super().__init__(
             hass,
             _LOGGER,
@@ -274,6 +283,10 @@ class SmartApplianceCoordinator(DataUpdateCoordinator):
             # Mise à jour des statistiques journalières/mensuelles
             self._update_statistics()
             
+            # Sauvegarde périodique de l'état (uniquement si un cycle est en cours)
+            if self.state_machine.state == STATE_RUNNING:
+                await self._save_state()
+            
             # Construction des données de retour
             data = {
                 "power": power,
@@ -324,6 +337,9 @@ class SmartApplianceCoordinator(DataUpdateCoordinator):
     async def _on_cycle_started(self) -> None:
         """Appelé lorsqu'un cycle démarre."""
         _LOGGER.info("Cycle démarré pour '%s'", self.appliance_name)
+        
+        # Sauvegarder l'état
+        await self._save_state()
         
         # Émettre un événement Home Assistant
         self.hass.bus.async_fire(
@@ -403,6 +419,9 @@ class SmartApplianceCoordinator(DataUpdateCoordinator):
             energy=energy,
             cost=cost,
         )
+        
+        # Sauvegarder l'état
+        await self._save_state()
     
     async def _on_alert_duration(self) -> None:
         """Appelé lorsqu'une alerte de durée est déclenchée."""
@@ -796,4 +815,171 @@ class SmartApplianceCoordinator(DataUpdateCoordinator):
     def price_kwh(self) -> float:
         """Propriété pour accéder au prix actuel."""
         return self._get_current_price()
+    
+    async def _save_state(self) -> None:
+        """Sauvegarde l'état actuel dans le stockage persistant."""
+        try:
+            # Préparer les données à sauvegarder
+            data = {
+                "state": self.state_machine.state,
+                "current_cycle": self._serialize_cycle(self.state_machine.current_cycle),
+                "last_cycle": self._serialize_cycle(self.state_machine.last_cycle),
+                "daily_stats": self._serialize_stats(self.daily_stats),
+                "monthly_stats": self.monthly_stats,
+                "cycle_history": [
+                    self._serialize_cycle(cycle) for cycle in self._cycle_history
+                ],
+                "monitoring_enabled": self.monitoring_enabled,
+                "notifications_enabled": self.notifications_enabled,
+            }
+            
+            await self._store.async_save(data)
+            _LOGGER.debug("État sauvegardé pour '%s'", self.appliance_name)
+            
+        except Exception as err:
+            _LOGGER.error(
+                "Erreur lors de la sauvegarde de l'état pour '%s': %s",
+                self.appliance_name,
+                err,
+            )
+    
+    async def restore_state(self) -> None:
+        """Restaure l'état depuis le stockage persistant."""
+        try:
+            data = await self._store.async_load()
+            
+            if data is None:
+                _LOGGER.debug(
+                    "Aucun état sauvegardé trouvé pour '%s'",
+                    self.appliance_name,
+                )
+                return
+            
+            # Restaurer l'état de la machine à états
+            self.state_machine.state = data.get("state", STATE_IDLE)
+            self.state_machine.current_cycle = self._deserialize_cycle(
+                data.get("current_cycle")
+            )
+            self.state_machine.last_cycle = self._deserialize_cycle(
+                data.get("last_cycle")
+            )
+            
+            # Restaurer les statistiques journalières
+            saved_daily_stats = data.get("daily_stats")
+            if saved_daily_stats:
+                # Vérifier si c'est toujours le même jour
+                saved_date = datetime.fromisoformat(saved_daily_stats["date"]).date()
+                if saved_date == datetime.now().date():
+                    self.daily_stats = self._deserialize_stats(saved_daily_stats)
+                else:
+                    _LOGGER.debug(
+                        "Stats journalières obsolètes (date: %s), réinitialisation",
+                        saved_date,
+                    )
+            
+            # Restaurer les statistiques mensuelles
+            saved_monthly_stats = data.get("monthly_stats")
+            if saved_monthly_stats:
+                # Vérifier si c'est toujours le même mois
+                now = datetime.now()
+                if (
+                    saved_monthly_stats["year"] == now.year
+                    and saved_monthly_stats["month"] == now.month
+                ):
+                    self.monthly_stats = saved_monthly_stats
+                else:
+                    _LOGGER.debug(
+                        "Stats mensuelles obsolètes (mois: %s/%s), réinitialisation",
+                        saved_monthly_stats["month"],
+                        saved_monthly_stats["year"],
+                    )
+            
+            # Restaurer l'historique des cycles
+            saved_history = data.get("cycle_history", [])
+            self._cycle_history = [
+                self._deserialize_cycle(cycle) for cycle in saved_history
+            ]
+            
+            # Restaurer les switches
+            self.monitoring_enabled = data.get("monitoring_enabled", True)
+            self.notifications_enabled = data.get("notifications_enabled", True)
+            self.notifier.set_enabled(self.notifications_enabled)
+            
+            _LOGGER.info(
+                "État restauré pour '%s' - État: %s, Cycle en cours: %s",
+                self.appliance_name,
+                self.state_machine.state,
+                "Oui" if self.state_machine.current_cycle else "Non",
+            )
+            
+        except Exception as err:
+            _LOGGER.error(
+                "Erreur lors de la restauration de l'état pour '%s': %s",
+                self.appliance_name,
+                err,
+            )
+    
+    def _serialize_cycle(self, cycle: dict[str, Any] | None) -> dict[str, Any] | None:
+        """Sérialise un cycle pour le stockage JSON."""
+        if cycle is None:
+            return None
+        
+        serialized = cycle.copy()
+        
+        # Convertir les datetime en ISO format
+        for key in ["start_time", "end_time", "timestamp"]:
+            if key in serialized and isinstance(serialized[key], datetime):
+                serialized[key] = serialized[key].isoformat()
+        
+        return serialized
+    
+    def _deserialize_cycle(self, cycle: dict[str, Any] | None) -> dict[str, Any] | None:
+        """Désérialise un cycle depuis le stockage JSON."""
+        if cycle is None:
+            return None
+        
+        deserialized = cycle.copy()
+        
+        # Convertir les chaînes ISO en datetime
+        for key in ["start_time", "end_time", "timestamp"]:
+            if key in deserialized and isinstance(deserialized[key], str):
+                try:
+                    deserialized[key] = datetime.fromisoformat(deserialized[key])
+                except (ValueError, TypeError):
+                    _LOGGER.warning(
+                        "Impossible de désérialiser la date '%s': %s",
+                        key,
+                        deserialized[key],
+                    )
+        
+        return deserialized
+    
+    def _serialize_stats(self, stats: dict[str, Any]) -> dict[str, Any]:
+        """Sérialise les statistiques pour le stockage JSON."""
+        serialized = stats.copy()
+        
+        # Convertir la date en ISO format
+        if "date" in serialized:
+            serialized["date"] = serialized["date"].isoformat()
+        
+        return serialized
+    
+    def _deserialize_stats(self, stats: dict[str, Any]) -> dict[str, Any]:
+        """Désérialise les statistiques depuis le stockage JSON."""
+        deserialized = stats.copy()
+        
+        # Convertir la chaîne ISO en date
+        if "date" in deserialized and isinstance(deserialized["date"], str):
+            try:
+                deserialized["date"] = datetime.fromisoformat(
+                    deserialized["date"]
+                ).date()
+            except (ValueError, TypeError):
+                _LOGGER.warning(
+                    "Impossible de désérialiser la date: %s",
+                    deserialized["date"],
+                )
+                deserialized["date"] = datetime.now().date()
+        
+        return deserialized
 
