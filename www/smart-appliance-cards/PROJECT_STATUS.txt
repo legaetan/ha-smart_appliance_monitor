@@ -1,145 +1,145 @@
 ╔══════════════════════════════════════════════════════════════════╗
 ║                SMART APPLIANCE CARDS v0.4.0                      ║
-║                   Statut: DÉVELOPPEMENT TERMINÉ                  ║
+║                   Status: DEVELOPMENT COMPLETE                   ║
 ╚══════════════════════════════════════════════════════════════════╝
 
-Date: 20 octobre 2025
-Projet: Custom Lovelace Cards pour Smart Appliance Monitor
-Équipe: Smart Appliance Monitor Team
+Date: October 20, 2025
+Project: Custom Lovelace Cards for Smart Appliance Monitor
+Team: Smart Appliance Monitor Team
 
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
-✅ COMPOSANTS DÉVELOPPÉS
+✅ COMPONENTS DEVELOPED
 
   1. smart-appliance-cycle-card.js
-     - Affichage cycle/session avec statut animé
-     - Valeurs temps réel (durée, énergie, coût)
-     - Boutons d'action (start, stop, reset)
-     - Alertes visuelles (débranché, durée)
-     - Éditeur visuel complet
+     - Cycle/session display with animated status
+     - Real-time values (duration, energy, cost)
+     - Action buttons (start, stop, reset)
+     - Visual alerts (unplugged, duration exceeded)
+     - Complete visual editor
 
   2. smart-appliance-stats-card.js
-     - Interface à onglets (Today/Week/Month)
-     - Statistiques complètes avec icônes
-     - Indicateurs de tendance (↑↓→)
-     - Métriques d'efficacité
-     - Éditeur visuel complet
+     - Tabbed interface (Today/Week/Month)
+     - Complete statistics with icons
+     - Trend indicators (↑↓→)
+     - Efficiency metrics
+     - Complete visual editor
 
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
-📊 STATISTIQUES DU PROJET
+📊 PROJECT STATISTICS
 
-  Fichiers créés:        20
-  Lignes de code:        2,368
-  Documentation:         6 fichiers MD (800+ lignes)
-  Exemples YAML:         4 fichiers
-  Modules utilitaires:   3
-  Composants:            4 (2 cartes + 2 éditeurs)
+  Files created:        21
+  Lines of code:        2,368
+  Documentation:        6 MD files (800+ lines)
+  YAML examples:        4 files
+  Utility modules:      3
+  Components:           4 (2 cards + 2 editors)
 
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
-📁 STRUCTURE DU PROJET
+📁 PROJECT STRUCTURE
 
   www/smart-appliance-cards/
-  ├── 📄 Documentation (6 fichiers)
+  ├── 📄 Documentation (6 files)
   │   ├── README.md
   │   ├── DEVELOPMENT_PLAN.md
   │   ├── DEVELOPMENT_SUMMARY.md
-  │   ├── BUILD_INSTRUCTIONS.md
+  │   ├── BUILD_GUIDE.md
   │   ├── QUICK_START.md
-  │   └── PROJECT_STATUS.txt (ce fichier)
+  │   └── PROJECT_STATUS.txt (this file)
   │
-  ├── ⚙️ Configuration (5 fichiers)
+  ├── ⚙️ Configuration (5 files)
   │   ├── package.json
   │   ├── rollup.config.js
   │   ├── .eslintrc.json
   │   ├── .prettierrc.json
   │   └── .gitignore
   │
-  ├── 💻 Code Source (src/ - 10 fichiers)
-  │   ├── cards/ (4 fichiers - cartes + éditeurs)
-  │   ├── utils/ (3 fichiers - utilitaires)
-  │   └── styles/ (1 fichier - CSS)
+  ├── 💻 Source Code (src/ - 10 files)
+  │   ├── cards/ (4 files - cards + editors)
+  │   ├── utils/ (3 files - utilities)
+  │   └── styles/ (1 file - CSS)
   │
-  ├── 📝 Exemples (4 fichiers YAML)
+  ├── 📝 Examples (4 YAML files)
   │   └── examples/
   │
-  └── 📦 Build (dist/ - après npm run build)
+  └── 📦 Build (dist/ - after npm run build)
 
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
-🎯 FONCTIONNALITÉS CLÉS
+🎯 KEY FEATURES
 
-  ✅ Auto-détection intelligente
-     - Type d'appareil (11 types supportés)
-     - Terminologie adaptative (cycle/session)
-     - Icône appropriée
-     - Toutes les entités liées
+  ✅ Intelligent auto-detection
+     - Appliance type (11 types supported)
+     - Adaptive terminology (cycle/session)
+     - Appropriate icon
+     - All related entities
 
-  ✅ Design moderne
-     - Animations fluides (pulse, rotation)
+  ✅ Modern design
+     - Smooth animations (pulse, rotation)
      - Responsive (mobile + desktop)
-     - Thème adaptatif (auto/light/dark)
-     - CSS Variables Home Assistant
+     - Adaptive theme (auto/light/dark)
+     - Home Assistant CSS Variables
 
-  ✅ Éditeurs visuels
-     - Configuration complète sans YAML
-     - Validation en temps réel
-     - Aide contextuelle
-     - Preview instantané
+  ✅ Visual editors
+     - Complete configuration without YAML
+     - Real-time validation
+     - Contextual help
+     - Instant preview
 
   ✅ Performance
-     - Bundles optimisés (~40-60 KB)
-     - Updates adaptatifs (1s/5s/30s)
-     - Minification production
+     - Optimized bundles (~40-60 KB)
+     - Adaptive updates (1s/5s/30s)
+     - Production minification
      - Tree-shaking
 
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
-🚀 PROCHAINES ÉTAPES
+🚀 NEXT STEPS
 
-  1. ⏳ Build de production
+  1. ⏳ Production build
      cd /workspace/www/smart-appliance-cards
      npm install
      npm run build
 
-  2. ⏳ Installation dans Home Assistant
-     Copier dist/ vers /config/www/
-     Ajouter resources dans HA
-     Redémarrer HA
+  2. ⏳ Install in Home Assistant
+     Copy dist/ to /config/www/
+     Add resources in HA
+     Restart HA
 
-  3. ⏳ Tests
-     Vérifier affichage
-     Tester animations
-     Vérifier mobile
-     Valider éditeurs
+  3. ⏳ Testing
+     Check display
+     Test animations
+     Check mobile
+     Validate editors
 
   4. ⏳ Release v0.4.0
-     Corriger bugs éventuels
-     Optimiser si nécessaire
-     Publier version finale
+     Fix any bugs
+     Optimize if needed
+     Publish final version
 
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
-📚 DOCUMENTATION DISPONIBLE
+📚 AVAILABLE DOCUMENTATION
 
   README.md
-    → Guide utilisateur complet (installation, configuration, exemples)
+    → Complete user guide (install, config, examples)
 
   DEVELOPMENT_PLAN.md
-    → Plan technique détaillé (architecture, specs, timeline)
+    → Detailed technical plan (architecture, specs, timeline)
 
   DEVELOPMENT_SUMMARY.md
-    → Résumé développement (fonctionnalités, stats, limitations)
+    → Development summary (features, stats, limitations)
 
-  BUILD_INSTRUCTIONS.md
-    → Instructions compilation (build, install, troubleshooting)
+  BUILD_GUIDE.md
+    → Build instructions (compile, install, troubleshooting)
 
   QUICK_START.md
-    → Démarrage rapide (4 étapes simples)
+    → Quick start (4 simple steps)
 
   examples/
-    → 4 fichiers YAML avec configurations variées
+    → 4 YAML files with various configurations
 
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
@@ -155,60 +155,60 @@ Projet: Custom Lovelace Cards pour Smart Appliance Monitor
 
 🐛 LIMITATIONS (v0.4.0)
 
-  Prévu pour v0.4.1:
-  - Mini graphique de puissance (cycle card)
-  - Graphiques historiques réels (stats card)
-  - Statistiques réelles semaine/mois
+  Planned for v0.4.1:
+  - Mini power graph (cycle card)
+  - Real historical charts (stats card)
+  - Real week/month statistics
 
-  Les cartes sont pleinement fonctionnelles sans ces features.
+  Cards are fully functional without these features.
 
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
-✅ CHECKLIST DE VALIDATION
+✅ VALIDATION CHECKLIST
 
-  Développement
-  [✓] Structure projet créée
-  [✓] Carte cycle développée
-  [✓] Carte stats développée
-  [✓] Éditeurs visuels
-  [✓] Utilitaires implémentés
-  [✓] Styles CSS
-  [✓] Configuration build
-  [✓] Documentation complète
-  [✓] Exemples YAML
+  Development
+  [✓] Project structure created
+  [✓] Cycle card developed
+  [✓] Stats card developed
+  [✓] Visual editors
+  [✓] Utilities implemented
+  [✓] CSS styles
+  [✓] Build configuration
+  [✓] Complete documentation
+  [✓] YAML examples
 
-  À Faire
-  [ ] Build production (npm run build)
-  [ ] Tests dans Home Assistant
-  [ ] Corrections éventuelles
+  To Do
+  [ ] Production build (npm run build)
+  [ ] Home Assistant tests
+  [ ] Bug fixes if needed
   [ ] Release v0.4.0
 
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
 🎉 CONCLUSION
 
-  Le développement est TERMINÉ avec SUCCÈS!
+  Development COMPLETED SUCCESSFULLY!
 
-  Points forts:
-  • Architecture solide et extensible
-  • Fonctionnalités complètes et utiles
-  • Documentation exhaustive
-  • Design moderne et responsive
-  • Auto-détection intelligente
-  • Performance optimisée
+  Strengths:
+  • Solid and extensible architecture
+  • Complete and useful features
+  • Exhaustive documentation
+  • Modern and responsive design
+  • Intelligent auto-detection
+  • Optimized performance
 
-  Le projet est prêt pour:
-  • Build de production
-  • Tests utilisateurs
+  Ready for:
+  • Production build
+  • User testing
   • Release v0.4.0
 
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
 Version: 0.4.0
-Date: 20 octobre 2025
-Statut: ✅ DÉVELOPPEMENT TERMINÉ - PRÊT POUR LES TESTS
-Équipe: Smart Appliance Monitor Team
+Date: October 20, 2025
+Status: ✅ DEVELOPMENT COMPLETE - READY FOR TESTING
+Team: Smart Appliance Monitor Team
 
-🚀 Prêt pour le build et les tests!
+🚀 Ready for build and testing!
 
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━

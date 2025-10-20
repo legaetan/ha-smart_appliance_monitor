@@ -1,6 +1,6 @@
 # 🚀 Quick Start - Smart Appliance Cards
 
-## Installation Rapide
+## Quick Installation
 
 ### 1. Build
 
@@ -10,14 +10,14 @@ npm install
 npm run build
 ```
 
-### 2. Copier vers Home Assistant
+### 2. Copy to Home Assistant
 
 ```bash
-# Copier le dossier dist vers Home Assistant
+# Copy dist folder to Home Assistant
 cp -r dist /path/to/homeassistant/config/www/smart-appliance-cards/
 ```
 
-### 3. Ajouter Resources dans HA
+### 3. Add Resources in HA
 
 Settings → Dashboards → Resources → Add Resource
 
@@ -29,23 +29,23 @@ Settings → Dashboards → Resources → Add Resource
 - URL: `/local/smart-appliance-cards/dist/smart-appliance-stats-card.js`
 - Type: JavaScript Module
 
-### 4. Redémarrer HA et vider cache
+### 4. Restart HA and Clear Cache
 
-- Redémarrer Home Assistant
-- Vider cache navigateur (Ctrl+Shift+R)
+- Restart Home Assistant
+- Clear browser cache (Ctrl+Shift+R)
 
 ---
 
-## Utilisation Rapide
+## Quick Usage
 
-### Ajouter une carte
+### Add a Card
 
-Dans un dashboard:
+In a dashboard:
 1. Edit Dashboard
 2. Add Card
-3. Chercher "Smart Appliance"
+3. Search for "Smart Appliance"
 
-### Configuration minimale
+### Minimal Configuration
 
 ```yaml
 type: custom:smart-appliance-cycle-card
@@ -59,15 +59,13 @@ entity: sensor.washing_machine_state
 
 ---
 
-## Documentation Complète
+## Full Documentation
 
-- **README.md** - Guide utilisateur complet
-- **BUILD_INSTRUCTIONS.md** - Instructions détaillées
-- **DEVELOPMENT_SUMMARY.md** - Détails techniques
-- **examples/** - Exemples de configuration
+- **README.md** - Complete user guide
+- **examples/** - Configuration examples
 
 ---
 
 **Version**: 0.4.0  
-**Date**: 20 octobre 2025  
-**Statut**: ✅ Prêt à l'emploi
+**Date**: October 20, 2025  
+**Status**: ✅ Ready to use
