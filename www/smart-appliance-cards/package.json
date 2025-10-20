@@ -1,0 +1,47 @@
+{
+  "name": "smart-appliance-cards",
+  "version": "0.4.0",
+  "description": "Custom Lovelace cards for Smart Appliance Monitor - Home Assistant",
+  "main": "dist/smart-appliance-cycle-card.js",
+  "scripts": {
+    "build": "rollup -c",
+    "watch": "rollup -c -w",
+    "dev": "rollup -c -w",
+    "lint": "eslint src/**/*.js",
+    "format": "prettier --write src/**/*.js",
+    "clean": "rm -rf dist/*.js dist/*.js.map"
+  },
+  "keywords": [
+    "home-assistant",
+    "lovelace",
+    "custom-card",
+    "smart-appliance",
+    "monitoring",
+    "energy",
+    "power"
+  ],
+  "author": "Smart Appliance Monitor Team",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/legaetan/ha-smart_appliance_monitor"
+  },
+  "dependencies": {
+    "lit": "^3.1.0",
+    "chart.js": "^4.4.0"
+  },
+  "devDependencies": {
+    "@babel/core": "^7.23.5",
+    "@babel/preset-env": "^7.23.5",
+    "@rollup/plugin-babel": "^6.0.4",
+    "@rollup/plugin-commonjs": "^25.0.7",
+    "@rollup/plugin-node-resolve": "^15.2.3",
+    "@rollup/plugin-terser": "^0.4.4",
+    "eslint": "^8.55.0",
+    "prettier": "^3.1.0",
+    "rollup": "^4.6.1"
+  },
+  "files": [
+    "dist/*.js"
+  ]
+}
