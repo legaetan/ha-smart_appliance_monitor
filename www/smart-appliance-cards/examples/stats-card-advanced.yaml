@@ -1,0 +1,142 @@
+# Smart Appliance Stats Card - Advanced Example
+# Full configuration with all options
+
+type: custom:smart-appliance-stats-card
+entity: sensor.washing_machine_state
+
+# Customization
+name: Washing Machine Statistics    # Override auto-detected name
+icon: mdi:chart-box                  # Custom icon (default: mdi:chart-box)
+
+# Tab settings
+default_tab: today          # Initial tab: today | week | month (default: today)
+
+# Features
+show_trends: true           # Show trend indicators with arrows (default: true)
+show_efficiency: true       # Show efficiency metrics section (default: true)
+
+# Chart settings (future feature)
+chart_type: bar             # bar | line (default: bar)
+
+# Theme
+theme: auto                 # auto | light | dark (default: auto)
+
+---
+# Multiple Stats Cards Example - Dashboard Overview
+
+type: vertical-stack
+cards:
+  # Washing Machine Stats
+  - type: custom:smart-appliance-stats-card
+    entity: sensor.washing_machine_state
+    name: Washing Machine
+    default_tab: today
+    show_trends: true
+    show_efficiency: true
+  
+  # Dishwasher Stats
+  - type: custom:smart-appliance-stats-card
+    entity: sensor.dishwasher_state
+    name: Dishwasher
+    default_tab: week
+    show_trends: true
+    show_efficiency: false
+
+---
+# Combined Cycle + Stats Layout
+
+type: horizontal-stack
+cards:
+  # Left: Current cycle status
+  - type: custom:smart-appliance-cycle-card
+    entity: sensor.washing_machine_state
+    show_power_graph: true
+    show_action_buttons: true
+  
+  # Right: Statistics
+  - type: custom:smart-appliance-stats-card
+    entity: sensor.washing_machine_state
+    default_tab: today
+    show_trends: true
+
+---
+# Complete Appliance Dashboard
+
+type: vertical-stack
+cards:
+  # Header
+  - type: markdown
+    content: |
+      # 🏠 Smart Appliances
+      Monitor and track your appliances
+  
+  # Current Status Cards
+  - type: grid
+    columns: 2
+    cards:
+      - type: custom:smart-appliance-cycle-card
+        entity: sensor.washing_machine_state
+      - type: custom:smart-appliance-cycle-card
+        entity: sensor.dishwasher_state
+  
+  # Statistics Cards
+  - type: grid
+    columns: 2
+    cards:
+      - type: custom:smart-appliance-stats-card
+        entity: sensor.washing_machine_state
+        default_tab: today
+      - type: custom:smart-appliance-stats-card
+        entity: sensor.dishwasher_state
+        default_tab: week
+
+---
+# Tabbed View - Multiple Appliances
+
+type: custom:vertical-stack-in-card
+cards:
+  # Tabs
+  - type: entities
+    entities:
+      - entity: input_select.appliance_view
+        name: Select Appliance
+  
+  # Conditional cards based on selection
+  - type: conditional
+    conditions:
+      - entity: input_select.appliance_view
+        state: washing_machine
+    card:
+      type: vertical-stack
+      cards:
+        - type: custom:smart-appliance-cycle-card
+          entity: sensor.washing_machine_state
+        - type: custom:smart-appliance-stats-card
+          entity: sensor.washing_machine_state
+  
+  - type: conditional
+    conditions:
+      - entity: input_select.appliance_view
+        state: dishwasher
+    card:
+      type: vertical-stack
+      cards:
+        - type: custom:smart-appliance-cycle-card
+          entity: sensor.dishwasher_state
+        - type: custom:smart-appliance-stats-card
+          entity: sensor.dishwasher_state
+
+---
+# Compact Mobile View
+
+type: vertical-stack
+cards:
+  - type: custom:smart-appliance-cycle-card
+    entity: sensor.washing_machine_state
+    show_power_graph: false
+    show_action_buttons: true
+  
+  - type: custom:smart-appliance-stats-card
+    entity: sensor.washing_machine_state
+    default_tab: today
+    show_efficiency: false

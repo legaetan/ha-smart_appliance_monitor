@@ -1,0 +1,11 @@
+# Smart Appliance Stats Card - Basic Example
+# Minimal configuration for quick setup
+
+type: custom:smart-appliance-stats-card
+entity: sensor.washing_machine_state
+
+# That's it! The card will auto-detect:
+# - Appliance name from entity
+# - Appliance type (washing machine)
+# - Terminology (cycle vs session)
+# - All related statistics entities
