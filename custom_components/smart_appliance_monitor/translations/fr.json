@@ -9,6 +9,7 @@
           "appliance_type": "Type d'appareil",
           "power_sensor": "Capteur de puissance",
           "energy_sensor": "Capteur d'énergie",
+          "price_entity": "Entité du prix (optionnel)",
           "price_kwh": "Prix du kWh (€)"
         },
         "data_description": {
@@ -16,7 +17,8 @@
           "appliance_type": "Type d'appareil électroménager",
           "power_sensor": "Capteur de puissance de la prise connectée (W)",
           "energy_sensor": "Capteur d'énergie de la prise connectée (kWh)",
-          "price_kwh": "Coût de l'électricité par kWh"
+          "price_entity": "Entité input_number ou sensor pour le prix dynamique (laissez vide pour utiliser une valeur fixe)",
+          "price_kwh": "Coût de l'électricité par kWh (utilisé si aucune entité n'est sélectionnée)"
         }
       }
     },

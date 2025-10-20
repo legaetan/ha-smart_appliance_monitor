@@ -16,17 +16,20 @@ from .const import (
     CONF_POWER_SENSOR,
     CONF_ENERGY_SENSOR,
     CONF_PRICE_KWH,
+    CONF_PRICE_ENTITY,
     CONF_START_THRESHOLD,
     CONF_STOP_THRESHOLD,
     CONF_START_DELAY,
     CONF_STOP_DELAY,
     CONF_ENABLE_ALERT_DURATION,
     CONF_ALERT_DURATION,
+    APPLIANCE_PROFILES,
     DEFAULT_START_THRESHOLD,
     DEFAULT_STOP_THRESHOLD,
     DEFAULT_START_DELAY,
     DEFAULT_STOP_DELAY,
     DEFAULT_ALERT_DURATION,
+    DEFAULT_PRICE_KWH,
     EVENT_CYCLE_STARTED,
     EVENT_CYCLE_FINISHED,
     EVENT_ALERT_DURATION,
@@ -54,20 +57,34 @@ class SmartApplianceCoordinator(DataUpdateCoordinator):
         self.appliance_type = entry.data[CONF_APPLIANCE_TYPE]
         self.power_sensor = entry.data[CONF_POWER_SENSOR]
         self.energy_sensor = entry.data[CONF_ENERGY_SENSOR]
-        self.price_kwh = entry.data[CONF_PRICE_KWH]
         
-        # Récupération des options (avec valeurs par défaut)
+        # Prix : entité ou valeur fixe
+        self.price_entity = entry.data.get(CONF_PRICE_ENTITY)
+        self.price_kwh_fixed = entry.data.get(CONF_PRICE_KWH, DEFAULT_PRICE_KWH)
+        
+        # Récupérer le profil de l'appareil
+        profile = APPLIANCE_PROFILES.get(
+            self.appliance_type, APPLIANCE_PROFILES["other"]
+        )
+        
+        # Récupération des options (avec valeurs par défaut du profil)
         self.start_threshold = entry.options.get(
-            CONF_START_THRESHOLD, DEFAULT_START_THRESHOLD
+            CONF_START_THRESHOLD, profile["start_threshold"]
         )
         self.stop_threshold = entry.options.get(
-            CONF_STOP_THRESHOLD, DEFAULT_STOP_THRESHOLD
+            CONF_STOP_THRESHOLD, profile["stop_threshold"]
         )
-        self.start_delay = entry.options.get(CONF_START_DELAY, DEFAULT_START_DELAY)
-        self.stop_delay = entry.options.get(CONF_STOP_DELAY, DEFAULT_STOP_DELAY)
+        self.start_delay = entry.options.get(
+            CONF_START_DELAY, profile["start_delay"]
+        )
+        self.stop_delay = entry.options.get(
+            CONF_STOP_DELAY, profile["stop_delay"]
+        )
         
         enable_alert = entry.options.get(CONF_ENABLE_ALERT_DURATION, False)
-        alert_duration = entry.options.get(CONF_ALERT_DURATION, DEFAULT_ALERT_DURATION)
+        alert_duration = entry.options.get(
+            CONF_ALERT_DURATION, profile["alert_duration"]
+        )
         
         # Machine à états
         self.state_machine = CycleStateMachine(
@@ -235,7 +252,10 @@ class SmartApplianceCoordinator(DataUpdateCoordinator):
         cycle = self.state_machine.last_cycle
         duration = cycle.get("duration", 0)
         energy = cycle.get("energy", 0)
-        cost = energy * self.price_kwh
+        
+        # Récupérer le prix actuel
+        price_kwh = self._get_current_price()
+        cost = energy * price_kwh
         
         _LOGGER.info(
             "Cycle terminé pour '%s' - Durée: %.1f min, Énergie: %.3f kWh, Coût: %.2f €",
@@ -336,4 +356,33 @@ class SmartApplianceCoordinator(DataUpdateCoordinator):
         )
         self.notifications_enabled = enabled
         self.notifier.set_enabled(enabled)
+    
+    def _get_current_price(self) -> float:
+        """Récupère le prix actuel du kWh.
+        
+        Si une entité est configurée, utilise sa valeur.
+        Sinon, utilise la valeur fixe configurée.
+        
+        Returns:
+            Prix du kWh en €
+        """
+        if self.price_entity:
+            # Récupérer la valeur depuis l'entité
+            price_state = self.hass.states.get(self.price_entity)
+            if price_state and price_state.state not in ["unavailable", "unknown"]:
+                try:
+                    return float(price_state.state)
+                except (ValueError, TypeError):
+                    _LOGGER.warning(
+                        "Impossible de lire le prix depuis %s, utilisation de la valeur fixe",
+                        self.price_entity,
+                    )
+        
+        # Valeur fixe par défaut
+        return self.price_kwh_fixed
+    
+    @property
+    def price_kwh(self) -> float:
+        """Propriété pour accéder au prix actuel."""
+        return self._get_current_price()
 

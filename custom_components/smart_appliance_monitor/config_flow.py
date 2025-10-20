@@ -20,6 +20,7 @@ from .const import (
     CONF_POWER_SENSOR,
     CONF_ENERGY_SENSOR,
     CONF_PRICE_KWH,
+    CONF_PRICE_ENTITY,
     CONF_START_THRESHOLD,
     CONF_STOP_THRESHOLD,
     CONF_START_DELAY,
@@ -27,6 +28,7 @@ from .const import (
     CONF_ENABLE_ALERT_DURATION,
     CONF_ALERT_DURATION,
     APPLIANCE_TYPES,
+    APPLIANCE_PROFILES,
     DEFAULT_PRICE_KWH,
     DEFAULT_START_THRESHOLD,
     DEFAULT_STOP_THRESHOLD,
@@ -83,6 +85,11 @@ class SmartApplianceMonitorConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
                         domain="sensor",
                     )
                 ),
+                vol.Optional(CONF_PRICE_ENTITY): selector.EntitySelector(
+                    selector.EntitySelectorConfig(
+                        domain=["sensor", "input_number"],
+                    )
+                ),
                 vol.Optional(CONF_PRICE_KWH, default=DEFAULT_PRICE_KWH): cv.positive_float,
             }
         )
@@ -115,30 +122,34 @@ class SmartApplianceMonitorOptionsFlowHandler(config_entries.OptionsFlow):
         if user_input is not None:
             return self.async_create_entry(title="", data=user_input)
 
+        # Récupérer le profil de l'appareil pour les valeurs par défaut
+        appliance_type = self.config_entry.data.get(CONF_APPLIANCE_TYPE, "other")
+        profile = APPLIANCE_PROFILES.get(appliance_type, APPLIANCE_PROFILES["other"])
+
         options_schema = vol.Schema(
             {
                 vol.Optional(
                     CONF_START_THRESHOLD,
                     default=self.config_entry.options.get(
-                        CONF_START_THRESHOLD, DEFAULT_START_THRESHOLD
+                        CONF_START_THRESHOLD, profile["start_threshold"]
                     ),
                 ): vol.All(vol.Coerce(int), vol.Range(min=1, max=5000)),
                 vol.Optional(
                     CONF_STOP_THRESHOLD,
                     default=self.config_entry.options.get(
-                        CONF_STOP_THRESHOLD, DEFAULT_STOP_THRESHOLD
+                        CONF_STOP_THRESHOLD, profile["stop_threshold"]
                     ),
                 ): vol.All(vol.Coerce(int), vol.Range(min=1, max=100)),
                 vol.Optional(
                     CONF_START_DELAY,
                     default=self.config_entry.options.get(
-                        CONF_START_DELAY, DEFAULT_START_DELAY
+                        CONF_START_DELAY, profile["start_delay"]
                     ),
                 ): vol.All(vol.Coerce(int), vol.Range(min=10, max=600)),
                 vol.Optional(
                     CONF_STOP_DELAY,
                     default=self.config_entry.options.get(
-                        CONF_STOP_DELAY, DEFAULT_STOP_DELAY
+                        CONF_STOP_DELAY, profile["stop_delay"]
                     ),
                 ): vol.All(vol.Coerce(int), vol.Range(min=10, max=1800)),
                 vol.Optional(
@@ -150,7 +161,7 @@ class SmartApplianceMonitorOptionsFlowHandler(config_entries.OptionsFlow):
                 vol.Optional(
                     CONF_ALERT_DURATION,
                     default=self.config_entry.options.get(
-                        CONF_ALERT_DURATION, DEFAULT_ALERT_DURATION
+                        CONF_ALERT_DURATION, profile["alert_duration"]
                     ),
                 ): vol.All(vol.Coerce(int), vol.Range(min=1800, max=21600)),
             }

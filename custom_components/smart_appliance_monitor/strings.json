@@ -9,6 +9,7 @@
           "appliance_type": "Appliance Type",
           "power_sensor": "Power Sensor",
           "energy_sensor": "Energy Sensor",
+          "price_entity": "Price Entity (optional)",
           "price_kwh": "Price per kWh (€)"
         },
         "data_description": {
@@ -16,7 +17,8 @@
           "appliance_type": "Type of appliance",
           "power_sensor": "Power sensor from the smart plug (W)",
           "energy_sensor": "Energy sensor from the smart plug (kWh)",
-          "price_kwh": "Cost of electricity per kWh"
+          "price_entity": "Input_number or sensor entity for dynamic pricing (leave empty to use fixed value)",
+          "price_kwh": "Cost of electricity per kWh (used if no entity is selected)"
         }
       }
     },
