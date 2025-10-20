@@ -1,13 +1,13 @@
 {
   "domain": "smart_appliance_monitor",
   "name": "Smart Appliance Monitor",
-  "codeowners": ["@legaetan"],
-  "config_flow": true,
-  "dependencies": ["recorder"],
+  "version": "0.0.1",
   "documentation": "https://github.com/legaetan/ha-smart_appliance_monitor",
-  "iot_class": "local_polling",
   "issue_tracker": "https://github.com/legaetan/ha-smart_appliance_monitor/issues",
   "requirements": [],
-  "version": "0.0.1"
+  "codeowners": ["@legaetan"],
+  "config_flow": true,
+  "iot_class": "local_polling",
+  "dependencies": ["recorder"]
 }
 

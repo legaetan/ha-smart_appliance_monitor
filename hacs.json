@@ -1,0 +1,9 @@
+{
+  "name": "Smart Appliance Monitor",
+  "render_readme": true,
+  "country": ["FR"],
+  "homeassistant": "2023.8.0",
+  "content_in_root": false,
+  "filename": "smart_appliance_monitor"
+}
+
