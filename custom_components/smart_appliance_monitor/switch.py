@@ -37,6 +37,9 @@ async def async_setup_entry(
         SmartApplianceNotificationCycleFinishedSwitch(coordinator),
         SmartApplianceNotificationAlertDurationSwitch(coordinator),
         SmartApplianceNotificationUnpluggedSwitch(coordinator),
+        SmartApplianceAutoShutdownSwitch(coordinator),
+        SmartApplianceEnergyLimitsSwitch(coordinator),
+        SmartApplianceSchedulingSwitch(coordinator),
     ]
     
     async_add_entities(entities)
@@ -261,5 +264,131 @@ class SmartApplianceNotificationUnpluggedSwitch(SmartApplianceEntity, SwitchEnti
     async def async_turn_off(self, **kwargs: Any) -> None:
         """Turn off notification type."""
         self.coordinator.notifier.set_notification_type_enabled(NOTIF_TYPE_UNPLUGGED, False)
+        self.async_write_ha_state()
+
+
+class SmartApplianceAutoShutdownSwitch(SmartApplianceEntity, SwitchEntity):
+    """Switch pour activer/désactiver l'extinction automatique."""
+
+    _attr_translation_key = "auto_shutdown"
+
+    def __init__(self, coordinator: SmartApplianceCoordinator) -> None:
+        """Initialize the switch."""
+        super().__init__(coordinator, "auto_shutdown")
+        self._attr_name = "Extinction automatique"
+        self._attr_entity_registry_enabled_default = False
+    
+    @property
+    def icon(self) -> str:
+        """Return the icon to use in the frontend."""
+        return "mdi:power-sleep" if self.is_on else "mdi:power-off"
+    
+    @property
+    def is_on(self) -> bool:
+        """Return True if auto-shutdown is enabled."""
+        return self.coordinator.auto_shutdown_enabled
+    
+    async def async_turn_on(self, **kwargs: Any) -> None:
+        """Turn on auto-shutdown."""
+        _LOGGER.info(
+            "Activation de l'extinction automatique pour '%s'",
+            self.coordinator.appliance_name,
+        )
+        self.coordinator.set_auto_shutdown_enabled(True)
+        await self.coordinator.async_request_refresh()
+        self.async_write_ha_state()
+    
+    async def async_turn_off(self, **kwargs: Any) -> None:
+        """Turn off auto-shutdown."""
+        _LOGGER.info(
+            "Désactivation de l'extinction automatique pour '%s'",
+            self.coordinator.appliance_name,
+        )
+        self.coordinator.set_auto_shutdown_enabled(False)
+        await self.coordinator.async_request_refresh()
+        self.async_write_ha_state()
+
+
+class SmartApplianceEnergyLimitsSwitch(SmartApplianceEntity, SwitchEntity):
+    """Switch pour activer/désactiver les limites énergétiques."""
+
+    _attr_translation_key = "energy_limits"
+
+    def __init__(self, coordinator: SmartApplianceCoordinator) -> None:
+        """Initialize the switch."""
+        super().__init__(coordinator, "energy_limits")
+        self._attr_name = "Limites énergétiques"
+        self._attr_entity_registry_enabled_default = False
+    
+    @property
+    def icon(self) -> str:
+        """Return the icon to use in the frontend."""
+        return "mdi:gauge-full" if self.is_on else "mdi:gauge-empty"
+    
+    @property
+    def is_on(self) -> bool:
+        """Return True if energy limits are enabled."""
+        return self.coordinator.energy_limits_enabled
+    
+    async def async_turn_on(self, **kwargs: Any) -> None:
+        """Turn on energy limits."""
+        _LOGGER.info(
+            "Activation des limites énergétiques pour '%s'",
+            self.coordinator.appliance_name,
+        )
+        self.coordinator.set_energy_limits_enabled(True)
+        await self.coordinator.async_request_refresh()
+        self.async_write_ha_state()
+    
+    async def async_turn_off(self, **kwargs: Any) -> None:
+        """Turn off energy limits."""
+        _LOGGER.info(
+            "Désactivation des limites énergétiques pour '%s'",
+            self.coordinator.appliance_name,
+        )
+        self.coordinator.set_energy_limits_enabled(False)
+        await self.coordinator.async_request_refresh()
+        self.async_write_ha_state()
+
+
+class SmartApplianceSchedulingSwitch(SmartApplianceEntity, SwitchEntity):
+    """Switch pour activer/désactiver la planification."""
+
+    _attr_translation_key = "scheduling"
+
+    def __init__(self, coordinator: SmartApplianceCoordinator) -> None:
+        """Initialize the switch."""
+        super().__init__(coordinator, "scheduling")
+        self._attr_name = "Planification"
+        self._attr_entity_registry_enabled_default = False
+    
+    @property
+    def icon(self) -> str:
+        """Return the icon to use in the frontend."""
+        return "mdi:calendar-clock" if self.is_on else "mdi:calendar-remove"
+    
+    @property
+    def is_on(self) -> bool:
+        """Return True if scheduling is enabled."""
+        return self.coordinator.scheduling_enabled
+    
+    async def async_turn_on(self, **kwargs: Any) -> None:
+        """Turn on scheduling."""
+        _LOGGER.info(
+            "Activation de la planification pour '%s'",
+            self.coordinator.appliance_name,
+        )
+        self.coordinator.set_scheduling_enabled(True)
+        await self.coordinator.async_request_refresh()
+        self.async_write_ha_state()
+    
+    async def async_turn_off(self, **kwargs: Any) -> None:
+        """Turn off scheduling."""
+        _LOGGER.info(
+            "Désactivation de la planification pour '%s'",
+            self.coordinator.appliance_name,
+        )
+        self.coordinator.set_scheduling_enabled(False)
+        await self.coordinator.async_request_refresh()
         self.async_write_ha_state()
 

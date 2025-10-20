@@ -31,10 +31,27 @@ from .const import (
     CONF_NOTIFICATION_SERVICES,
     CONF_NOTIFICATION_TYPES,
     CONF_CUSTOM_NOTIFY_SERVICE,
+    CONF_ENABLE_AUTO_SHUTDOWN,
+    CONF_AUTO_SHUTDOWN_DELAY,
+    CONF_AUTO_SHUTDOWN_ENTITY,
+    CONF_ENABLE_ENERGY_LIMITS,
+    CONF_ENERGY_LIMIT_CYCLE,
+    CONF_ENERGY_LIMIT_DAILY,
+    CONF_ENERGY_LIMIT_MONTHLY,
+    CONF_COST_BUDGET_MONTHLY,
+    CONF_ENABLE_SCHEDULING,
+    CONF_ALLOWED_HOURS_START,
+    CONF_ALLOWED_HOURS_END,
+    CONF_BLOCKED_DAYS,
+    CONF_SCHEDULING_MODE,
+    CONF_ENABLE_ANOMALY_DETECTION,
     APPLIANCE_TYPES,
     APPLIANCE_PROFILES,
     NOTIFICATION_SERVICES,
     NOTIFICATION_TYPES,
+    SCHEDULING_MODE_NOTIFICATION,
+    SCHEDULING_MODE_STRICT,
+    DAYS_OF_WEEK,
     DEFAULT_PRICE_KWH,
     DEFAULT_START_THRESHOLD,
     DEFAULT_STOP_THRESHOLD,
@@ -42,6 +59,8 @@ from .const import (
     DEFAULT_STOP_DELAY,
     DEFAULT_ALERT_DURATION,
     DEFAULT_UNPLUGGED_TIMEOUT,
+    DEFAULT_AUTO_SHUTDOWN_DELAY,
+    DEFAULT_SCHEDULING_MODE,
     DEFAULT_NOTIFICATION_SERVICES,
     DEFAULT_NOTIFICATION_TYPES,
 )
@@ -257,11 +276,15 @@ class SmartApplianceMonitorOptionsFlowHandler(config_entries.OptionsFlow):
             if "alert_duration_hours" in user_input:
                 self._options[CONF_ALERT_DURATION] = int(user_input["alert_duration_hours"] * 3600)
             
-            # Sauvegarder enable_alert_duration et expert_mode
+            # Sauvegarder enable_alert_duration, enable_anomaly_detection
             self._options[CONF_ENABLE_ALERT_DURATION] = user_input.get(CONF_ENABLE_ALERT_DURATION, False)
+            self._options[CONF_ENABLE_ANOMALY_DETECTION] = user_input.get(CONF_ENABLE_ANOMALY_DETECTION, False)
             
+            # Si mode avancé (energy/scheduling) activé
+            if user_input.get("configure_advanced", False):
+                return await self.async_step_energy_management()
             # Si mode expert activé, aller à l'étape expert
-            if user_input.get("expert_mode", False):
+            elif user_input.get("expert_mode", False):
                 self._options["expert_mode"] = True
                 return await self.async_step_expert()
             else:
@@ -304,6 +327,16 @@ class SmartApplianceMonitorOptionsFlowHandler(config_entries.OptionsFlow):
                     "alert_duration_hours",
                     default=alert_duration_hours,
                 ): vol.All(vol.Coerce(float), vol.Range(min=0.5, max=24)),
+                vol.Optional(
+                    CONF_ENABLE_ANOMALY_DETECTION,
+                    default=self.config_entry.options.get(
+                        CONF_ENABLE_ANOMALY_DETECTION, False
+                    ),
+                ): cv.boolean,
+                vol.Optional(
+                    "configure_advanced",
+                    default=False,
+                ): cv.boolean,
                 vol.Optional(
                     "expert_mode",
                     default=False,
@@ -380,6 +413,12 @@ class SmartApplianceMonitorOptionsFlowHandler(config_entries.OptionsFlow):
             if "unplugged_timeout_minutes" in user_input:
                 self._options[CONF_UNPLUGGED_TIMEOUT] = user_input["unplugged_timeout_minutes"] * 60
             
+            # Auto-shutdown
+            self._options[CONF_ENABLE_AUTO_SHUTDOWN] = user_input.get(CONF_ENABLE_AUTO_SHUTDOWN, False)
+            if "auto_shutdown_delay_minutes" in user_input:
+                self._options[CONF_AUTO_SHUTDOWN_DELAY] = user_input["auto_shutdown_delay_minutes"] * 60
+            self._options[CONF_AUTO_SHUTDOWN_ENTITY] = user_input.get(CONF_AUTO_SHUTDOWN_ENTITY, "")
+            
             # Sauvegarder le service personnalisé
             self._options[CONF_CUSTOM_NOTIFY_SERVICE] = user_input.get(
                 CONF_CUSTOM_NOTIFY_SERVICE, ""
@@ -392,6 +431,9 @@ class SmartApplianceMonitorOptionsFlowHandler(config_entries.OptionsFlow):
         unplugged_timeout_minutes = self.config_entry.options.get(
             CONF_UNPLUGGED_TIMEOUT, DEFAULT_UNPLUGGED_TIMEOUT
         ) / 60
+        auto_shutdown_delay_minutes = self.config_entry.options.get(
+            CONF_AUTO_SHUTDOWN_DELAY, DEFAULT_AUTO_SHUTDOWN_DELAY
+        ) / 60
 
         options_schema = vol.Schema(
             {
@@ -403,11 +445,132 @@ class SmartApplianceMonitorOptionsFlowHandler(config_entries.OptionsFlow):
                     CONF_CUSTOM_NOTIFY_SERVICE,
                     default=self.config_entry.options.get(CONF_CUSTOM_NOTIFY_SERVICE, ""),
                 ): str,
+                vol.Optional(
+                    CONF_ENABLE_AUTO_SHUTDOWN,
+                    default=self.config_entry.options.get(CONF_ENABLE_AUTO_SHUTDOWN, False),
+                ): cv.boolean,
+                vol.Optional(
+                    "auto_shutdown_delay_minutes",
+                    default=auto_shutdown_delay_minutes,
+                ): vol.All(vol.Coerce(float), vol.Range(min=5, max=60)),
+                vol.Optional(
+                    CONF_AUTO_SHUTDOWN_ENTITY,
+                    default=self.config_entry.options.get(CONF_AUTO_SHUTDOWN_ENTITY, ""),
+                ): selector.EntitySelector(
+                    selector.EntitySelectorConfig(
+                        domain=["switch", "light"],
+                    )
+                ),
             }
         )
 
         return self.async_show_form(
             step_id="expert",
+            data_schema=options_schema,
+        )
+
+    async def async_step_energy_management(
+        self, user_input: dict[str, Any] | None = None
+    ) -> FlowResult:
+        """Step: Energy Management (optional)."""
+        if user_input is not None:
+            # Sauvegarder les options de gestion énergétique
+            self._options[CONF_ENABLE_ENERGY_LIMITS] = user_input.get(CONF_ENABLE_ENERGY_LIMITS, False)
+            self._options[CONF_ENERGY_LIMIT_CYCLE] = user_input.get(CONF_ENERGY_LIMIT_CYCLE, 0)
+            self._options[CONF_ENERGY_LIMIT_DAILY] = user_input.get(CONF_ENERGY_LIMIT_DAILY, 0)
+            self._options[CONF_ENERGY_LIMIT_MONTHLY] = user_input.get(CONF_ENERGY_LIMIT_MONTHLY, 0)
+            self._options[CONF_COST_BUDGET_MONTHLY] = user_input.get(CONF_COST_BUDGET_MONTHLY, 0)
+            
+            # Passer à l'étape scheduling
+            return await self.async_step_scheduling()
+
+        options_schema = vol.Schema(
+            {
+                vol.Optional(
+                    CONF_ENABLE_ENERGY_LIMITS,
+                    default=self.config_entry.options.get(CONF_ENABLE_ENERGY_LIMITS, False),
+                ): cv.boolean,
+                vol.Optional(
+                    CONF_ENERGY_LIMIT_CYCLE,
+                    default=self.config_entry.options.get(CONF_ENERGY_LIMIT_CYCLE, 0),
+                ): vol.All(vol.Coerce(float), vol.Range(min=0, max=100)),
+                vol.Optional(
+                    CONF_ENERGY_LIMIT_DAILY,
+                    default=self.config_entry.options.get(CONF_ENERGY_LIMIT_DAILY, 0),
+                ): vol.All(vol.Coerce(float), vol.Range(min=0, max=500)),
+                vol.Optional(
+                    CONF_ENERGY_LIMIT_MONTHLY,
+                    default=self.config_entry.options.get(CONF_ENERGY_LIMIT_MONTHLY, 0),
+                ): vol.All(vol.Coerce(float), vol.Range(min=0, max=10000)),
+                vol.Optional(
+                    CONF_COST_BUDGET_MONTHLY,
+                    default=self.config_entry.options.get(CONF_COST_BUDGET_MONTHLY, 0),
+                ): vol.All(vol.Coerce(float), vol.Range(min=0, max=1000)),
+            }
+        )
+
+        return self.async_show_form(
+            step_id="energy_management",
+            data_schema=options_schema,
+        )
+
+    async def async_step_scheduling(
+        self, user_input: dict[str, Any] | None = None
+    ) -> FlowResult:
+        """Step: Scheduling (optional)."""
+        if user_input is not None:
+            # Sauvegarder les options de planification
+            self._options[CONF_ENABLE_SCHEDULING] = user_input.get(CONF_ENABLE_SCHEDULING, False)
+            self._options[CONF_ALLOWED_HOURS_START] = user_input.get(CONF_ALLOWED_HOURS_START, "00:00")
+            self._options[CONF_ALLOWED_HOURS_END] = user_input.get(CONF_ALLOWED_HOURS_END, "23:59")
+            self._options[CONF_BLOCKED_DAYS] = user_input.get(CONF_BLOCKED_DAYS, [])
+            self._options[CONF_SCHEDULING_MODE] = user_input.get(CONF_SCHEDULING_MODE, DEFAULT_SCHEDULING_MODE)
+            
+            # Si mode expert était activé, aller à l'étape expert, sinon notifications
+            if self._options.get("expert_mode", False):
+                return await self.async_step_expert()
+            else:
+                return await self.async_step_notifications()
+
+        options_schema = vol.Schema(
+            {
+                vol.Optional(
+                    CONF_ENABLE_SCHEDULING,
+                    default=self.config_entry.options.get(CONF_ENABLE_SCHEDULING, False),
+                ): cv.boolean,
+                vol.Optional(
+                    CONF_ALLOWED_HOURS_START,
+                    default=self.config_entry.options.get(CONF_ALLOWED_HOURS_START, "00:00"),
+                ): str,
+                vol.Optional(
+                    CONF_ALLOWED_HOURS_END,
+                    default=self.config_entry.options.get(CONF_ALLOWED_HOURS_END, "23:59"),
+                ): str,
+                vol.Optional(
+                    CONF_BLOCKED_DAYS,
+                    default=self.config_entry.options.get(CONF_BLOCKED_DAYS, []),
+                ): selector.SelectSelector(
+                    selector.SelectSelectorConfig(
+                        options=DAYS_OF_WEEK,
+                        multiple=True,
+                        mode=selector.SelectSelectorMode.LIST,
+                        translation_key="day_of_week",
+                    )
+                ),
+                vol.Optional(
+                    CONF_SCHEDULING_MODE,
+                    default=self.config_entry.options.get(CONF_SCHEDULING_MODE, DEFAULT_SCHEDULING_MODE),
+                ): selector.SelectSelector(
+                    selector.SelectSelectorConfig(
+                        options=[SCHEDULING_MODE_NOTIFICATION, SCHEDULING_MODE_STRICT],
+                        translation_key="scheduling_mode",
+                    )
+                ),
+            }
+        )
+
+        return self.async_show_form(
+            step_id="scheduling",
             data_schema=options_schema,
         )
 

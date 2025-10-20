@@ -15,6 +15,11 @@ from .const import (
     NOTIF_TYPE_CYCLE_FINISHED,
     NOTIF_TYPE_ALERT_DURATION,
     NOTIF_TYPE_UNPLUGGED,
+    NOTIF_TYPE_AUTO_SHUTDOWN,
+    NOTIF_TYPE_ENERGY_LIMIT,
+    NOTIF_TYPE_BUDGET,
+    NOTIF_TYPE_SCHEDULE,
+    NOTIF_TYPE_ANOMALY,
 )
 from .device import get_appliance_emoji
 
@@ -66,6 +71,11 @@ class SmartApplianceNotifier:
             NOTIF_TYPE_CYCLE_FINISHED: True,
             NOTIF_TYPE_ALERT_DURATION: True,
             NOTIF_TYPE_UNPLUGGED: True,
+            NOTIF_TYPE_AUTO_SHUTDOWN: True,
+            NOTIF_TYPE_ENERGY_LIMIT: True,
+            NOTIF_TYPE_BUDGET: True,
+            NOTIF_TYPE_SCHEDULE: True,
+            NOTIF_TYPE_ANOMALY: True,
         }
     
     def set_notification_type_enabled(self, notif_type: str, enabled: bool) -> None:
@@ -268,6 +278,166 @@ class SmartApplianceNotifier:
             self.appliance_name,
             time_at_zero,
         )
+    
+    async def notify_auto_shutdown(self, delay_minutes: float) -> None:
+        """Envoie une notification lorsque l'extinction automatique se déclenche.
+        
+        Args:
+            delay_minutes: Délai d'inactivité en minutes
+        """
+        if not self._is_notification_type_enabled(NOTIF_TYPE_AUTO_SHUTDOWN):
+            _LOGGER.debug("Notifications d'auto-shutdown désactivées pour '%s'", self.appliance_name)
+            return
+        
+        title = f"💤 {self.appliance_name} - Extinction automatique"
+        message = (
+            f"Le {self.appliance_name.lower()} a été éteint automatiquement.\n\n"
+            f"⏱️ Inactif depuis {int(delay_minutes)} minutes."
+        )
+        
+        await self._send_notification(
+            notif_type=NOTIF_TYPE_AUTO_SHUTDOWN,
+            title=title,
+            message=message,
+            data={
+                "notification_icon": "mdi:power-sleep",
+                "color": "#9C27B0",
+                "tag": f"smart_appliance_{self.appliance_name.lower()}_shutdown",
+                "delay_minutes": delay_minutes,
+            },
+        )
+        
+        _LOGGER.info("Notification d'extinction automatique envoyée pour '%s'", self.appliance_name)
+    
+    async def notify_energy_limit_exceeded(self, daily_energy: float, monthly_energy: float) -> None:
+        """Envoie une notification lorsqu'une limite énergétique est dépassée.
+        
+        Args:
+            daily_energy: Énergie journalière en kWh
+            monthly_energy: Énergie mensuelle en kWh
+        """
+        if not self._is_notification_type_enabled(NOTIF_TYPE_ENERGY_LIMIT):
+            _LOGGER.debug("Notifications de limite énergétique désactivées pour '%s'", self.appliance_name)
+            return
+        
+        title = f"⚡ {self.appliance_name} - Limite énergétique"
+        message = (
+            f"Le {self.appliance_name.lower()} a dépassé une limite énergétique.\n\n"
+            f"📊 Aujourd'hui : {daily_energy:.2f} kWh\n"
+            f"📅 Ce mois : {monthly_energy:.2f} kWh"
+        )
+        
+        await self._send_notification(
+            notif_type=NOTIF_TYPE_ENERGY_LIMIT,
+            title=title,
+            message=message,
+            data={
+                "notification_icon": "mdi:gauge-full",
+                "color": "#FF5722",
+                "tag": f"smart_appliance_{self.appliance_name.lower()}_energy_limit",
+                "daily_energy": daily_energy,
+                "monthly_energy": monthly_energy,
+            },
+        )
+        
+        _LOGGER.warning("Notification de limite énergétique envoyée pour '%s'", self.appliance_name)
+    
+    async def notify_budget_exceeded(self, monthly_cost: float, budget: float) -> None:
+        """Envoie une notification lorsque le budget mensuel est dépassé.
+        
+        Args:
+            monthly_cost: Coût mensuel actuel en €
+            budget: Budget mensuel configuré en €
+        """
+        if not self._is_notification_type_enabled(NOTIF_TYPE_BUDGET):
+            _LOGGER.debug("Notifications de budget désactivées pour '%s'", self.appliance_name)
+            return
+        
+        title = f"💰 {self.appliance_name} - Budget dépassé"
+        message = (
+            f"Le {self.appliance_name.lower()} a dépassé son budget mensuel.\n\n"
+            f"💸 Coût actuel : {monthly_cost:.2f} €\n"
+            f"🎯 Budget : {budget:.2f} €\n"
+            f"📈 Dépassement : {monthly_cost - budget:.2f} €"
+        )
+        
+        await self._send_notification(
+            notif_type=NOTIF_TYPE_BUDGET,
+            title=title,
+            message=message,
+            data={
+                "notification_icon": "mdi:cash-remove",
+                "color": "#F44336",
+                "tag": f"smart_appliance_{self.appliance_name.lower()}_budget",
+                "monthly_cost": monthly_cost,
+                "budget": budget,
+            },
+        )
+        
+        _LOGGER.warning("Notification de budget dépassé envoyée pour '%s'", self.appliance_name)
+    
+    async def notify_usage_out_of_schedule(self, allowed_start: str, allowed_end: str) -> None:
+        """Envoie une notification lorsque l'appareil est utilisé hors horaires.
+        
+        Args:
+            allowed_start: Heure de début autorisée (HH:MM)
+            allowed_end: Heure de fin autorisée (HH:MM)
+        """
+        if not self._is_notification_type_enabled(NOTIF_TYPE_SCHEDULE):
+            _LOGGER.debug("Notifications de planification désactivées pour '%s'", self.appliance_name)
+            return
+        
+        title = f"🕐 {self.appliance_name} - Hors horaire"
+        message = (
+            f"Le {self.appliance_name.lower()} est utilisé en dehors des horaires autorisés.\n\n"
+            f"⏰ Plage autorisée : {allowed_start} - {allowed_end}"
+        )
+        
+        await self._send_notification(
+            notif_type=NOTIF_TYPE_SCHEDULE,
+            title=title,
+            message=message,
+            data={
+                "notification_icon": "mdi:calendar-remove",
+                "color": "#FF9800",
+                "tag": f"smart_appliance_{self.appliance_name.lower()}_schedule",
+                "allowed_start": allowed_start,
+                "allowed_end": allowed_end,
+            },
+        )
+        
+        _LOGGER.warning("Notification hors horaire envoyée pour '%s'", self.appliance_name)
+    
+    async def notify_anomaly_detected(self, score: float) -> None:
+        """Envoie une notification lorsqu'une anomalie est détectée.
+        
+        Args:
+            score: Score d'anomalie (0-100)
+        """
+        if not self._is_notification_type_enabled(NOTIF_TYPE_ANOMALY):
+            _LOGGER.debug("Notifications d'anomalie désactivées pour '%s'", self.appliance_name)
+            return
+        
+        title = f"⚠️ {self.appliance_name} - Anomalie détectée"
+        message = (
+            f"Une anomalie a été détectée sur le {self.appliance_name.lower()}.\n\n"
+            f"📊 Score d'anomalie : {score:.1f}/100\n"
+            f"Vérifiez le fonctionnement de l'appareil."
+        )
+        
+        await self._send_notification(
+            notif_type=NOTIF_TYPE_ANOMALY,
+            title=title,
+            message=message,
+            data={
+                "notification_icon": "mdi:alert-circle",
+                "color": "#E91E63",
+                "tag": f"smart_appliance_{self.appliance_name.lower()}_anomaly",
+                "anomaly_score": score,
+            },
+        )
+        
+        _LOGGER.warning("Notification d'anomalie envoyée pour '%s' (score: %.1f)", self.appliance_name, score)
     
     async def _send_notification(
         self,

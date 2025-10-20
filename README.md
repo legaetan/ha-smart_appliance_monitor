@@ -11,18 +11,27 @@ Smart Appliance Monitor is a Home Assistant custom integration that automaticall
 
 ## Features
 
+### Core Features
 - **Automatic Cycle Detection** - Intelligent start/stop detection with configurable thresholds
 - **11 Appliance Types** - Optimized profiles for washing machines, dishwashers, dryers, ovens, water heaters, coffee makers, monitors, NAS, 3D printers, VMC, and more
 - **Smart Terminology** - Adaptive naming (cycle/session) based on appliance type for better UX
 - **Comprehensive Statistics** - Track duration, energy consumption, and cost per cycle/session
 - **Unplugged Detection** - Automatic detection when appliance is disconnected or powered off
 - **Advanced Notifications** - Multi-service support (Mobile App, Telegram, Persistent, Custom)
-- **Granular Notification Control** - Enable/disable by type (started, finished, alert, unplugged)
+- **Granular Notification Control** - Enable/disable by type (9 notification types available)
 - **Dynamic Pricing** - Support for variable electricity rates via Home Assistant entities
 - **Flexible Reconfiguration** - Modify all settings without losing historical data
-- **19 Entities per Appliance** - Sensors, binary sensors, switches for complete monitoring
-- **Custom Services** - Programmatic control via Home Assistant services
+- **30 Entities per Appliance** - Complete monitoring suite with sensors, binary sensors, switches
+- **Custom Services** - Programmatic control via Home Assistant services (7 services available)
 - **Bilingual** - Full interface in English and French
+
+### Advanced Features (v0.5.0)
+- **Auto-Shutdown** - Automatically turn off appliances after inactivity to save energy
+- **Energy Management** - Set limits and budgets for energy consumption (cycle, daily, monthly)
+- **Scheduling** - Define allowed usage hours and blocked days for optimal energy usage
+- **Anomaly Detection** - AI-powered detection of unusual consumption patterns
+- **Data Export** - Export statistics to CSV or JSON for external analysis
+- **Energy Dashboard Integration** - Native support for Home Assistant Energy Dashboard
 
 ## Supported Appliances
 
@@ -107,9 +116,9 @@ Or browse locally: [docs/wiki-github/](docs/wiki-github/)
 
 ## Entities Created
 
-For each configured appliance, the integration creates **19 entities**:
+For each configured appliance, the integration creates **up to 30 entities**:
 
-### Sensors (10)
+### Sensors (13)
 - **State** - Current appliance state (idle/running/finished)
 - **Cycle/Session Duration** - Duration of current cycle/session (adaptive naming)
 - **Cycle/Session Energy** - Energy consumed in current cycle/session
@@ -119,20 +128,30 @@ For each configured appliance, the integration creates **19 entities**:
 - **Last Cycle/Session Cost** - Cost of last completed cycle/session
 - **Daily Cycles/Sessions** - Number of cycles/sessions today (adaptive naming)
 - **Daily Cost** - Total cost today
+- **Daily Energy** - Total energy consumed today (kWh) ⚡ *NEW v0.5.0*
 - **Monthly Cost** - Total cost this month
+- **Monthly Energy** - Total energy consumed this month (kWh) ⚡ *NEW v0.5.0*
+- **Anomaly Score** - Real-time anomaly score (0-100%) *NEW v0.5.0 - Optional*
 
-### Binary Sensors (3)
+### Binary Sensors (7)
 - **Running** - Is appliance currently running
 - **Duration Alert** - Has cycle exceeded expected duration (optional)
 - **Unplugged** - Is appliance disconnected or powered off
+- **Energy Limit Exceeded** - Has any energy limit been exceeded *NEW v0.5.0 - Optional*
+- **Budget Exceeded** - Has monthly budget been exceeded *NEW v0.5.0 - Optional*
+- **Usage Allowed** - Is current usage within allowed schedule *NEW v0.5.0 - Optional*
+- **Anomaly Detected** - Is an anomaly currently detected *NEW v0.5.0 - Optional*
 
-### Switches (6)
+### Switches (9)
 - **Monitoring** - Enable/disable cycle monitoring
 - **Notifications** - Enable/disable all notifications
 - **Notify Cycle Started** - Enable/disable start notifications
 - **Notify Cycle Finished** - Enable/disable completion notifications
 - **Notify Alert Duration** - Enable/disable duration alerts
 - **Notify Unplugged** - Enable/disable unplugged alerts
+- **Auto Shutdown** - Enable/disable automatic shutdown *NEW v0.5.0 - Optional*
+- **Energy Limits** - Enable/disable energy limits monitoring *NEW v0.5.0 - Optional*
+- **Scheduling** - Enable/disable usage scheduling *NEW v0.5.0 - Optional*
 
 ### Buttons (1)
 - **Reset Statistics** - Clear all statistics and start fresh
@@ -147,6 +166,18 @@ Stop monitoring for a specific appliance.
 
 ### `smart_appliance_monitor.reset_statistics`
 Reset all statistics for a specific appliance.
+
+### `smart_appliance_monitor.generate_dashboard_yaml`
+Generate optimized dashboard YAML for the appliance.
+
+### `smart_appliance_monitor.export_to_csv` ⚡ *NEW v0.5.0*
+Export appliance data to CSV format. Optionally save to file.
+
+### `smart_appliance_monitor.export_to_json` ⚡ *NEW v0.5.0*
+Export appliance data to JSON format. Optionally save to file.
+
+### `smart_appliance_monitor.force_shutdown` ⚡ *NEW v0.5.0*
+Manually trigger auto-shutdown for testing (requires auto-shutdown to be enabled).
 
 ## Dynamic Pricing
 
@@ -184,6 +215,44 @@ automation:
 ```
 
 Then select `input_number.electricity_price` when configuring the integration.
+
+## Implemented in v0.5.0 ✅
+
+- ✅ **Energy Dashboard integration** - Native support with proper sensor configuration
+- ✅ **Data export** - CSV and JSON export with complete statistics
+- ✅ **Auto-shutdown** - Automatic power off after inactivity
+- ✅ **Energy Management** - Limits and budgets for consumption control
+- ✅ **Usage Scheduling** - Time-based usage control
+- ✅ **Anomaly Detection** - Basic pattern-based detection
+
+## Planned for Future Releases
+
+### v0.6.0 - Custom Cards & UI Enhancements
+- Custom Lovelace cards (smart-appliance-cycle-card, smart-appliance-stats-card)
+  - Cards are developed and available in `/www/smart-appliance-cards/`
+  - Require manual build: `npm install && npm run build`
+- Enhanced dashboard auto-generation with custom cards
+- Mobile app optimized views
+
+### v0.7.0 - Machine Learning & Predictions
+- Machine learning auto-calibration
+- Intelligent cycle pattern detection
+- Automatic threshold adjustment based on usage patterns
+- Cycle duration predictions
+- Consumption forecasting
+
+### v0.8.0 - Advanced Features
+- Multi-appliance groups and aggregated statistics
+- Advanced analytics dashboard
+- Comparative analysis between appliances
+- Cost optimization recommendations
+- Integration with dynamic pricing APIs
+
+### Future Considerations
+- Third-party API integration (energy providers)
+- Cloud backup of statistics
+- Community appliance profiles sharing
+- HACS publication (when ready)
 
 ## Contributing
 

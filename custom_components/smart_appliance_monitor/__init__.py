@@ -53,6 +53,26 @@ SERVICE_GENERATE_DASHBOARD_YAML_SCHEMA = vol.Schema(
     }
 )
 
+SERVICE_EXPORT_TO_CSV_SCHEMA = vol.Schema(
+    {
+        vol.Required("entity_id"): cv.entity_id,
+        vol.Optional("file_path"): cv.string,
+    }
+)
+
+SERVICE_EXPORT_TO_JSON_SCHEMA = vol.Schema(
+    {
+        vol.Required("entity_id"): cv.entity_id,
+        vol.Optional("file_path"): cv.string,
+    }
+)
+
+SERVICE_FORCE_SHUTDOWN_SCHEMA = vol.Schema(
+    {
+        vol.Required("entity_id"): cv.entity_id,
+    }
+)
+
 
 async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     """Set up Smart Appliance Monitor from a config entry."""
@@ -286,6 +306,124 @@ async def async_setup_services(hass: HomeAssistant) -> None:
             appliance_name
         )
     
+    async def handle_export_to_csv(call: ServiceCall) -> None:
+        """Handle export_to_csv service call."""
+        entity_id = call.data["entity_id"]
+        file_path = call.data.get("file_path")
+        
+        coordinator = _get_coordinator_from_entity_id(hass, entity_id)
+        if coordinator is None:
+            _LOGGER.error("Unable to find coordinator for entity %s", entity_id)
+            return
+        
+        _LOGGER.info("Exporting data to CSV for '%s'", coordinator.appliance_name)
+        
+        from .export import SmartApplianceDataExporter
+        exporter = SmartApplianceDataExporter(coordinator)
+        csv_content = exporter.export_to_csv(file_path)
+        
+        # Send notification with export summary
+        summary = exporter.get_export_summary()
+        message = (
+            f"Data exported to CSV for **{coordinator.appliance_name}**\n\n"
+            f"**Export Summary**:\n"
+            f"- Has current cycle: {summary['has_current_cycle']}\n"
+            f"- Has last cycle: {summary['has_last_cycle']}\n"
+            f"- Daily cycles: {summary['daily_cycles']}\n"
+        )
+        if file_path:
+            message += f"\n**File saved to**: {file_path}"
+        else:
+            message += f"\n\nCSV content is in the logs."
+        
+        await hass.services.async_call(
+            "persistent_notification",
+            "create",
+            {
+                "title": f"📊 CSV Export - {coordinator.appliance_name}",
+                "message": message,
+                "notification_id": f"export_csv_{coordinator.entry.entry_id}",
+            },
+        )
+        
+        if not file_path:
+            _LOGGER.info("CSV export for '%s':\n%s", coordinator.appliance_name, csv_content[:500])
+    
+    async def handle_export_to_json(call: ServiceCall) -> None:
+        """Handle export_to_json service call."""
+        entity_id = call.data["entity_id"]
+        file_path = call.data.get("file_path")
+        
+        coordinator = _get_coordinator_from_entity_id(hass, entity_id)
+        if coordinator is None:
+            _LOGGER.error("Unable to find coordinator for entity %s", entity_id)
+            return
+        
+        _LOGGER.info("Exporting data to JSON for '%s'", coordinator.appliance_name)
+        
+        from .export import SmartApplianceDataExporter
+        exporter = SmartApplianceDataExporter(coordinator)
+        json_content = exporter.export_to_json(file_path)
+        
+        # Send notification with export summary
+        summary = exporter.get_export_summary()
+        message = (
+            f"Data exported to JSON for **{coordinator.appliance_name}**\n\n"
+            f"**Export Summary**:\n"
+            f"- Has current cycle: {summary['has_current_cycle']}\n"
+            f"- Has last cycle: {summary['has_last_cycle']}\n"
+            f"- Daily cycles: {summary['daily_cycles']}\n"
+            f"- History size: {summary['history_size']}\n"
+        )
+        if file_path:
+            message += f"\n**File saved to**: {file_path}"
+        else:
+            message += f"\n\nJSON content is in the logs."
+        
+        await hass.services.async_call(
+            "persistent_notification",
+            "create",
+            {
+                "title": f"📊 JSON Export - {coordinator.appliance_name}",
+                "message": message,
+                "notification_id": f"export_json_{coordinator.entry.entry_id}",
+            },
+        )
+        
+        if not file_path:
+            _LOGGER.info("JSON export for '%s':\n%s", coordinator.appliance_name, json_content[:500])
+    
+    async def handle_force_shutdown(call: ServiceCall) -> None:
+        """Handle force_shutdown service call."""
+        entity_id = call.data["entity_id"]
+        
+        coordinator = _get_coordinator_from_entity_id(hass, entity_id)
+        if coordinator is None:
+            _LOGGER.error("Unable to find coordinator for entity %s", entity_id)
+            return
+        
+        if not coordinator.auto_shutdown_enabled or not coordinator.auto_shutdown_entity:
+            _LOGGER.warning(
+                "Cannot force shutdown for '%s': auto-shutdown not enabled or entity not configured",
+                coordinator.appliance_name
+            )
+            await hass.services.async_call(
+                "persistent_notification",
+                "create",
+                {
+                    "title": "Force Shutdown Failed",
+                    "message": (
+                        f"Cannot force shutdown for {coordinator.appliance_name}.\n"
+                        "Auto-shutdown must be enabled and an entity must be configured."
+                    ),
+                    "notification_id": f"force_shutdown_error_{coordinator.entry.entry_id}",
+                },
+            )
+            return
+        
+        _LOGGER.info("Force shutdown for '%s'", coordinator.appliance_name)
+        await coordinator._on_auto_shutdown()
+    
     # Register services
     hass.services.async_register(
         DOMAIN,
@@ -313,6 +451,27 @@ async def async_setup_services(hass: HomeAssistant) -> None:
         "generate_dashboard_yaml",
         handle_generate_dashboard_yaml,
         schema=SERVICE_GENERATE_DASHBOARD_YAML_SCHEMA,
+    )
+    
+    hass.services.async_register(
+        DOMAIN,
+        "export_to_csv",
+        handle_export_to_csv,
+        schema=SERVICE_EXPORT_TO_CSV_SCHEMA,
+    )
+    
+    hass.services.async_register(
+        DOMAIN,
+        "export_to_json",
+        handle_export_to_json,
+        schema=SERVICE_EXPORT_TO_JSON_SCHEMA,
+    )
+    
+    hass.services.async_register(
+        DOMAIN,
+        "force_shutdown",
+        handle_force_shutdown,
+        schema=SERVICE_FORCE_SHUTDOWN_SCHEMA,
     )
     
     _LOGGER.info("Services Smart Appliance Monitor enregistrés")

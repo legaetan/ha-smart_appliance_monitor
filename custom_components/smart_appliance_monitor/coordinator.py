@@ -27,6 +27,20 @@ from .const import (
     CONF_NOTIFICATION_SERVICES,
     CONF_NOTIFICATION_TYPES,
     CONF_CUSTOM_NOTIFY_SERVICE,
+    CONF_ENABLE_AUTO_SHUTDOWN,
+    CONF_AUTO_SHUTDOWN_DELAY,
+    CONF_AUTO_SHUTDOWN_ENTITY,
+    CONF_ENABLE_ENERGY_LIMITS,
+    CONF_ENERGY_LIMIT_CYCLE,
+    CONF_ENERGY_LIMIT_DAILY,
+    CONF_ENERGY_LIMIT_MONTHLY,
+    CONF_COST_BUDGET_MONTHLY,
+    CONF_ENABLE_SCHEDULING,
+    CONF_ALLOWED_HOURS_START,
+    CONF_ALLOWED_HOURS_END,
+    CONF_BLOCKED_DAYS,
+    CONF_SCHEDULING_MODE,
+    CONF_ENABLE_ANOMALY_DETECTION,
     APPLIANCE_PROFILES,
     DEFAULT_START_THRESHOLD,
     DEFAULT_STOP_THRESHOLD,
@@ -34,13 +48,21 @@ from .const import (
     DEFAULT_STOP_DELAY,
     DEFAULT_ALERT_DURATION,
     DEFAULT_UNPLUGGED_TIMEOUT,
+    DEFAULT_AUTO_SHUTDOWN_DELAY,
+    DEFAULT_SCHEDULING_MODE,
     DEFAULT_PRICE_KWH,
     DEFAULT_NOTIFICATION_SERVICES,
     DEFAULT_NOTIFICATION_TYPES,
+    SCHEDULING_MODE_STRICT,
     EVENT_CYCLE_STARTED,
     EVENT_CYCLE_FINISHED,
     EVENT_ALERT_DURATION,
     EVENT_UNPLUGGED,
+    EVENT_AUTO_SHUTDOWN,
+    EVENT_ENERGY_LIMIT_EXCEEDED,
+    EVENT_BUDGET_EXCEEDED,
+    EVENT_USAGE_OUT_OF_SCHEDULE,
+    EVENT_ANOMALY_DETECTED,
 )
 from .state_machine import CycleStateMachine
 from .notify import SmartApplianceNotifier
@@ -135,6 +157,35 @@ class SmartApplianceCoordinator(DataUpdateCoordinator):
             notifications_enabled=self.notifications_enabled,
         )
         
+        # Auto-shutdown
+        self.auto_shutdown_enabled = entry.options.get(CONF_ENABLE_AUTO_SHUTDOWN, False)
+        self.auto_shutdown_delay = entry.options.get(CONF_AUTO_SHUTDOWN_DELAY, DEFAULT_AUTO_SHUTDOWN_DELAY)
+        self.auto_shutdown_entity = entry.options.get(CONF_AUTO_SHUTDOWN_ENTITY, "")
+        self._auto_shutdown_timer: datetime | None = None
+        
+        # Energy limits
+        self.energy_limits_enabled = entry.options.get(CONF_ENABLE_ENERGY_LIMITS, False)
+        self.energy_limit_cycle = entry.options.get(CONF_ENERGY_LIMIT_CYCLE, 0)
+        self.energy_limit_daily = entry.options.get(CONF_ENERGY_LIMIT_DAILY, 0)
+        self.energy_limit_monthly = entry.options.get(CONF_ENERGY_LIMIT_MONTHLY, 0)
+        self.cost_budget_monthly = entry.options.get(CONF_COST_BUDGET_MONTHLY, 0)
+        self._energy_limit_cycle_notified = False
+        self._energy_limit_daily_notified = False
+        self._energy_limit_monthly_notified = False
+        self._budget_monthly_notified = False
+        
+        # Scheduling
+        self.scheduling_enabled = entry.options.get(CONF_ENABLE_SCHEDULING, False)
+        self.allowed_hours_start = entry.options.get(CONF_ALLOWED_HOURS_START, "00:00")
+        self.allowed_hours_end = entry.options.get(CONF_ALLOWED_HOURS_END, "23:59")
+        self.blocked_days = entry.options.get(CONF_BLOCKED_DAYS, [])
+        self.scheduling_mode = entry.options.get(CONF_SCHEDULING_MODE, DEFAULT_SCHEDULING_MODE)
+        
+        # Anomaly detection
+        self.anomaly_detection_enabled = entry.options.get(CONF_ENABLE_ANOMALY_DETECTION, False)
+        self._cycle_history: list[dict[str, Any]] = []
+        self._max_history_size = 10
+        
         super().__init__(
             hass,
             _LOGGER,
@@ -163,6 +214,7 @@ class SmartApplianceCoordinator(DataUpdateCoordinator):
         return {
             "year": now.year,
             "month": now.month,
+            "total_energy": 0.0,
             "total_cost": 0.0,
         }
     
@@ -212,6 +264,12 @@ class SmartApplianceCoordinator(DataUpdateCoordinator):
                 # Gestion des événements
                 if event:
                     await self._handle_event(event)
+                
+                # Vérifications supplémentaires
+                await self._check_auto_shutdown()
+                await self._check_energy_limits()
+                await self._check_scheduling()
+                await self._check_anomaly_detection()
             
             # Mise à jour des statistiques journalières/mensuelles
             self._update_statistics()
@@ -252,6 +310,16 @@ class SmartApplianceCoordinator(DataUpdateCoordinator):
             await self._on_alert_duration()
         elif event == EVENT_UNPLUGGED:
             await self._on_unplugged()
+        elif event == EVENT_AUTO_SHUTDOWN:
+            await self._on_auto_shutdown()
+        elif event == EVENT_ENERGY_LIMIT_EXCEEDED:
+            await self._on_energy_limit_exceeded()
+        elif event == EVENT_BUDGET_EXCEEDED:
+            await self._on_budget_exceeded()
+        elif event == EVENT_USAGE_OUT_OF_SCHEDULE:
+            await self._on_usage_out_of_schedule()
+        elif event == EVENT_ANOMALY_DETECTED:
+            await self._on_anomaly_detected()
     
     async def _on_cycle_started(self) -> None:
         """Appelé lorsqu'un cycle démarre."""
@@ -295,7 +363,26 @@ class SmartApplianceCoordinator(DataUpdateCoordinator):
         self.daily_stats["cycles"] += 1
         self.daily_stats["total_energy"] += energy
         self.daily_stats["total_cost"] += cost
+        self.monthly_stats["total_energy"] += energy
         self.monthly_stats["total_cost"] += cost
+        
+        # Ajouter à l'historique pour la détection d'anomalies
+        if self.anomaly_detection_enabled:
+            self._cycle_history.append({
+                "duration": duration,
+                "energy": energy,
+                "cost": cost,
+                "timestamp": datetime.now(),
+            })
+            # Limiter la taille de l'historique
+            if len(self._cycle_history) > self._max_history_size:
+                self._cycle_history.pop(0)
+        
+        # Réinitialiser le timer d'auto-shutdown
+        self._auto_shutdown_timer = None
+        
+        # Réinitialiser le flag de limite cycle
+        self._energy_limit_cycle_notified = False
         
         # Émission d'un événement
         self.hass.bus.async_fire(
@@ -402,6 +489,284 @@ class SmartApplianceCoordinator(DataUpdateCoordinator):
         )
         self.notifications_enabled = enabled
         self.notifier.set_enabled(enabled)
+    
+    def set_auto_shutdown_enabled(self, enabled: bool) -> None:
+        """Active ou désactive l'extinction automatique."""
+        self.auto_shutdown_enabled = enabled
+        if not enabled:
+            self._auto_shutdown_timer = None
+    
+    def set_energy_limits_enabled(self, enabled: bool) -> None:
+        """Active ou désactive les limites énergétiques."""
+        self.energy_limits_enabled = enabled
+        if not enabled:
+            self._energy_limit_cycle_notified = False
+            self._energy_limit_daily_notified = False
+            self._energy_limit_monthly_notified = False
+            self._budget_monthly_notified = False
+    
+    def set_scheduling_enabled(self, enabled: bool) -> None:
+        """Active ou désactive la planification."""
+        self.scheduling_enabled = enabled
+    
+    async def _check_auto_shutdown(self) -> None:
+        """Vérifie si l'appareil doit être éteint automatiquement."""
+        if not self.auto_shutdown_enabled or not self.auto_shutdown_entity:
+            return
+        
+        # Si appareil en idle, démarrer/vérifier le timer
+        if self.state_machine.state == "idle":
+            if self._auto_shutdown_timer is None:
+                self._auto_shutdown_timer = datetime.now()
+            else:
+                elapsed = (datetime.now() - self._auto_shutdown_timer).total_seconds()
+                if elapsed >= self.auto_shutdown_delay:
+                    await self._on_auto_shutdown()
+        else:
+            # Réinitialiser le timer si l'appareil n'est pas idle
+            self._auto_shutdown_timer = None
+    
+    async def _check_energy_limits(self) -> None:
+        """Vérifie les limites énergétiques."""
+        if not self.energy_limits_enabled:
+            return
+        
+        # Vérifier limite du cycle en cours
+        if self.energy_limit_cycle > 0 and self.state_machine.current_cycle:
+            cycle_energy = self.state_machine.current_cycle.get("energy", 0)
+            if cycle_energy > self.energy_limit_cycle and not self._energy_limit_cycle_notified:
+                self._energy_limit_cycle_notified = True
+                await self._handle_event(EVENT_ENERGY_LIMIT_EXCEEDED)
+        
+        # Vérifier limite journalière
+        if self.energy_limit_daily > 0:
+            if self.daily_stats["total_energy"] > self.energy_limit_daily and not self._energy_limit_daily_notified:
+                self._energy_limit_daily_notified = True
+                await self._handle_event(EVENT_ENERGY_LIMIT_EXCEEDED)
+        
+        # Vérifier limite mensuelle
+        if self.energy_limit_monthly > 0:
+            if self.monthly_stats["total_energy"] > self.energy_limit_monthly and not self._energy_limit_monthly_notified:
+                self._energy_limit_monthly_notified = True
+                await self._handle_event(EVENT_ENERGY_LIMIT_EXCEEDED)
+        
+        # Vérifier budget mensuel
+        if self.cost_budget_monthly > 0:
+            if self.monthly_stats["total_cost"] > self.cost_budget_monthly and not self._budget_monthly_notified:
+                self._budget_monthly_notified = True
+                await self._handle_event(EVENT_BUDGET_EXCEEDED)
+    
+    async def _check_scheduling(self) -> None:
+        """Vérifie si l'utilisation est autorisée selon la planification."""
+        if not self.scheduling_enabled:
+            return
+        
+        if not self._is_usage_allowed():
+            # Si l'appareil est en cours d'utilisation hors des horaires
+            if self.state_machine.state == "running":
+                await self._handle_event(EVENT_USAGE_OUT_OF_SCHEDULE)
+    
+    async def _check_anomaly_detection(self) -> None:
+        """Vérifie s'il y a des anomalies dans le cycle en cours."""
+        if not self.anomaly_detection_enabled or len(self._cycle_history) < 3:
+            return
+        
+        # Vérifier seulement pendant un cycle
+        if self.state_machine.state != "running" or not self.state_machine.current_cycle:
+            return
+        
+        current_cycle = self.state_machine.current_cycle
+        current_duration = current_cycle.get("duration", 0)
+        current_energy = current_cycle.get("energy", 0)
+        
+        # Calculer moyennes de l'historique
+        avg_duration = sum(c["duration"] for c in self._cycle_history) / len(self._cycle_history)
+        avg_energy = sum(c["energy"] for c in self._cycle_history) / len(self._cycle_history)
+        
+        # Détecter anomalies
+        anomaly_detected = False
+        
+        # Cycle trop long (>200% de la moyenne)
+        if current_duration > avg_duration * 2:
+            anomaly_detected = True
+            _LOGGER.warning("Anomalie détectée: Cycle trop long (%.1f min vs %.1f min en moyenne)", 
+                          current_duration, avg_duration)
+        
+        # Consommation anormale (>150% de la moyenne)
+        if current_energy > avg_energy * 1.5:
+            anomaly_detected = True
+            _LOGGER.warning("Anomalie détectée: Consommation élevée (%.3f kWh vs %.3f kWh en moyenne)", 
+                          current_energy, avg_energy)
+        
+        if anomaly_detected:
+            await self._handle_event(EVENT_ANOMALY_DETECTED)
+    
+    def _is_usage_allowed(self) -> bool:
+        """Vérifie si l'utilisation est autorisée selon la planification."""
+        now = datetime.now()
+        
+        # Vérifier jour bloqué
+        day_names = ["monday", "tuesday", "wednesday", "thursday", "friday", "saturday", "sunday"]
+        current_day = day_names[now.weekday()]
+        if current_day in self.blocked_days:
+            return False
+        
+        # Vérifier horaires
+        current_time = now.time()
+        try:
+            start_time = datetime.strptime(self.allowed_hours_start, "%H:%M").time()
+            end_time = datetime.strptime(self.allowed_hours_end, "%H:%M").time()
+            
+            if start_time <= end_time:
+                # Plage normale (ex: 08:00 - 22:00)
+                return start_time <= current_time <= end_time
+            else:
+                # Plage traversant minuit (ex: 22:00 - 07:00)
+                return current_time >= start_time or current_time <= end_time
+        except ValueError:
+            _LOGGER.error("Format d'heure invalide: %s - %s", self.allowed_hours_start, self.allowed_hours_end)
+            return True
+    
+    def get_anomaly_score(self) -> float:
+        """Calcule un score d'anomalie (0-100)."""
+        if not self.anomaly_detection_enabled or len(self._cycle_history) < 3:
+            return 0
+        
+        if self.state_machine.state != "running" or not self.state_machine.current_cycle:
+            return 0
+        
+        current_cycle = self.state_machine.current_cycle
+        current_duration = current_cycle.get("duration", 0)
+        current_energy = current_cycle.get("energy", 0)
+        
+        # Calculer moyennes
+        avg_duration = sum(c["duration"] for c in self._cycle_history) / len(self._cycle_history)
+        avg_energy = sum(c["energy"] for c in self._cycle_history) / len(self._cycle_history)
+        
+        # Calculer les écarts en pourcentage
+        duration_deviation = abs(current_duration - avg_duration) / avg_duration if avg_duration > 0 else 0
+        energy_deviation = abs(current_energy - avg_energy) / avg_energy if avg_energy > 0 else 0
+        
+        # Score basé sur les écarts (max 100)
+        score = min(100, (duration_deviation + energy_deviation) * 50)
+        return round(score, 1)
+    
+    async def _on_auto_shutdown(self) -> None:
+        """Appelé lorsque l'extinction automatique se déclenche."""
+        _LOGGER.info("Extinction automatique pour '%s'", self.appliance_name)
+        
+        # Éteindre l'appareil
+        try:
+            await self.hass.services.async_call(
+                "homeassistant",
+                "turn_off",
+                {"entity_id": self.auto_shutdown_entity},
+                blocking=True,
+            )
+            
+            # Émettre un événement
+            self.hass.bus.async_fire(
+                f"{DOMAIN}_auto_shutdown",
+                {
+                    "appliance_name": self.appliance_name,
+                    "appliance_type": self.appliance_type,
+                    "entry_id": self.entry.entry_id,
+                    "entity_id": self.auto_shutdown_entity,
+                },
+            )
+            
+            # Notification
+            await self.notifier.notify_auto_shutdown(self.auto_shutdown_delay / 60)
+            
+        except Exception as err:
+            _LOGGER.error("Erreur lors de l'extinction automatique: %s", err)
+        
+        # Réinitialiser le timer
+        self._auto_shutdown_timer = None
+    
+    async def _on_energy_limit_exceeded(self) -> None:
+        """Appelé lorsqu'une limite énergétique est dépassée."""
+        _LOGGER.warning("Limite énergétique dépassée pour '%s'", self.appliance_name)
+        
+        # Émettre un événement
+        self.hass.bus.async_fire(
+            f"{DOMAIN}_energy_limit_exceeded",
+            {
+                "appliance_name": self.appliance_name,
+                "appliance_type": self.appliance_type,
+                "entry_id": self.entry.entry_id,
+                "daily_energy": self.daily_stats["total_energy"],
+                "monthly_energy": self.monthly_stats["total_energy"],
+            },
+        )
+        
+        # Notification
+        await self.notifier.notify_energy_limit_exceeded(
+            daily_energy=self.daily_stats["total_energy"],
+            monthly_energy=self.monthly_stats["total_energy"],
+        )
+    
+    async def _on_budget_exceeded(self) -> None:
+        """Appelé lorsque le budget mensuel est dépassé."""
+        _LOGGER.warning("Budget mensuel dépassé pour '%s'", self.appliance_name)
+        
+        # Émettre un événement
+        self.hass.bus.async_fire(
+            f"{DOMAIN}_budget_exceeded",
+            {
+                "appliance_name": self.appliance_name,
+                "appliance_type": self.appliance_type,
+                "entry_id": self.entry.entry_id,
+                "monthly_cost": self.monthly_stats["total_cost"],
+                "budget": self.cost_budget_monthly,
+            },
+        )
+        
+        # Notification
+        await self.notifier.notify_budget_exceeded(
+            monthly_cost=self.monthly_stats["total_cost"],
+            budget=self.cost_budget_monthly,
+        )
+    
+    async def _on_usage_out_of_schedule(self) -> None:
+        """Appelé lorsque l'appareil est utilisé hors des horaires autorisés."""
+        _LOGGER.warning("Utilisation hors horaire pour '%s'", self.appliance_name)
+        
+        # Émettre un événement
+        self.hass.bus.async_fire(
+            f"{DOMAIN}_usage_out_of_schedule",
+            {
+                "appliance_name": self.appliance_name,
+                "appliance_type": self.appliance_type,
+                "entry_id": self.entry.entry_id,
+            },
+        )
+        
+        # Notification
+        await self.notifier.notify_usage_out_of_schedule(
+            allowed_start=self.allowed_hours_start,
+            allowed_end=self.allowed_hours_end,
+        )
+    
+    async def _on_anomaly_detected(self) -> None:
+        """Appelé lorsqu'une anomalie est détectée."""
+        _LOGGER.warning("Anomalie détectée pour '%s'", self.appliance_name)
+        
+        score = self.get_anomaly_score()
+        
+        # Émettre un événement
+        self.hass.bus.async_fire(
+            f"{DOMAIN}_anomaly_detected",
+            {
+                "appliance_name": self.appliance_name,
+                "appliance_type": self.appliance_type,
+                "entry_id": self.entry.entry_id,
+                "anomaly_score": score,
+            },
+        )
+        
+        # Notification
+        await self.notifier.notify_anomaly_detected(score=score)
     
     def _get_current_price(self) -> float:
         """Récupère le prix actuel du kWh.

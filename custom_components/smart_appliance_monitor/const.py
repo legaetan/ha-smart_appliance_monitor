@@ -25,6 +25,28 @@ CONF_NOTIFICATION_SERVICES = "notification_services"
 CONF_NOTIFICATION_TYPES = "notification_types"
 CONF_CUSTOM_NOTIFY_SERVICE = "custom_notify_service"
 
+# Auto-Shutdown Configuration
+CONF_ENABLE_AUTO_SHUTDOWN = "enable_auto_shutdown"
+CONF_AUTO_SHUTDOWN_DELAY = "auto_shutdown_delay"
+CONF_AUTO_SHUTDOWN_ENTITY = "auto_shutdown_entity"
+
+# Energy Management Configuration
+CONF_ENABLE_ENERGY_LIMITS = "enable_energy_limits"
+CONF_ENERGY_LIMIT_CYCLE = "energy_limit_cycle"
+CONF_ENERGY_LIMIT_DAILY = "energy_limit_daily"
+CONF_ENERGY_LIMIT_MONTHLY = "energy_limit_monthly"
+CONF_COST_BUDGET_MONTHLY = "cost_budget_monthly"
+
+# Scheduling Configuration
+CONF_ENABLE_SCHEDULING = "enable_scheduling"
+CONF_ALLOWED_HOURS_START = "allowed_hours_start"
+CONF_ALLOWED_HOURS_END = "allowed_hours_end"
+CONF_BLOCKED_DAYS = "blocked_days"
+CONF_SCHEDULING_MODE = "scheduling_mode"
+
+# Anomaly Detection Configuration
+CONF_ENABLE_ANOMALY_DETECTION = "enable_anomaly_detection"
+
 # Appliance Types
 APPLIANCE_TYPE_OVEN = "oven"
 APPLIANCE_TYPE_DISHWASHER = "dishwasher"
@@ -65,12 +87,22 @@ EVENT_CYCLE_STARTED = "cycle_started"
 EVENT_CYCLE_FINISHED = "cycle_finished"
 EVENT_ALERT_DURATION = "alert_duration"
 EVENT_UNPLUGGED = "unplugged"
+EVENT_AUTO_SHUTDOWN = "auto_shutdown"
+EVENT_ENERGY_LIMIT_EXCEEDED = "energy_limit_exceeded"
+EVENT_BUDGET_EXCEEDED = "budget_exceeded"
+EVENT_USAGE_OUT_OF_SCHEDULE = "usage_out_of_schedule"
+EVENT_ANOMALY_DETECTED = "anomaly_detected"
 
 # Notification Types
 NOTIF_TYPE_CYCLE_STARTED = "cycle_started"
 NOTIF_TYPE_CYCLE_FINISHED = "cycle_finished"
 NOTIF_TYPE_ALERT_DURATION = "alert_duration"
 NOTIF_TYPE_UNPLUGGED = "unplugged"
+NOTIF_TYPE_AUTO_SHUTDOWN = "auto_shutdown"
+NOTIF_TYPE_ENERGY_LIMIT = "energy_limit"
+NOTIF_TYPE_BUDGET = "budget"
+NOTIF_TYPE_SCHEDULE = "schedule"
+NOTIF_TYPE_ANOMALY = "anomaly"
 
 # Notification Services
 NOTIF_SERVICE_MOBILE_APP = "mobile_app"
@@ -90,6 +122,11 @@ NOTIFICATION_TYPES = [
     NOTIF_TYPE_CYCLE_FINISHED,
     NOTIF_TYPE_ALERT_DURATION,
     NOTIF_TYPE_UNPLUGGED,
+    NOTIF_TYPE_AUTO_SHUTDOWN,
+    NOTIF_TYPE_ENERGY_LIMIT,
+    NOTIF_TYPE_BUDGET,
+    NOTIF_TYPE_SCHEDULE,
+    NOTIF_TYPE_ANOMALY,
 ]
 
 # Sensor Types
@@ -102,7 +139,10 @@ SENSOR_LAST_CYCLE_ENERGY = "last_cycle_energy"
 SENSOR_LAST_CYCLE_COST = "last_cycle_cost"
 SENSOR_DAILY_CYCLES = "daily_cycles"
 SENSOR_DAILY_COST = "daily_cost"
+SENSOR_DAILY_ENERGY = "daily_energy"
 SENSOR_MONTHLY_COST = "monthly_cost"
+SENSOR_MONTHLY_ENERGY = "monthly_energy"
+SENSOR_ANOMALY_SCORE = "anomaly_score"
 
 # Default Values
 DEFAULT_PRICE_KWH = 0.2516
@@ -112,6 +152,8 @@ DEFAULT_START_DELAY = 120
 DEFAULT_STOP_DELAY = 300
 DEFAULT_ALERT_DURATION = 7200
 DEFAULT_UNPLUGGED_TIMEOUT = 300  # 5 minutes
+DEFAULT_AUTO_SHUTDOWN_DELAY = 1800  # 30 minutes
+DEFAULT_SCHEDULING_MODE = "notification_only"  # or "strict_block"
 DEFAULT_NOTIFICATION_SERVICES = [NOTIF_SERVICE_MOBILE_APP, NOTIF_SERVICE_PERSISTENT]
 DEFAULT_NOTIFICATION_TYPES = [
     NOTIF_TYPE_CYCLE_STARTED,
@@ -119,6 +161,13 @@ DEFAULT_NOTIFICATION_TYPES = [
     NOTIF_TYPE_ALERT_DURATION,
     NOTIF_TYPE_UNPLUGGED,
 ]
+
+# Scheduling Modes
+SCHEDULING_MODE_NOTIFICATION = "notification_only"
+SCHEDULING_MODE_STRICT = "strict_block"
+
+# Days of Week
+DAYS_OF_WEEK = ["monday", "tuesday", "wednesday", "thursday", "friday", "saturday", "sunday"]
 
 # Profils d'appareils avec seuils optimisés
 APPLIANCE_PROFILES = {

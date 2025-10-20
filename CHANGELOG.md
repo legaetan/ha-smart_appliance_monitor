@@ -5,6 +5,199 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.5.0] - 2025-10-21
+
+### Added
+
+#### Auto-Shutdown Feature
+- **Automatic appliance shutdown** after configurable inactivity period (5-60 minutes)
+  - Optional feature, disabled by default
+  - Configurable delay after cycle finish or prolonged inactivity
+  - Requires configuration of a switch/plug entity to cut power
+  - New event: `EVENT_AUTO_SHUTDOWN`
+  - New configuration options: `CONF_ENABLE_AUTO_SHUTDOWN`, `CONF_AUTO_SHUTDOWN_DELAY`, `CONF_AUTO_SHUTDOWN_ENTITY`
+  - New switch: `switch.auto_shutdown` to enable/disable the feature
+  - Notification sent before shutdown
+  - Service `force_shutdown` for manual testing
+
+#### Energy Management System
+- **Energy limits monitoring** with configurable thresholds
+  - Per-cycle energy limit (e.g., 2 kWh max per cycle)
+  - Daily energy limit (e.g., 5 kWh max per day)
+  - Monthly energy limit (e.g., 50 kWh max per month)
+  - Monthly cost budget (e.g., 10€ max per month)
+  - New configuration options: `CONF_ENABLE_ENERGY_LIMITS`, `CONF_ENERGY_LIMIT_CYCLE`, `CONF_ENERGY_LIMIT_DAILY`, `CONF_ENERGY_LIMIT_MONTHLY`, `CONF_COST_BUDGET_MONTHLY`
+  - New binary sensors:
+    - `binary_sensor.energy_limit_exceeded` - Indicates if any energy limit is exceeded
+    - `binary_sensor.budget_exceeded` - Indicates if monthly budget is exceeded
+  - New switch: `switch.energy_limits` to enable/disable energy monitoring
+  - Automatic notifications when limits are exceeded
+  - Reset notifications on new day/month
+
+#### Scheduling System
+- **Usage scheduling** with allowed time windows and blocked days
+  - Configure allowed hours (e.g., 22h-7h for off-peak hours)
+  - Block specific days of the week (e.g., Sunday)
+  - Two modes: "notification_only" or "strict_block"
+  - New configuration options: `CONF_ENABLE_SCHEDULING`, `CONF_ALLOWED_HOURS_START`, `CONF_ALLOWED_HOURS_END`, `CONF_BLOCKED_DAYS`, `CONF_SCHEDULING_MODE`
+  - New binary sensor: `binary_sensor.usage_allowed` - Indicates if current usage is within allowed schedule
+  - New switch: `switch.scheduling` to enable/disable scheduling
+  - Notification if appliance used outside allowed hours
+  - Support for time ranges crossing midnight (e.g., 22:00-07:00)
+
+#### Anomaly Detection
+- **Intelligent anomaly detection** based on historical patterns
+  - Detects cycles that are too short (<50% of average duration)
+  - Detects cycles that are too long (>200% of average duration)
+  - Detects abnormal energy consumption (±50% from average)
+  - Based on history of last 10 cycles
+  - New configuration option: `CONF_ENABLE_ANOMALY_DETECTION`
+  - New binary sensor: `binary_sensor.anomaly_detected` - Active when anomaly is detected
+  - New sensor: `sensor.anomaly_score` (0-100%) - Real-time anomaly score
+  - Automatic notification when anomaly is detected
+  - Cycle history tracking in coordinator
+
+#### Data Export
+- **CSV export** - Export appliance data to CSV format
+  - Current cycle, last cycle, daily and monthly statistics
+  - Configuration details included
+  - Service: `smart_appliance_monitor.export_to_csv`
+  - Optional file path parameter for automatic saving
+  - CSV content returned in notification and logs
+
+- **JSON export** - Export appliance data to JSON format
+  - Complete structured data export
+  - Includes cycle history for anomaly detection
+  - Service: `smart_appliance_monitor.export_to_json`
+  - Optional file path parameter for automatic saving
+  - JSON content returned in notification and logs
+
+- New module: `export.py` - Data export management
+  - `SmartApplianceDataExporter` class
+  - Export summary generation
+
+#### Energy Dashboard Integration
+- **Native Energy Dashboard support**
+  - Sensors marked with proper device_class and state_class
+  - New module: `energy.py` - Energy Dashboard helper
+  - `EnergyDashboardHelper` class for configuration assistance
+  - Functions to generate Energy Dashboard configuration
+  - Instructions for adding appliances to Energy Dashboard
+  - Compatible sensors: `daily_energy`, `monthly_energy`, `cycle_energy`
+
+#### New Sensors (3)
+- `sensor.daily_energy` - Daily energy consumption (kWh) with TOTAL state class
+- `sensor.monthly_energy` - Monthly energy consumption (kWh) with TOTAL state class
+- `sensor.anomaly_score` - Current anomaly score (0-100%)
+
+#### New Binary Sensors (4)
+- `binary_sensor.energy_limit_exceeded` - Energy limit status
+- `binary_sensor.budget_exceeded` - Budget exceeded status
+- `binary_sensor.usage_allowed` - Usage scheduling status
+- `binary_sensor.anomaly_detected` - Anomaly detection status
+
+#### New Switches (3)
+- `switch.auto_shutdown` - Enable/disable automatic shutdown
+- `switch.energy_limits` - Enable/disable energy limits monitoring
+- `switch.scheduling` - Enable/disable usage scheduling
+
+#### New Services (3)
+- `export_to_csv` - Export data to CSV format
+- `export_to_json` - Export data to JSON format
+- `force_shutdown` - Manual shutdown trigger (for testing)
+
+#### New Configuration Steps
+- **Step: Energy Management** (optional) - Configure energy limits and budget
+- **Step: Scheduling** (optional) - Configure allowed hours and blocked days
+- **Enhanced Expert Step** - Now includes auto-shutdown configuration
+
+### Changed
+
+#### Configuration Flow
+- Added `configure_advanced` toggle in delays step to access energy management and scheduling
+- Added `enable_anomaly_detection` toggle in delays step
+- Expert step now includes auto-shutdown configuration (delay and entity selection)
+- Configuration flow now has up to 6 steps total (init → delays → [energy_management] → [scheduling] → [expert] → notifications)
+
+#### Coordinator
+- Monthly stats now track both energy and cost (`total_energy` added)
+- New methods: `set_auto_shutdown_enabled()`, `set_energy_limits_enabled()`, `set_scheduling_enabled()`
+- New check methods: `_check_auto_shutdown()`, `_check_energy_limits()`, `_check_scheduling()`, `_check_anomaly_detection()`
+- New event handlers: `_on_auto_shutdown()`, `_on_energy_limit_exceeded()`, `_on_budget_exceeded()`, `_on_usage_out_of_schedule()`, `_on_anomaly_detected()`
+- Cycle history tracking for anomaly detection (`_cycle_history` list)
+- Auto-shutdown timer management (`_auto_shutdown_timer`)
+- Energy limit notification flags to prevent spam
+- Integrated all new features into `_async_update_data()` method
+
+#### Notification System
+- Added 5 new notification types: auto_shutdown, energy_limit, budget, schedule, anomaly
+- New notification methods in `notify.py`:
+  - `notify_auto_shutdown()`
+  - `notify_energy_limit_exceeded()`
+  - `notify_budget_exceeded()`
+  - `notify_usage_out_of_schedule()`
+  - `notify_anomaly_detected()`
+
+### Improved
+
+#### Statistics
+- Monthly energy tracking added (was cost-only before)
+- Cycle history for machine learning analysis
+- Better reset logic for daily/monthly boundaries
+
+#### Code Quality
+- All new features follow existing architecture patterns
+- Comprehensive error handling in all new modules
+- Logging added for all major operations
+- Type hints throughout new code
+
+### Technical Details
+
+#### Files Created
+- `custom_components/smart_appliance_monitor/export.py` (235 lines)
+- `custom_components/smart_appliance_monitor/energy.py` (175 lines)
+
+#### Files Modified
+- `const.py` (+100 lines) - 50+ new constants for all features
+- `config_flow.py` (+150 lines) - 2 new steps, enhanced expert step
+- `coordinator.py` (+350 lines) - All feature logic and checks
+- `switch.py` (+130 lines) - 3 new switch classes
+- `sensor.py` (+150 lines) - 3 new sensor classes
+- `binary_sensor.py` (+160 lines) - 4 new binary sensor classes
+- `notify.py` (+170 lines) - 5 new notification methods
+- `services.yaml` (+60 lines) - 3 new service definitions
+- `__init__.py` (+120 lines) - 3 new service handlers
+- `manifest.json` - Version updated to 0.5.0
+
+#### Total Entity Count
+- **Sensors**: 13 (was 10)
+  - Added: `daily_energy`, `monthly_energy`, `anomaly_score`
+- **Binary Sensors**: 7 (was 3)
+  - Added: `energy_limit_exceeded`, `budget_exceeded`, `usage_allowed`, `anomaly_detected`
+- **Switches**: 9 (was 6)
+  - Added: `auto_shutdown`, `energy_limits`, `scheduling`
+- **Buttons**: 1 (unchanged)
+
+**Total per appliance: 30 entities** (was 20)
+
+### Breaking Changes
+
+None - This release is fully backward compatible. All new features are optional and disabled by default.
+
+### Migration Notes
+
+- Existing configurations will continue to work without changes
+- No database migration required
+- Monthly stats now include `total_energy` field (automatically initialized to 0.0)
+- New configuration options available in Options Flow
+
+### Known Limitations
+
+- Anomaly detection requires at least 3 completed cycles for meaningful analysis
+- Auto-shutdown requires a switch/plug entity that can be controlled by Home Assistant
+- Scheduling does not support multiple time windows (only one per day)
+- Custom cards still require manual build (run `npm install && npm run build` in `/www/smart-appliance-cards/`)
+
 ## [0.4.1] - 2025-10-20
 
 ### Added
@@ -453,28 +646,4 @@ Pre-configured optimized thresholds for different appliance types:
 - State machine now tracks zero-power time
 - Coordinator handles 4 event types (was 3)
 - Full bilingual support (EN/FR) for all new features
-
-## [Unreleased]
-
-### Planned for v0.3.0
-- Dashboard templates (7 appliance-specific templates)
-- Service `create_dashboard` for automatic dashboard generation
-- Custom cards (smart-appliance-cycle-card, smart-appliance-stats-card)
-- HACS publication
-- Energy Dashboard integration
-- Data export (CSV, JSON)
-
-### Planned for v0.5.0
-- Machine learning auto-calibration
-- Intelligent cycle pattern detection
-- Automatic threshold adjustment
-- Cycle duration predictions
-
-### Planned for v1.0.0
-- Automatic dashboard generation
-- Multi-appliance groups
-- Advanced analytics
-- Third-party API integration
-
-[0.1.0]: https://github.com/legaetan/ha-smart_appliance_monitor/releases/tag/v0.1.0
 

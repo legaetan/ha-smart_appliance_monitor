@@ -48,8 +48,14 @@ async def async_setup_entry(
         SmartApplianceLastCycleCostSensor(coordinator),
         SmartApplianceDailyCyclesSensor(coordinator),
         SmartApplianceDailyCostSensor(coordinator),
+        SmartApplianceDailyEnergySensor(coordinator),
         SmartApplianceMonthlyCostSensor(coordinator),
+        SmartApplianceMonthlyEnergySensor(coordinator),
     ]
+    
+    # Ajouter sensor anomaly score si activé
+    if coordinator.anomaly_detection_enabled:
+        entities.append(SmartApplianceAnomalyScoreSensor(coordinator))
     
     async_add_entities(entities)
     _LOGGER.info(
@@ -396,6 +402,41 @@ class SmartApplianceDailyCostSensor(SmartApplianceEntity, SensorEntity):
         }
 
 
+class SmartApplianceDailyEnergySensor(SmartApplianceEntity, SensorEntity):
+    """Sensor pour l'énergie journalière."""
+
+    _attr_device_class = SensorDeviceClass.ENERGY
+    _attr_native_unit_of_measurement = UnitOfEnergy.KILO_WATT_HOUR
+    _attr_state_class = SensorStateClass.TOTAL
+    _attr_translation_key = "daily_energy"
+
+    def __init__(self, coordinator: SmartApplianceCoordinator) -> None:
+        """Initialize the sensor."""
+        super().__init__(coordinator, "daily_energy")
+        self._attr_name = "Énergie du jour"
+    
+    @property
+    def native_value(self) -> float:
+        """Return the energy today in kWh."""
+        daily_stats = self.coordinator.data.get("daily_stats", {})
+        return round(daily_stats.get("total_energy", 0), 3)
+    
+    @property
+    def icon(self) -> str:
+        """Return the icon to use in the frontend."""
+        return "mdi:lightning-bolt"
+    
+    @property
+    def extra_state_attributes(self) -> dict[str, Any]:
+        """Return additional state attributes."""
+        daily_stats = self.coordinator.data.get("daily_stats", {})
+        return {
+            "date": daily_stats.get("date"),
+            "cycles": daily_stats.get("cycles", 0),
+            "total_cost": round(daily_stats.get("total_cost", 0), 2),
+        }
+
+
 class SmartApplianceMonthlyCostSensor(SmartApplianceEntity, SensorEntity):
     """Sensor pour le coût mensuel."""
 
@@ -427,5 +468,79 @@ class SmartApplianceMonthlyCostSensor(SmartApplianceEntity, SensorEntity):
         return {
             "year": monthly_stats.get("year"),
             "month": monthly_stats.get("month"),
+            "total_energy": round(monthly_stats.get("total_energy", 0), 3),
+        }
+
+
+class SmartApplianceMonthlyEnergySensor(SmartApplianceEntity, SensorEntity):
+    """Sensor pour l'énergie mensuelle."""
+
+    _attr_device_class = SensorDeviceClass.ENERGY
+    _attr_native_unit_of_measurement = UnitOfEnergy.KILO_WATT_HOUR
+    _attr_state_class = SensorStateClass.TOTAL
+    _attr_translation_key = "monthly_energy"
+
+    def __init__(self, coordinator: SmartApplianceCoordinator) -> None:
+        """Initialize the sensor."""
+        super().__init__(coordinator, "monthly_energy")
+        self._attr_name = "Énergie du mois"
+    
+    @property
+    def native_value(self) -> float:
+        """Return the energy this month in kWh."""
+        monthly_stats = self.coordinator.data.get("monthly_stats", {})
+        return round(monthly_stats.get("total_energy", 0), 3)
+    
+    @property
+    def icon(self) -> str:
+        """Return the icon to use in the frontend."""
+        return "mdi:lightning-bolt-circle"
+    
+    @property
+    def extra_state_attributes(self) -> dict[str, Any]:
+        """Return additional state attributes."""
+        monthly_stats = self.coordinator.data.get("monthly_stats", {})
+        return {
+            "year": monthly_stats.get("year"),
+            "month": monthly_stats.get("month"),
+            "total_cost": round(monthly_stats.get("total_cost", 0), 2),
+        }
+
+
+class SmartApplianceAnomalyScoreSensor(SmartApplianceEntity, SensorEntity):
+    """Sensor pour le score d'anomalie."""
+
+    _attr_native_unit_of_measurement = "%"
+    _attr_state_class = SensorStateClass.MEASUREMENT
+    _attr_translation_key = "anomaly_score"
+
+    def __init__(self, coordinator: SmartApplianceCoordinator) -> None:
+        """Initialize the sensor."""
+        super().__init__(coordinator, "anomaly_score")
+        self._attr_name = "Score d'anomalie"
+    
+    @property
+    def native_value(self) -> float:
+        """Return the anomaly score (0-100)."""
+        return self.coordinator.get_anomaly_score()
+    
+    @property
+    def icon(self) -> str:
+        """Return the icon to use in the frontend."""
+        score = self.native_value
+        if score >= 70:
+            return "mdi:alert-circle"
+        elif score >= 40:
+            return "mdi:alert"
+        else:
+            return "mdi:check-circle"
+    
+    @property
+    def extra_state_attributes(self) -> dict[str, Any]:
+        """Return additional state attributes."""
+        return {
+            "history_size": len(self.coordinator._cycle_history),
+            "detection_enabled": self.coordinator.anomaly_detection_enabled,
+            "current_state": self.coordinator.data.get("state"),
         }
 

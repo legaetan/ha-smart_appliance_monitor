@@ -69,3 +69,63 @@ generate_dashboard_yaml:
       default: true
       selector:
         boolean:
+
+export_to_csv:
+  name: Export to CSV
+  description: Exports appliance data to CSV format. The CSV content is returned and optionally saved to a file.
+  target:
+    entity:
+      integration: smart_appliance_monitor
+      domain: sensor
+  fields:
+    entity_id:
+      name: Entity
+      description: The appliance monitor entity
+      required: true
+      selector:
+        entity:
+          integration: smart_appliance_monitor
+    file_path:
+      name: File path
+      description: Optional path where to save the CSV file (e.g., /config/exports/washing_machine.csv)
+      required: false
+      selector:
+        text:
+
+export_to_json:
+  name: Export to JSON
+  description: Exports appliance data to JSON format. The JSON content is returned and optionally saved to a file.
+  target:
+    entity:
+      integration: smart_appliance_monitor
+      domain: sensor
+  fields:
+    entity_id:
+      name: Entity
+      description: The appliance monitor entity
+      required: true
+      selector:
+        entity:
+          integration: smart_appliance_monitor
+    file_path:
+      name: File path
+      description: Optional path where to save the JSON file (e.g., /config/exports/washing_machine.json)
+      required: false
+      selector:
+        text:
+
+force_shutdown:
+  name: Force shutdown
+  description: Manually triggers the auto-shutdown for testing purposes. Only works if auto-shutdown is enabled and configured.
+  target:
+    entity:
+      integration: smart_appliance_monitor
+      domain: sensor
+  fields:
+    entity_id:
+      name: Entity
+      description: The appliance monitor entity
+      required: true
+      selector:
+        entity:
+          integration: smart_appliance_monitor
