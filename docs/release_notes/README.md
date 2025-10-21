@@ -4,6 +4,14 @@ Ce dossier contient les notes de version détaillées pour chaque release de Sma
 
 ## 📋 Index des Versions
 
+### Documentation Update - Octobre 2025
+
+- **[Documentation Update](RELEASE_NOTES_docs_2025-10-21.md)** - 21 octobre 2025 - Réorganisation Majeure 📚
+  - Nouveau fichier IDEAS.md centralisé (297 lignes)
+  - 3 nouvelles idées majeures ajoutées
+  - Release notes organisées dans dossier dédié
+  - Documentation épurée et professionnelle
+
 ### Version 0.5.x - Features Avancées & Corrections
 
 - **[v0.5.6](RELEASE_NOTES_v0.5.6.md)** - 21 octobre 2025 - Support Bilingue (Français) 🇫🇷
