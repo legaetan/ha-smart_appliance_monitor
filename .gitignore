@@ -143,7 +143,7 @@ RELEASE_NOTES_v*.md
 RELEASE_SUMMARY_v*.md
 
 # Frontend cards - npm dependencies and build artifacts
-www/smart-appliance-cards/node_modules/
-www/smart-appliance-cards/package-lock.json
+custom_components/smart_appliance_monitor/www/smart-appliance-cards/node_modules/
+custom_components/smart_appliance_monitor/www/smart-appliance-cards/package-lock.json
 # But keep compiled dist files for distribution
-!www/smart-appliance-cards/dist/
+!custom_components/smart_appliance_monitor/www/smart-appliance-cards/dist/
