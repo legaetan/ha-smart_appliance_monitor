@@ -20,6 +20,7 @@ from .const import (
     NOTIF_TYPE_BUDGET,
     NOTIF_TYPE_SCHEDULE,
     NOTIF_TYPE_ANOMALY,
+    NOTIF_TYPE_AI_ANALYSIS,
 )
 from .device import get_appliance_emoji
 
@@ -76,6 +77,7 @@ class SmartApplianceNotifier:
             NOTIF_TYPE_BUDGET: True,
             NOTIF_TYPE_SCHEDULE: True,
             NOTIF_TYPE_ANOMALY: True,
+            NOTIF_TYPE_AI_ANALYSIS: True,
         }
     
     def set_enabled(self, enabled: bool) -> None:
@@ -451,6 +453,87 @@ class SmartApplianceNotifier:
         )
         
         _LOGGER.warning("Notification d'anomalie envoyée pour '%s' (score: %.1f)", self.appliance_name, score)
+    
+    async def notify_ai_analysis(self, result: dict[str, Any]) -> None:
+        """Send notification for AI analysis results.
+        
+        Args:
+            result: AI analysis results dictionary
+        """
+        if not self._is_notification_type_enabled(NOTIF_TYPE_AI_ANALYSIS):
+            _LOGGER.debug("AI analysis notifications disabled for '%s'", self.appliance_name)
+            return
+        
+        status = result.get("status", "unknown")
+        summary = result.get("summary", "Analysis completed")
+        recommendations = result.get("recommendations", [])
+        savings_kwh = result.get("energy_savings_kwh", 0)
+        savings_eur = result.get("energy_savings_eur", 0)
+        
+        # Icon based on status
+        if status == "optimized":
+            icon = "mdi:brain-check"
+            status_emoji = "✅"
+            color = "#4CAF50"
+        elif status == "needs_improvement":
+            icon = "mdi:brain-alert"
+            status_emoji = "⚠️"
+            color = "#FF9800"
+        else:
+            icon = "mdi:brain"
+            status_emoji = "ℹ️"
+            color = "#2196F3"
+        
+        title = f"🤖 AI Analysis - {self.appliance_name}"
+        
+        # Build message
+        message_parts = [
+            f"{status_emoji} Status: {status.replace('_', ' ').title()}",
+            "",
+            f"📝 {summary}",
+        ]
+        
+        if savings_kwh > 0 or savings_eur > 0:
+            message_parts.append("")
+            message_parts.append("💡 Potential Savings:")
+            if savings_kwh > 0:
+                message_parts.append(f"  • Energy: {savings_kwh:.2f} kWh")
+            if savings_eur > 0:
+                message_parts.append(f"  • Cost: {savings_eur:.2f} €")
+        
+        if recommendations:
+            message_parts.append("")
+            message_parts.append("📋 Top Recommendations:")
+            for i, rec in enumerate(recommendations[:3], 1):  # Top 3 only
+                message_parts.append(f"  {i}. {rec}")
+        
+        message = "\n".join(message_parts)
+        
+        await self._send_notification(
+            notif_type=NOTIF_TYPE_AI_ANALYSIS,
+            title=title,
+            message=message,
+            data={
+                "notification_icon": icon,
+                "color": color,
+                "tag": f"smart_appliance_{self.appliance_name.lower()}_ai_analysis",
+                "status": status,
+                "savings_kwh": savings_kwh,
+                "savings_eur": savings_eur,
+                "actions": [
+                    {
+                        "action": "VIEW_DETAILS",
+                        "title": "View Details",
+                    },
+                    {
+                        "action": "REANALYZE",
+                        "title": "Re-analyze",
+                    },
+                ],
+            },
+        )
+        
+        _LOGGER.info("AI analysis notification sent for '%s' (status: %s)", self.appliance_name, status)
     
     async def _send_notification(
         self,

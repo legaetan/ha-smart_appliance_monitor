@@ -182,3 +182,138 @@ get_energy_data:
       advanced: true
       selector:
         object:
+
+analyze_cycles:
+  name: Analyze Cycles with AI
+  description: Analyzes appliance usage cycles using AI to provide insights, recommendations, and optimization opportunities. Requires AI Task entity to be configured in global settings.
+  target:
+    entity:
+      integration: smart_appliance_monitor
+      domain: sensor
+  fields:
+    entity_id:
+      name: Entity
+      description: The appliance monitor entity to analyze
+      required: true
+      selector:
+        entity:
+          integration: smart_appliance_monitor
+    analysis_type:
+      name: Analysis Type
+      description: Type of AI analysis to perform
+      default: all
+      selector:
+        select:
+          options:
+            - label: All Analysis Types
+              value: all
+            - label: Pattern Analysis
+              value: pattern
+            - label: Comparative Analysis
+              value: comparative
+            - label: Recommendations
+              value: recommendations
+    cycle_count:
+      name: Cycle Count
+      description: Number of historical cycles to analyze (1-50)
+      default: 10
+      selector:
+        number:
+          min: 1
+          max: 50
+          mode: box
+    export_format:
+      name: Export Format
+      description: Format for data export if save_export is enabled
+      default: json
+      advanced: true
+      selector:
+        select:
+          options:
+            - json
+            - csv
+            - both
+    save_export:
+      name: Save Export
+      description: Save exported data to files in /config directory
+      default: false
+      advanced: true
+      selector:
+        boolean:
+
+analyze_energy_dashboard:
+  name: Analyze Energy Dashboard with AI
+  description: Performs AI analysis on overall home energy consumption using Energy Dashboard data. Provides global recommendations and efficiency scoring. Requires AI Task entity to be configured in global settings.
+  fields:
+    period:
+      name: Analysis Period
+      description: Time period to analyze
+      default: today
+      selector:
+        select:
+          options:
+            - label: Today
+              value: today
+            - label: Yesterday
+              value: yesterday
+            - label: Last 7 Days
+              value: week
+            - label: This Month
+              value: month
+    compare_previous:
+      name: Compare with Previous Period
+      description: Include comparison with the previous period (yesterday, last week, last month)
+      default: false
+      selector:
+        boolean:
+    include_recommendations:
+      name: Include Recommendations
+      description: Include detailed recommendations in the analysis
+      default: true
+      advanced: true
+      selector:
+        boolean:
+
+configure_ai:
+  name: Configure AI Analysis
+  description: Configure global AI analysis settings for all appliances. Sets the AI Task entity, default price entity, and analysis trigger behavior.
+  fields:
+    ai_task_entity:
+      name: AI Task Entity
+      description: Entity ID of the AI Task to use for analysis (e.g., ai_task.openai_ai_task, ai_task.claude_ai_task)
+      required: false
+      example: "ai_task.openai_ai_task"
+      selector:
+        entity:
+          domain: ai_task
+    global_price_entity:
+      name: Global Price Entity
+      description: Default electricity price entity for all appliances (can be overridden per appliance)
+      required: false
+      example: "input_number.electricity_price"
+      selector:
+        entity:
+          domain:
+            - input_number
+            - sensor
+    enable_ai_analysis:
+      name: Enable AI Analysis
+      description: Enable or disable AI analysis globally for all appliances
+      required: false
+      selector:
+        boolean:
+    ai_analysis_trigger:
+      name: Analysis Trigger
+      description: When to automatically trigger AI analysis
+      required: false
+      selector:
+        select:
+          options:
+            - label: Automatic (After Each Cycle)
+              value: auto_cycle_end
+            - label: Manual (Via Service Only)
+              value: manual
+            - label: Periodic (Daily)
+              value: periodic_daily
+            - label: Periodic (Weekly)
+              value: periodic_weekly

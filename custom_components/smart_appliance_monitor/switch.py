@@ -40,6 +40,7 @@ async def async_setup_entry(
         SmartApplianceAutoShutdownSwitch(coordinator),
         SmartApplianceEnergyLimitsSwitch(coordinator),
         SmartApplianceSchedulingSwitch(coordinator),
+        SmartApplianceAIAnalysisSwitch(coordinator),
     ]
     
     async_add_entities(entities)
@@ -391,4 +392,57 @@ class SmartApplianceSchedulingSwitch(SmartApplianceEntity, SwitchEntity):
         self.coordinator.set_scheduling_enabled(False)
         await self.coordinator.async_request_refresh()
         self.async_write_ha_state()
+
+
+class SmartApplianceAIAnalysisSwitch(SmartApplianceEntity, SwitchEntity):
+    """Switch to enable/disable AI analysis."""
+
+    _attr_translation_key = "ai_analysis"
+
+    def __init__(self, coordinator: SmartApplianceCoordinator) -> None:
+        """Initialize the switch."""
+        super().__init__(coordinator, "ai_analysis")
+        self._attr_name = "AI Analysis"
+        self._attr_entity_registry_enabled_default = False
+    
+    @property
+    def icon(self) -> str:
+        """Return the icon to use in the frontend."""
+        return "mdi:brain" if self.is_on else "mdi:brain-off"
+    
+    @property
+    def is_on(self) -> bool:
+        """Return True if AI analysis is enabled."""
+        return getattr(self.coordinator, "ai_analysis_enabled", False)
+    
+    async def async_turn_on(self, **kwargs: Any) -> None:
+        """Turn on AI analysis."""
+        _LOGGER.info(
+            "Enabling AI analysis for '%s'",
+            self.coordinator.appliance_name,
+        )
+        self.coordinator.set_ai_analysis_enabled(True)
+        await self.coordinator.async_request_refresh()
+        self.async_write_ha_state()
+    
+    async def async_turn_off(self, **kwargs: Any) -> None:
+        """Turn off AI analysis."""
+        _LOGGER.info(
+            "Disabling AI analysis for '%s'",
+            self.coordinator.appliance_name,
+        )
+        self.coordinator.set_ai_analysis_enabled(False)
+        await self.coordinator.async_request_refresh()
+        self.async_write_ha_state()
+    
+    @property
+    def available(self) -> bool:
+        """Return True if AI Task entity is configured."""
+        # Check if global AI config has an AI Task entity
+        global_config = self.hass.data.get(DOMAIN, {}).get("global_config")
+        if not global_config:
+            return False
+        
+        ai_task_entity = global_config.get_sync("ai_task_entity")
+        return ai_task_entity is not None
 

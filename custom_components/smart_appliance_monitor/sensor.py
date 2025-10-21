@@ -57,6 +57,9 @@ async def async_setup_entry(
     if coordinator.anomaly_detection_enabled:
         entities.append(SmartApplianceAnomalyScoreSensor(coordinator))
     
+    # Add AI analysis sensor (always add, availability controlled by switch/config)
+    entities.append(SmartApplianceAIAnalysisSensor(coordinator))
+    
     async_add_entities(entities)
     _LOGGER.info(
         "Sensors créés pour '%s' (%d entités)",
@@ -542,5 +545,141 @@ class SmartApplianceAnomalyScoreSensor(SmartApplianceEntity, SensorEntity):
             "history_size": len(self.coordinator._cycle_history),
             "detection_enabled": self.coordinator.anomaly_detection_enabled,
             "current_state": self.coordinator.data.get("state"),
+        }
+
+
+class SmartApplianceAIAnalysisSensor(SmartApplianceEntity, SensorEntity):
+    """Sensor for AI analysis results."""
+
+    _attr_translation_key = "ai_analysis"
+
+    def __init__(self, coordinator: SmartApplianceCoordinator) -> None:
+        """Initialize the sensor."""
+        super().__init__(coordinator, "ai_analysis")
+        self._attr_name = "AI Analysis"
+    
+    @property
+    def native_value(self) -> str:
+        """Return the analysis status."""
+        if not hasattr(self.coordinator, "last_ai_analysis_result") or not self.coordinator.last_ai_analysis_result:
+            return "not_analyzed"
+        
+        return self.coordinator.last_ai_analysis_result.get("status", "unknown")
+    
+    @property
+    def icon(self) -> str:
+        """Return the icon to use in the frontend."""
+        status = self.native_value
+        if status == "optimized":
+            return "mdi:brain-check"
+        elif status == "needs_improvement":
+            return "mdi:brain-alert"
+        elif status == "not_analyzed":
+            return "mdi:brain-off"
+        else:
+            return "mdi:brain"
+    
+    @property
+    def extra_state_attributes(self) -> dict[str, Any]:
+        """Return additional state attributes."""
+        if not hasattr(self.coordinator, "last_ai_analysis_result") or not self.coordinator.last_ai_analysis_result:
+            return {
+                "last_analysis_date": None,
+                "analysis_type": None,
+                "recommendations": [],
+                "insights": "",
+                "energy_savings_kwh": 0,
+                "energy_savings_eur": 0,
+                "optimal_hours": "",
+                "full_analysis": "",
+                "cycle_count_analyzed": 0,
+            }
+        
+        result = self.coordinator.last_ai_analysis_result
+        
+        return {
+            "last_analysis_date": result.get("timestamp"),
+            "analysis_type": result.get("analysis_type", "unknown"),
+            "summary": result.get("summary", ""),
+            "recommendations": result.get("recommendations", []),
+            "insights": result.get("insights", ""),
+            "energy_savings_kwh": result.get("energy_savings_kwh", 0),
+            "energy_savings_eur": result.get("energy_savings_eur", 0),
+            "optimal_hours": result.get("optimal_hours", ""),
+            "full_analysis": result.get("full_analysis", ""),
+            "cycle_count_analyzed": result.get("cycle_count_analyzed", 0),
+            "appliance_name": result.get("appliance_name", self.coordinator.appliance_name),
+        }
+
+
+class EnergyDashboardAIAnalysisSensor(SensorEntity):
+    """Sensor for Energy Dashboard AI analysis results."""
+
+    _attr_translation_key = "energy_dashboard_ai_analysis"
+    _attr_native_unit_of_measurement = "score"
+    _attr_state_class = SensorStateClass.MEASUREMENT
+
+    def __init__(self, hass: HomeAssistant) -> None:
+        """Initialize the sensor."""
+        self.hass = hass
+        self._attr_name = "Energy Dashboard AI Analysis"
+        self._attr_unique_id = f"{DOMAIN}_energy_dashboard_ai_analysis"
+        self._last_result: dict[str, Any] | None = None
+    
+    def update_analysis(self, result: dict[str, Any]) -> None:
+        """Update the sensor with new analysis results."""
+        self._last_result = result
+        self.async_write_ha_state()
+    
+    @property
+    def native_value(self) -> int:
+        """Return the efficiency score (0-100)."""
+        if not self._last_result:
+            return 0
+        
+        return self._last_result.get("efficiency_score", 0)
+    
+    @property
+    def icon(self) -> str:
+        """Return the icon to use in the frontend."""
+        score = self.native_value
+        if score >= 80:
+            return "mdi:lightning-bolt-circle"
+        elif score >= 60:
+            return "mdi:lightning-bolt"
+        elif score >= 40:
+            return "mdi:alert"
+        else:
+            return "mdi:alert-circle"
+    
+    @property
+    def extra_state_attributes(self) -> dict[str, Any]:
+        """Return additional state attributes."""
+        if not self._last_result:
+            return {
+                "last_analysis_date": None,
+                "analysis_period": None,
+                "global_recommendations": [],
+                "top_optimization_opportunities": [],
+                "estimated_monthly_savings_eur": 0,
+                "peak_hours": "",
+                "off_peak_recommendations": "",
+                "inefficient_devices": [],
+                "consumption_trend": "unknown",
+                "full_analysis": "",
+            }
+        
+        return {
+            "last_analysis_date": self._last_result.get("timestamp"),
+            "analysis_period": self._last_result.get("analysis_period", "unknown"),
+            "global_recommendations": self._last_result.get("global_recommendations", []),
+            "top_optimization_opportunities": self._last_result.get("top_optimization_opportunities", []),
+            "estimated_monthly_savings_eur": self._last_result.get("estimated_monthly_savings_eur", 0),
+            "peak_hours": self._last_result.get("peak_hours", ""),
+            "off_peak_recommendations": self._last_result.get("off_peak_recommendations", ""),
+            "inefficient_devices": self._last_result.get("inefficient_devices", []),
+            "consumption_trend": self._last_result.get("consumption_trend", "unknown"),
+            "full_analysis": self._last_result.get("full_analysis", ""),
+            "comparison_included": self._last_result.get("comparison_included", False),
         }
 

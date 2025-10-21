@@ -66,6 +66,9 @@ from .const import (
     EVENT_BUDGET_EXCEEDED,
     EVENT_USAGE_OUT_OF_SCHEDULE,
     EVENT_ANOMALY_DETECTED,
+    EVENT_AI_ANALYSIS_COMPLETED,
+    EVENT_AI_ANALYSIS_FAILED,
+    AI_TRIGGER_AUTO_CYCLE_END,
 )
 from .state_machine import CycleStateMachine
 from .notify import SmartApplianceNotifier
@@ -190,6 +193,12 @@ class SmartApplianceCoordinator(DataUpdateCoordinator):
         self.anomaly_detection_enabled = entry.options.get(CONF_ENABLE_ANOMALY_DETECTION, False)
         self._cycle_history: list[dict[str, Any]] = []
         self._max_history_size = 10
+        
+        # AI Analysis
+        self.ai_analysis_enabled = False  # Will be loaded from global config
+        self.ai_analysis_trigger = "manual"  # Will be loaded from global config
+        self.ai_task_entity: str | None = None  # Will be loaded from global config
+        self.last_ai_analysis_result: dict[str, Any] | None = None
         
         # Storage pour la persistance
         storage_key = STORAGE_KEY.format(entry_id=entry.entry_id)
@@ -420,6 +429,21 @@ class SmartApplianceCoordinator(DataUpdateCoordinator):
             cost=cost,
         )
         
+        # Trigger AI analysis if enabled and configured for auto-trigger on cycle end
+        if (
+            self.ai_analysis_enabled
+            and self.ai_analysis_trigger == AI_TRIGGER_AUTO_CYCLE_END
+            and self.ai_task_entity
+        ):
+            _LOGGER.debug(
+                "Auto-triggering AI analysis for '%s' after cycle finished",
+                self.appliance_name,
+            )
+            # Run analysis in background (don't block cycle finish)
+            self.hass.async_create_task(
+                self.async_trigger_ai_analysis()
+            )
+        
         # Sauvegarder l'état
         await self._save_state()
     
@@ -527,6 +551,127 @@ class SmartApplianceCoordinator(DataUpdateCoordinator):
     def set_scheduling_enabled(self, enabled: bool) -> None:
         """Active ou désactive la planification."""
         self.scheduling_enabled = enabled
+    
+    def set_ai_analysis_enabled(self, enabled: bool) -> None:
+        """Enable or disable AI analysis.
+        
+        Args:
+            enabled: True to enable, False to disable
+        """
+        _LOGGER.info(
+            "AI analysis %s for '%s'",
+            "enabled" if enabled else "disabled",
+            self.appliance_name,
+        )
+        self.ai_analysis_enabled = enabled
+    
+    async def load_global_ai_config(self) -> None:
+        """Load AI configuration from global config."""
+        global_config = self.hass.data.get(DOMAIN, {}).get("global_config")
+        if not global_config:
+            _LOGGER.debug("No global config found for AI analysis")
+            return
+        
+        # Load AI Task entity
+        self.ai_task_entity = global_config.get_sync("ai_task_entity")
+        
+        # Load AI analysis trigger
+        self.ai_analysis_trigger = global_config.get_sync("ai_analysis_trigger", "manual")
+        
+        _LOGGER.debug(
+            "Global AI config loaded for '%s': entity=%s, trigger=%s",
+            self.appliance_name,
+            self.ai_task_entity,
+            self.ai_analysis_trigger,
+        )
+    
+    async def async_trigger_ai_analysis(
+        self,
+        analysis_type: str = "all",
+        cycle_count: int = 10,
+    ) -> dict[str, Any] | None:
+        """Trigger AI analysis for this appliance.
+        
+        Args:
+            analysis_type: Type of analysis to perform
+            cycle_count: Number of cycles to analyze
+            
+        Returns:
+            Analysis results or None if failed
+        """
+        from .ai_client import SmartApplianceAIClient
+        from .export import SmartApplianceDataExporter
+        
+        if not self.ai_task_entity:
+            _LOGGER.warning(
+                "Cannot trigger AI analysis for '%s': no AI Task entity configured",
+                self.appliance_name,
+            )
+            return None
+        
+        try:
+            _LOGGER.info(
+                "Triggering AI analysis for '%s' (type: %s, cycles: %d)",
+                self.appliance_name,
+                analysis_type,
+                cycle_count,
+            )
+            
+            # Export data for AI analysis
+            exporter = SmartApplianceDataExporter(self)
+            export_data = exporter.export_for_ai_analysis(cycle_count=cycle_count)
+            
+            # Add cycle count to export data
+            export_data["cycle_count_analyzed"] = cycle_count
+            
+            # Create AI client and analyze
+            ai_client = SmartApplianceAIClient(self.hass, self.ai_task_entity)
+            result = await ai_client.async_analyze_cycle_data(
+                appliance_name=self.appliance_name,
+                appliance_type=self.appliance_type,
+                data=export_data,
+                analysis_type=analysis_type,
+            )
+            
+            # Store result
+            result["cycle_count_analyzed"] = cycle_count
+            self.last_ai_analysis_result = result
+            
+            # Fire event
+            self.hass.bus.fire(
+                f"{DOMAIN}_{EVENT_AI_ANALYSIS_COMPLETED}",
+                {
+                    "appliance_name": self.appliance_name,
+                    "analysis_type": analysis_type,
+                    "status": result.get("status"),
+                },
+            )
+            
+            _LOGGER.info(
+                "AI analysis completed for '%s': status=%s",
+                self.appliance_name,
+                result.get("status"),
+            )
+            
+            return result
+            
+        except Exception as err:
+            _LOGGER.error(
+                "AI analysis failed for '%s': %s",
+                self.appliance_name,
+                err,
+            )
+            
+            # Fire error event
+            self.hass.bus.fire(
+                f"{DOMAIN}_{EVENT_AI_ANALYSIS_FAILED}",
+                {
+                    "appliance_name": self.appliance_name,
+                    "error": str(err),
+                },
+            )
+            
+            return None
     
     async def _check_auto_shutdown(self) -> None:
         """Vérifie si l'appareil doit être éteint automatiquement."""

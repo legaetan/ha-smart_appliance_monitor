@@ -254,3 +254,127 @@ APPLIANCE_PROFILES = {
     },
 }
 
+# AI Analysis Configuration
+CONF_AI_TASK_ENTITY = "ai_task_entity"
+CONF_GLOBAL_PRICE_ENTITY = "global_price_entity"
+CONF_ENABLE_AI_ANALYSIS = "enable_ai_analysis"
+CONF_AI_ANALYSIS_TRIGGER = "ai_analysis_trigger"
+
+# AI Analysis Triggers
+AI_TRIGGER_AUTO_CYCLE_END = "auto_cycle_end"
+AI_TRIGGER_MANUAL = "manual"
+AI_TRIGGER_PERIODIC_DAILY = "periodic_daily"
+AI_TRIGGER_PERIODIC_WEEKLY = "periodic_weekly"
+
+AI_ANALYSIS_TRIGGERS = [
+    AI_TRIGGER_AUTO_CYCLE_END,
+    AI_TRIGGER_MANUAL,
+    AI_TRIGGER_PERIODIC_DAILY,
+    AI_TRIGGER_PERIODIC_WEEKLY,
+]
+
+# AI Analysis Types
+AI_ANALYSIS_TYPE_PATTERN = "pattern"
+AI_ANALYSIS_TYPE_COMPARATIVE = "comparative"
+AI_ANALYSIS_TYPE_RECOMMENDATIONS = "recommendations"
+AI_ANALYSIS_TYPE_ALL = "all"
+
+AI_ANALYSIS_TYPES = [
+    AI_ANALYSIS_TYPE_PATTERN,
+    AI_ANALYSIS_TYPE_COMPARATIVE,
+    AI_ANALYSIS_TYPE_RECOMMENDATIONS,
+    AI_ANALYSIS_TYPE_ALL,
+]
+
+# AI Analysis Events
+EVENT_AI_ANALYSIS_COMPLETED = "ai_analysis_completed"
+EVENT_AI_ANALYSIS_FAILED = "ai_analysis_failed"
+
+# AI Analysis Notification Type
+NOTIF_TYPE_AI_ANALYSIS = "ai_analysis"
+
+# AI Analysis Sensor
+SENSOR_AI_ANALYSIS = "ai_analysis"
+
+# AI Analysis Structure for ai_task.generate_data
+ANALYSIS_STRUCTURE = {
+    "summary": {
+        "selector": {"text": {}},
+        "description": "Short summary of the analysis",
+        "required": True,
+    },
+    "status": {
+        "selector": {
+            "select": {
+                "options": ["optimized", "normal", "needs_improvement"],
+            }
+        },
+        "description": "Overall status of appliance efficiency",
+        "required": True,
+    },
+    "recommendations": {
+        "selector": {"text": {}},
+        "description": "List of recommendations (one per line)",
+        "required": True,
+    },
+    "energy_savings_kwh": {
+        "selector": {"number": {"min": 0, "step": 0.01}},
+        "description": "Potential energy savings in kWh",
+    },
+    "energy_savings_eur": {
+        "selector": {"number": {"min": 0, "step": 0.01}},
+        "description": "Potential cost savings in EUR",
+    },
+    "optimal_hours": {
+        "selector": {"text": {}},
+        "description": "Recommended usage hours",
+    },
+    "insights": {
+        "selector": {"text": {}},
+        "description": "Key insights from the analysis",
+    },
+}
+
+# Energy Dashboard AI Analysis Structure
+ENERGY_DASHBOARD_ANALYSIS_STRUCTURE = {
+    "efficiency_score": {
+        "selector": {"number": {"min": 0, "max": 100}},
+        "description": "Global energy efficiency score (0-100)",
+        "required": True,
+    },
+    "global_recommendations": {
+        "selector": {"text": {}},
+        "description": "Recommendations for the entire home (one per line)",
+        "required": True,
+    },
+    "top_optimization_opportunities": {
+        "selector": {"text": {}},
+        "description": "Top 3 optimization opportunities",
+        "required": True,
+    },
+    "estimated_monthly_savings_eur": {
+        "selector": {"number": {"min": 0, "step": 0.01}},
+        "description": "Estimated monthly savings in EUR",
+    },
+    "peak_hours": {
+        "selector": {"text": {}},
+        "description": "Detected peak consumption hours",
+    },
+    "off_peak_recommendations": {
+        "selector": {"text": {}},
+        "description": "Suggestions for off-peak usage",
+    },
+    "inefficient_devices": {
+        "selector": {"text": {}},
+        "description": "List of less efficient devices",
+    },
+    "consumption_trend": {
+        "selector": {
+            "select": {
+                "options": ["increasing", "stable", "decreasing"],
+            }
+        },
+        "description": "Overall consumption trend",
+    },
+}
+

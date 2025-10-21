@@ -5,6 +5,152 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.7.0] - 2025-10-21
+
+### Added
+
+#### AI-Powered Cycle Analysis 🤖
+
+**AI Client Integration (`ai_client.py`)**
+- **New module** `SmartApplianceAIClient` for AI-powered analysis via Home Assistant AI Tasks
+- Uses `ai_task.generate_data` service (no direct API calls)
+- Support for OpenAI, Claude, Ollama, and any HA-compatible AI provider
+- Three analysis methods:
+  - `async_analyze_cycle_data()` - Individual appliance cycle analysis
+  - `async_analyze_energy_dashboard()` - Global home energy analysis
+- Structured response parsing with field validation
+- Optimized prompts for pattern, comparative, and recommendation analysis
+- Error handling and timeout management
+
+**Global AI Configuration (`storage_config.py`)**
+- **New module** `GlobalConfigManager` for persistent AI configuration
+- Storage in `.storage/smart_appliance_monitor.global_config`
+- Methods: `async_load()`, `async_save()`, `async_get()`, `async_set()`, `async_update()`
+- Accessible by all coordinators via `hass.data[DOMAIN]["global_config"]`
+- Stores: AI Task entity, global price entity, analysis trigger, enable/disable state
+
+**Enhanced Data Export**
+- **New method** `export_for_ai_analysis()` in `export.py`
+  - Structured JSON with cycle history (last N cycles)
+  - Aggregated statistics (mean, stdev, min/max)
+  - Temporal patterns (most common hours and days)
+  - Comparison current vs historical
+- **New method** `export_cycles_history_csv()` for tabular export
+- Metadata includes: appliance config, type profile, pricing
+
+**Energy Dashboard AI Analysis**
+- **New method** `export_for_ai_analysis()` in `energy_dashboard.py`
+  - Aggregated data for all appliances
+  - Period-based exports (today/yesterday/week/month)
+  - Optional comparison with previous period
+  - Device breakdowns and top consumers
+  - Pricing information
+
+**New AI Analysis Services**
+1. **`analyze_cycles`** - Analyze individual appliance cycles
+   - Parameters: entity_id, analysis_type, cycle_count, export_format, save_export
+   - Analysis types: pattern, comparative, recommendations, all
+   - Optional data export to /config files
+   - Auto-sends notification if enabled
+   
+2. **`analyze_energy_dashboard`** - Global home energy analysis
+   - Parameters: period, compare_previous, include_recommendations
+   - Analyzes all appliances together
+   - Provides efficiency score (0-100)
+   - Identifies top consumers and optimization opportunities
+   
+3. **`configure_ai`** - Configure global AI settings
+   - Parameters: ai_task_entity, global_price_entity, enable_ai_analysis, ai_analysis_trigger
+   - Reloads config for all coordinators
+   - Sends confirmation notification
+
+**New AI Analysis Sensors**
+- **Per-appliance sensor** `sensor.<appliance>_ai_analysis`
+  - State: optimized/normal/needs_improvement/not_analyzed
+  - Attributes: last_analysis_date, analysis_type, summary, recommendations, insights
+  - Attributes: energy_savings_kwh, energy_savings_eur, optimal_hours
+  - Attributes: full_analysis, cycle_count_analyzed
+  
+- **Global dashboard sensor** `sensor.sam_energy_dashboard_ai_analysis`
+  - State: Efficiency score (0-100)
+  - Attributes: global_recommendations, top_optimization_opportunities
+  - Attributes: estimated_monthly_savings_eur, peak_hours, off_peak_recommendations
+  - Attributes: inefficient_devices, consumption_trend
+
+**New AI Analysis Switch**
+- **Switch** `switch.<appliance>_ai_analysis`
+  - Enable/disable AI analysis per appliance
+  - Independent of global configuration (local override)
+  - Icon: mdi:brain / mdi:brain-off
+  - Only available when AI Task entity configured
+
+**Coordinator AI Integration**
+- **New properties**: `ai_analysis_enabled`, `ai_analysis_trigger`, `ai_task_entity`, `last_ai_analysis_result`
+- **New method** `async_trigger_ai_analysis()` - Trigger analysis programmatically
+- **New method** `load_global_ai_config()` - Load AI config on startup
+- **Auto-trigger** support: Analysis triggered automatically after cycle completion if configured
+- **Events**: `EVENT_AI_ANALYSIS_COMPLETED`, `EVENT_AI_ANALYSIS_FAILED`
+
+**AI Analysis Notifications**
+- **New notification type** `NOTIF_TYPE_AI_ANALYSIS`
+- **New method** `notify_ai_analysis()` in `notify.py`
+- Rich notifications with status emoji, summary, recommendations, savings
+- Mobile app actions: "View Details", "Re-analyze"
+- Color-coded by status (green/orange/blue)
+
+**Translations and Documentation**
+- Added AI analysis keys to `strings.json` (English)
+- Added AI analysis keys to `translations/fr.json` (French)
+- Bilingual support for all UI elements
+- New selectors: ai_analysis_trigger, ai_analysis_type
+- Service documentation in `services.yaml`
+
+**Testing and Documentation**
+- **New file** `TESTING_AI.md` - Complete testing guide
+  - Setup instructions for AI Task entities
+  - 6 detailed test scenarios
+  - Troubleshooting section
+  - Performance notes and cost estimates
+  - Automation examples
+- Updated `README.md` with AI Analysis Features section
+- Service usage examples with expected results
+
+### Changed
+
+- **Coordinator** now loads global AI config on initialization
+- **`__init__.py`** initializes global config manager on first entry setup
+- **Notification types** list extended with AI analysis
+- **Sensor entity count** increased to 14 per appliance (added AI sensor)
+- **Switch entity count** increased to 10 per appliance (added AI switch)
+- **Service count** increased to 13 total services (added 3 AI services)
+
+### Fixed
+
+- Proper handling of missing AI Task entity (graceful degradation)
+- Sensor availability based on global AI configuration
+- Cache invalidation when global config changes
+
+### Technical Details
+
+**Architecture**
+- AI analysis flows through: Trigger → Coordinator → Exporter → AI Client → HA AI Task → Response Parser → Sensor/Notification
+- No direct API calls - everything via Home Assistant AI Tasks
+- Structured responses using AI Task `structure` parameter
+- Response validation and error handling at each step
+
+**Performance**
+- AI analysis: 10-30 seconds depending on provider and data size
+- Local AI (Ollama): ~5-15 seconds
+- Cloud AI (OpenAI/Claude): ~10-30 seconds
+- API costs: ~$0.01-0.03 per cycle analysis, ~$0.02-0.05 per dashboard analysis
+
+**Compatibility**
+- ✅ No breaking changes
+- ✅ Optional feature (disabled by default)
+- ✅ Compatible with all existing features
+- ✅ Works with any HA AI Task provider
+- ✅ Bilingual interface (EN/FR)
+
 ## [0.6.0] - 2025-10-21
 
 ### Added

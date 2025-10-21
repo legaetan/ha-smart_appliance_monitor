@@ -203,6 +203,24 @@
       },
       "notification_unplugged": {
         "name": "Notify Unplugged"
+      },
+      "ai_analysis": {
+        "name": "AI Analysis"
+      }
+    },
+    "sensor": {
+      "ai_analysis": {
+        "name": "AI Analysis",
+        "state": {
+          "optimized": "Optimized",
+          "normal": "Normal",
+          "needs_improvement": "Needs Improvement",
+          "not_analyzed": "Not Analyzed",
+          "unknown": "Unknown"
+        }
+      },
+      "energy_dashboard_ai_analysis": {
+        "name": "Energy Dashboard AI Analysis"
       }
     }
   },
@@ -235,7 +253,24 @@
         "cycle_started": "Cycle Started",
         "cycle_finished": "Cycle Finished",
         "alert_duration": "Duration Alert",
-        "unplugged": "Unplugged Alert"
+        "unplugged": "Unplugged Alert",
+        "ai_analysis": "AI Analysis"
+      }
+    },
+    "ai_analysis_trigger": {
+      "options": {
+        "auto_cycle_end": "Automatic (After Each Cycle)",
+        "manual": "Manual (Via Service)",
+        "periodic_daily": "Periodic (Daily)",
+        "periodic_weekly": "Periodic (Weekly)"
+      }
+    },
+    "ai_analysis_type": {
+      "options": {
+        "all": "All Analysis Types",
+        "pattern": "Pattern Analysis",
+        "comparative": "Comparative Analysis",
+        "recommendations": "Recommendations Only"
       }
     }
   }

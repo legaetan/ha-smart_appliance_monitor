@@ -87,35 +87,41 @@ Follow this exact workflow for creating releases (based on v0.5.1 experience):
    git push && git push --tags
    ```
 
-### Step 3: Create GitHub Release
+### Step 3: Create Release Notes and GitHub Release
 
-1. Create temporary release notes file `RELEASE_NOTES_vX.Y.Z.md`:
+1. Create release notes file `docs/release_notes/RELEASE_NOTES_vX.Y.Z.md`:
    - Write in English
-   - Include: overview, key features, installation instructions, bug fixes
-   - Keep it user-friendly and concise
-   - Reference full changelog
+   - Include: overview, key features, installation instructions, bug fixes, examples
+   - Keep it user-friendly and comprehensive
+   - Reference full changelog and other documentation
+   - This file is PERMANENT and should be committed to the repository
 
-2. Create ZIP archive:
+2. Update `docs/release_notes/README.md`:
+   - Add new version entry at the top
+   - Update "Latest version" at the bottom
+   - Commit this update with the release
+
+3. Create ZIP archive:
    ```bash
    zip -r smart_appliance_monitor-vX.Y.Z.zip custom_components/smart_appliance_monitor/ -x "*.pyc" "*__pycache__*" "*.git*"
    ```
 
-3. Create GitHub release:
+4. Create GitHub release:
    ```bash
    gh release create vX.Y.Z smart_appliance_monitor-vX.Y.Z.zip \
      --title "vX.Y.Z - [Feature Name]" \
-     --notes-file RELEASE_NOTES_vX.Y.Z.md
+     --notes-file docs/release_notes/RELEASE_NOTES_vX.Y.Z.md
    ```
 
 ### Step 4: Cleanup
 
-1. Delete temporary files:
+1. Delete temporary ZIP archive:
    ```bash
-   rm RELEASE_NOTES_vX.Y.Z.md smart_appliance_monitor-vX.Y.Z.zip
+   rm smart_appliance_monitor-vX.Y.Z.zip
    ```
 
-2. No commit needed - files are already in `.gitignore`
-3. Repository stays clean without release artifacts
+2. Keep release notes in `docs/release_notes/` - they are permanent documentation
+3. Repository contains complete release history in the release_notes folder
 
 ## Project Structure
 
@@ -143,6 +149,10 @@ ha-smart_appliance_monitor/
 ├── tests/                           # Unit tests
 ├── docs/                            # Technical documentation
 │   ├── wiki-github/                 # User wiki (submodule)
+│   ├── release_notes/               # Release notes (permanent)
+│   │   ├── README.md                # Index of all releases
+│   │   └── RELEASE_NOTES_vX.Y.Z.md  # Individual release notes
+│   ├── TESTING_AI.md                # AI features testing guide
 │   └── PERSISTENCE.md               # Technical docs
 ├── CHANGELOG.md                     # Version history
 ├── README.md                        # Main documentation
@@ -156,11 +166,12 @@ ha-smart_appliance_monitor/
 - Python modules: lowercase with underscores (e.g., `state_machine.py`)
 - Documentation: UPPERCASE.md (e.g., `README.md`, `CHANGELOG.md`)
 - Version file: `version` (no extension)
+- Release notes: `docs/release_notes/RELEASE_NOTES_vX.Y.Z.md` (PERMANENT - committed)
+- Testing guides: `docs/TESTING_*.md`
 
 **Temporary files (gitignored):**
-- Release notes: `RELEASE_NOTES_vX.Y.Z.md`
-- Release summaries: `RELEASE_SUMMARY_vX.Y.Z.md`
 - Archives: `smart_appliance_monitor-vX.Y.Z.zip`
+- Development notes: `notes.md`, `todo.md`, etc.
 
 ## Git Commit Message Format
 
@@ -203,9 +214,9 @@ from .const import DOMAIN
 
 ### Never Commit
 - ZIP archives (`smart_appliance_monitor-*.zip`)
-- Release notes files (`RELEASE_NOTES_*.md`, `RELEASE_SUMMARY_*.md`)
 - Python cache files (`__pycache__/`, `*.pyc`)
 - IDE files (`.vscode/`, `.idea/`)
+- Temporary development notes (`notes.md`, `todo.md`, etc.)
 
 ### Always Remember
 - Wiki is a submodule - commit and push wiki changes separately FIRST
@@ -227,12 +238,14 @@ Before creating a release, ensure:
 - [ ] Version updated in `version` and `manifest.json`
 - [ ] CHANGELOG.md updated with all changes
 - [ ] README.md updated if needed
+- [ ] Release notes created in `docs/release_notes/RELEASE_NOTES_vX.Y.Z.md`
+- [ ] Release notes index updated in `docs/release_notes/README.md`
 - [ ] Wiki updated if needed (and changes committed/pushed)
 - [ ] All tests passing
 - [ ] No linter errors
-- [ ] Release notes written in English
-- [ ] Code comments in English
+- [ ] All documentation in English (release notes, README, code comments)
 - [ ] French translations updated if UI changed
+- [ ] Testing guides created/updated for new features (e.g., `docs/TESTING_*.md`)
 
 ## Questions?
 

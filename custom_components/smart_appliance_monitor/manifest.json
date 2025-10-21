@@ -1,7 +1,7 @@
 {
   "domain": "smart_appliance_monitor",
   "name": "Smart Appliance Monitor",
-  "version": "0.6.0",
+  "version": "0.7.0",
   "documentation": "https://github.com/legaetan/ha-smart_appliance_monitor",
   "issue_tracker": "https://github.com/legaetan/ha-smart_appliance_monitor/issues",
   "requirements": [],

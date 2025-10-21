@@ -4,6 +4,28 @@ Ce dossier contient les notes de version détaillées pour chaque release de Sma
 
 ## 📋 Index des Versions
 
+### Version 0.7.x - AI Analysis 🤖
+
+- **[v0.7.0](RELEASE_NOTES_v0.7.0.md)** - 21 octobre 2025 - AI-Powered Cycle Analysis 🤖
+  - Analyse IA des cycles d'appareils via Home Assistant AI Tasks
+  - Support OpenAI, Claude, Ollama, et autres providers IA
+  - Trois types d'analyse : Pattern, Comparative, Recommendations
+  - Analyse globale du tableau de bord énergétique
+  - Nouveaux services : `configure_ai`, `analyze_cycles`, `analyze_energy_dashboard`
+  - Nouveaux capteurs et switches d'analyse IA
+  - Guide de test complet (TESTING_AI.md)
+  - Documentation bilingue (EN/FR)
+
+### Version 0.6.x - Energy Dashboard Integration ⚡
+
+- **[v0.6.0](RELEASE_NOTES_v0.6.0.md)** - 21 octobre 2025 - Energy Dashboard Integration Suite
+  - Lecteur de fichier `.storage/energy` (read-only)
+  - Synchronisation automatique avec Energy Dashboard
+  - Services de sync et export de configuration
+  - Custom Energy Dashboard avec analytics avancées
+  - Comparaisons multi-périodes
+  - Template de dashboard personnalisé
+
 ### Version 0.5.x - Features Avancées & Corrections
 
 - **[v0.5.7](RELEASE_NOTES_v0.5.7.md)** - 21 octobre 2025 - Documentation & Roadmap 📚
@@ -73,6 +95,6 @@ Ce projet suit le [Semantic Versioning](https://semver.org/):
 
 ---
 
-**Dernière version** : v0.5.6  
+**Dernière version** : v0.7.0  
 **Date** : 21 octobre 2025
 

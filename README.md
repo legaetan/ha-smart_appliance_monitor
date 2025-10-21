@@ -34,6 +34,16 @@ Smart Appliance Monitor is a Home Assistant custom integration that automaticall
 - **Energy Dashboard Integration** - Native support for Home Assistant Energy Dashboard
 - **State Persistence** (v0.5.1) - Cycles and statistics are preserved across Home Assistant restarts
 
+### AI Analysis Features (v0.7.0) ⚡ *NEW*
+- **Intelligent Cycle Analysis** - AI-powered analysis of appliance usage patterns and habits
+- **Three Analysis Types** - Pattern analysis, comparative analysis, and personalized recommendations
+- **Energy Optimization** - Identify potential savings and optimal usage hours
+- **Automatic Trigger** - Optional automatic analysis after each cycle completion
+- **Global Dashboard Analysis** - AI analysis of entire home energy consumption
+- **Efficiency Scoring** - Get actionable efficiency scores (0-100) for appliances and home
+- **HA AI Tasks Integration** - Uses Home Assistant AI Tasks (OpenAI, Claude, Ollama, etc.)
+- **Bilingual Insights** - Analysis and recommendations in English and French
+
 ### Energy Dashboard Suite (v0.6.0+) ⚡ *NEW*
 - **Automatic Sync Detection** - Check if devices are configured in Energy Dashboard on startup
 - **Energy Storage Reader** - Read-only access to `.storage/energy` for advanced analytics
@@ -233,6 +243,54 @@ data:
     - "Washing Machine"
     - "Dishwasher"
 ```
+
+### AI Analysis Services ⚡ *NEW v0.7.0*
+
+#### `smart_appliance_monitor.configure_ai`
+Configure global AI analysis settings for all appliances.
+
+```yaml
+service: smart_appliance_monitor.configure_ai
+data:
+  ai_task_entity: ai_task.openai_ai_task  # Or claude, ollama, etc.
+  enable_ai_analysis: true
+  ai_analysis_trigger: manual  # auto_cycle_end, manual, periodic_daily, periodic_weekly
+  global_price_entity: input_number.electricity_price  # Optional
+```
+
+#### `smart_appliance_monitor.analyze_cycles`
+Analyze appliance cycles using AI to get insights, patterns, and recommendations.
+
+```yaml
+service: smart_appliance_monitor.analyze_cycles
+data:
+  entity_id: sensor.washing_machine_state
+  analysis_type: all  # pattern, comparative, recommendations, all
+  cycle_count: 10  # Number of cycles to analyze
+  save_export: false  # Optionally save data to files
+```
+
+**Analysis Results**: Stored in `sensor.<appliance>_ai_analysis` with attributes:
+- `status`: optimized, normal, or needs_improvement
+- `recommendations`: List of actionable recommendations
+- `energy_savings_kwh`: Potential energy savings
+- `energy_savings_eur`: Potential cost savings
+- `optimal_hours`: Recommended usage hours
+- `insights`: Key insights from analysis
+
+#### `smart_appliance_monitor.analyze_energy_dashboard`
+Perform AI analysis on overall home energy consumption.
+
+```yaml
+service: smart_appliance_monitor.analyze_energy_dashboard
+data:
+  period: today  # today, yesterday, week, month
+  compare_previous: true
+```
+
+**Analysis Results**: Includes efficiency score (0-100), top consumers, optimization opportunities, and estimated monthly savings.
+
+See [TESTING_AI.md](docs/TESTING_AI.md) for detailed setup and testing instructions.
 
 ## Dynamic Pricing
 

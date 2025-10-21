@@ -94,6 +94,33 @@ SERVICE_GET_ENERGY_DATA_SCHEMA = vol.Schema(
     }
 )
 
+SERVICE_ANALYZE_CYCLES_SCHEMA = vol.Schema(
+    {
+        vol.Required("entity_id"): cv.entity_id,
+        vol.Optional("analysis_type", default="all"): vol.In(["pattern", "comparative", "recommendations", "all"]),
+        vol.Optional("cycle_count", default=10): cv.positive_int,
+        vol.Optional("export_format", default="json"): vol.In(["json", "csv", "both"]),
+        vol.Optional("save_export", default=False): cv.boolean,
+    }
+)
+
+SERVICE_ANALYZE_ENERGY_DASHBOARD_SCHEMA = vol.Schema(
+    {
+        vol.Optional("period", default="today"): vol.In(["today", "yesterday", "week", "month"]),
+        vol.Optional("compare_previous", default=False): cv.boolean,
+        vol.Optional("include_recommendations", default=True): cv.boolean,
+    }
+)
+
+SERVICE_CONFIGURE_AI_SCHEMA = vol.Schema(
+    {
+        vol.Optional("ai_task_entity"): cv.entity_id,
+        vol.Optional("global_price_entity"): cv.entity_id,
+        vol.Optional("enable_ai_analysis"): cv.boolean,
+        vol.Optional("ai_analysis_trigger"): vol.In(["auto_cycle_end", "manual", "periodic_daily", "periodic_weekly"]),
+    }
+)
+
 
 async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     """Set up Smart Appliance Monitor from a config entry."""
@@ -101,11 +128,22 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     
     hass.data.setdefault(DOMAIN, {})
     
+    # Initialize global config manager if not already done
+    if "global_config" not in hass.data[DOMAIN]:
+        from .storage_config import GlobalConfigManager
+        global_config = GlobalConfigManager(hass)
+        await global_config.async_load()
+        hass.data[DOMAIN]["global_config"] = global_config
+        _LOGGER.info("Global AI configuration manager initialized")
+    
     # Créer le coordinator
     coordinator = SmartApplianceCoordinator(hass, entry)
     
     # Restaurer l'état depuis le stockage persistant
     await coordinator.restore_state()
+    
+    # Load global AI configuration
+    await coordinator.load_global_ai_config()
     
     await coordinator.async_config_entry_first_refresh()
     
@@ -766,6 +804,176 @@ async def async_setup_services(hass: HomeAssistant) -> None:
             },
         )
     
+    async def handle_analyze_cycles(call: ServiceCall) -> None:
+        """Handle analyze_cycles service call."""
+        entity_id = call.data["entity_id"]
+        analysis_type = call.data.get("analysis_type", "all")
+        cycle_count = call.data.get("cycle_count", 10)
+        export_format = call.data.get("export_format", "json")
+        save_export = call.data.get("save_export", False)
+        
+        coordinator = _get_coordinator_from_entity_id(hass, entity_id)
+        if coordinator is None:
+            _LOGGER.error("Unable to find coordinator for entity %s", entity_id)
+            return
+        
+        _LOGGER.info(
+            "Starting AI analysis for '%s' (type: %s, cycles: %d)",
+            coordinator.appliance_name,
+            analysis_type,
+            cycle_count,
+        )
+        
+        # Export data if requested
+        if save_export:
+            from .export import SmartApplianceDataExporter
+            exporter = SmartApplianceDataExporter(coordinator)
+            
+            if export_format in ("json", "both"):
+                json_path = f"/config/sam_export_{coordinator.appliance_name}_cycles.json"
+                exporter.export_to_json(file_path=json_path)
+                _LOGGER.info("Exported data to JSON: %s", json_path)
+            
+            if export_format in ("csv", "both"):
+                csv_path = f"/config/sam_export_{coordinator.appliance_name}_cycles.csv"
+                csv_content = exporter.export_cycles_history_csv(cycle_count=cycle_count)
+                from pathlib import Path
+                Path(csv_path).write_text(csv_content, encoding="utf-8")
+                _LOGGER.info("Exported data to CSV: %s", csv_path)
+        
+        # Trigger AI analysis
+        result = await coordinator.async_trigger_ai_analysis(
+            analysis_type=analysis_type,
+            cycle_count=cycle_count,
+        )
+        
+        if result:
+            _LOGGER.info(
+                "AI analysis completed for '%s': status=%s",
+                coordinator.appliance_name,
+                result.get("status"),
+            )
+            
+            # Send notification if enabled
+            if coordinator.notifications_enabled:
+                await coordinator.notifier.notify_ai_analysis(result)
+        else:
+            _LOGGER.error("AI analysis failed for '%s'", coordinator.appliance_name)
+    
+    async def handle_analyze_energy_dashboard(call: ServiceCall) -> None:
+        """Handle analyze_energy_dashboard service call."""
+        period = call.data.get("period", "today")
+        compare_previous = call.data.get("compare_previous", False)
+        include_recommendations = call.data.get("include_recommendations", True)
+        
+        _LOGGER.info(
+            "Starting Energy Dashboard AI analysis (period: %s, compare: %s)",
+            period,
+            compare_previous,
+        )
+        
+        # Get global config and AI Task entity
+        global_config = hass.data.get(DOMAIN, {}).get("global_config")
+        if not global_config:
+            _LOGGER.error("No global configuration found for AI analysis")
+            return
+        
+        ai_task_entity = global_config.get_sync("ai_task_entity")
+        if not ai_task_entity:
+            _LOGGER.error("No AI Task entity configured")
+            return
+        
+        try:
+            from .energy_dashboard import CustomEnergyDashboard
+            from .ai_client import SmartApplianceAIClient
+            
+            # Get dashboard data
+            dashboard = CustomEnergyDashboard(hass)
+            export_data = await dashboard.export_for_ai_analysis(
+                period=period,
+                compare_previous=compare_previous,
+            )
+            
+            # Analyze with AI
+            ai_client = SmartApplianceAIClient(hass, ai_task_entity)
+            result = await ai_client.async_analyze_energy_dashboard(
+                dashboard_data=export_data,
+                period=period,
+                compare_previous=compare_previous,
+            )
+            
+            _LOGGER.info(
+                "Energy Dashboard AI analysis completed: score=%d",
+                result.get("efficiency_score", 0),
+            )
+            
+            # Update the global sensor if it exists
+            sensor_entity_id = f"sensor.{DOMAIN}_energy_dashboard_ai_analysis"
+            if sensor_entity_id in hass.states.async_entity_ids():
+                # Get the sensor and update it
+                # Note: This requires the sensor to be set up globally
+                _LOGGER.info("Energy Dashboard analysis result: %s", result)
+            
+            # Fire event with result
+            hass.bus.fire(
+                f"{DOMAIN}_energy_dashboard_analysis_completed",
+                {
+                    "period": period,
+                    "efficiency_score": result.get("efficiency_score", 0),
+                    "consumption_trend": result.get("consumption_trend", "unknown"),
+                },
+            )
+            
+        except Exception as err:
+            _LOGGER.error("Energy Dashboard AI analysis failed: %s", err)
+    
+    async def handle_configure_ai(call: ServiceCall) -> None:
+        """Handle configure_ai service call to set global AI configuration."""
+        ai_task_entity = call.data.get("ai_task_entity")
+        global_price_entity = call.data.get("global_price_entity")
+        enable_ai_analysis = call.data.get("enable_ai_analysis")
+        ai_analysis_trigger = call.data.get("ai_analysis_trigger")
+        
+        # Get global config
+        global_config = hass.data.get(DOMAIN, {}).get("global_config")
+        if not global_config:
+            _LOGGER.error("Global configuration manager not found")
+            return
+        
+        # Update configuration
+        updates = {}
+        if ai_task_entity is not None:
+            updates["ai_task_entity"] = ai_task_entity
+        if global_price_entity is not None:
+            updates["global_price_entity"] = global_price_entity
+        if enable_ai_analysis is not None:
+            updates["enable_ai_analysis"] = enable_ai_analysis
+        if ai_analysis_trigger is not None:
+            updates["ai_analysis_trigger"] = ai_analysis_trigger
+        
+        if updates:
+            await global_config.async_update(updates)
+            _LOGGER.info("Global AI configuration updated: %s", updates)
+            
+            # Reload config for all coordinators
+            for entry_id, coordinator in hass.data.get(DOMAIN, {}).items():
+                if isinstance(coordinator, SmartApplianceCoordinator):
+                    await coordinator.load_global_ai_config()
+                    _LOGGER.debug("Reloaded AI config for '%s'", coordinator.appliance_name)
+            
+            # Send confirmation notification
+            await hass.services.async_call(
+                "persistent_notification",
+                "create",
+                {
+                    "title": "✅ AI Configuration Updated",
+                    "message": f"Global AI analysis configuration has been updated.\n\n{updates}",
+                    "notification_id": "sam_ai_config_updated",
+                },
+            )
+        else:
+            _LOGGER.warning("No configuration changes provided")
+    
     # Register services
     hass.services.async_register(
         DOMAIN,
@@ -835,6 +1043,27 @@ async def async_setup_services(hass: HomeAssistant) -> None:
         "get_energy_data",
         handle_get_energy_data,
         schema=SERVICE_GET_ENERGY_DATA_SCHEMA,
+    )
+    
+    hass.services.async_register(
+        DOMAIN,
+        "analyze_cycles",
+        handle_analyze_cycles,
+        schema=SERVICE_ANALYZE_CYCLES_SCHEMA,
+    )
+    
+    hass.services.async_register(
+        DOMAIN,
+        "analyze_energy_dashboard",
+        handle_analyze_energy_dashboard,
+        schema=SERVICE_ANALYZE_ENERGY_DASHBOARD_SCHEMA,
+    )
+    
+    hass.services.async_register(
+        DOMAIN,
+        "configure_ai",
+        handle_configure_ai,
+        schema=SERVICE_CONFIGURE_AI_SCHEMA,
     )
     
     _LOGGER.info("Services Smart Appliance Monitor enregistrés")

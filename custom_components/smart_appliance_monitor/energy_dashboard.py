@@ -424,3 +424,127 @@ class CustomEnergyDashboard:
         
         return summary
 
+    async def export_for_ai_analysis(
+        self,
+        period: str = "today",
+        compare_previous: bool = False,
+    ) -> dict[str, Any]:
+        """Export energy dashboard data for AI analysis.
+        
+        Args:
+            period: Analysis period (today/yesterday/week/month)
+            compare_previous: Include comparison with previous period
+            
+        Returns:
+            Structured data optimized for AI analysis
+        """
+        now = datetime.now()
+        
+        # Determine period boundaries
+        if period == "today":
+            start = now.replace(hour=0, minute=0, second=0, microsecond=0)
+            end = now
+            prev_start = start - timedelta(days=1)
+            prev_end = start
+        elif period == "yesterday":
+            start = (now - timedelta(days=1)).replace(hour=0, minute=0, second=0, microsecond=0)
+            end = now.replace(hour=0, minute=0, second=0, microsecond=0)
+            prev_start = start - timedelta(days=1)
+            prev_end = start
+        elif period == "week":
+            start = (now - timedelta(days=7)).replace(hour=0, minute=0, second=0, microsecond=0)
+            end = now
+            prev_start = start - timedelta(days=7)
+            prev_end = start
+        elif period == "month":
+            start = now.replace(day=1, hour=0, minute=0, second=0, microsecond=0)
+            end = now
+            # Previous month
+            if start.month == 1:
+                prev_start = start.replace(year=start.year - 1, month=12)
+            else:
+                prev_start = start.replace(month=start.month - 1)
+            prev_end = start
+        else:
+            # Default to today
+            start = now.replace(hour=0, minute=0, second=0, microsecond=0)
+            end = now
+            prev_start = start - timedelta(days=1)
+            prev_end = start
+        
+        # Get current period data
+        current_data = await self.get_period_data(start, end)
+        breakdown = await self.get_devices_breakdown()
+        top_consumers = await self.get_top_consumers(limit=5)
+        efficiency = await self.get_energy_efficiency_score()
+        
+        export_data = {
+            "period": {
+                "name": period,
+                "start": start.isoformat(),
+                "end": end.isoformat(),
+                "duration_hours": (end - start).total_seconds() / 3600,
+            },
+            "overview": {
+                "total_devices": len(breakdown["devices"]),
+                "total_energy_kwh": round(current_data["totals"]["energy_kwh"], 3),
+                "total_cost_eur": round(current_data["totals"]["cost"], 2),
+                "total_cycles": current_data["totals"]["cycles"],
+                "efficiency_score": efficiency["overall_score"],
+            },
+            "devices": [],
+            "top_consumers": top_consumers,
+            "efficiency_metrics": efficiency,
+        }
+        
+        # Add detailed device information
+        for device in breakdown["devices"]:
+            device_info = {
+                "name": device["name"],
+                "type": device["type"],
+                "daily_energy_kwh": device["daily"]["energy_kwh"],
+                "daily_cost_eur": device["daily"]["cost"],
+                "daily_cycles": device["daily"]["cycles"],
+                "monthly_energy_kwh": device["monthly"]["energy_kwh"],
+                "monthly_cost_eur": device["monthly"]["cost"],
+                "percentage_of_total": device.get("percentage", 0),
+            }
+            export_data["devices"].append(device_info)
+        
+        # Add comparison if requested
+        if compare_previous:
+            comparison = await self.get_comparison_data(
+                start, end, prev_start, prev_end
+            )
+            export_data["comparison"] = {
+                "previous_period": {
+                    "start": prev_start.isoformat(),
+                    "end": prev_end.isoformat(),
+                    "energy_kwh": round(comparison["previous"]["totals"]["energy_kwh"], 3),
+                    "cost_eur": round(comparison["previous"]["totals"]["cost"], 2),
+                },
+                "changes": {
+                    "energy_diff_kwh": comparison["comparison"]["energy_diff_kwh"],
+                    "energy_change_pct": comparison["comparison"]["energy_change_pct"],
+                    "cost_diff_eur": comparison["comparison"]["cost_diff"],
+                    "cost_change_pct": comparison["comparison"]["cost_change_pct"],
+                },
+            }
+        
+        # Add pricing information
+        coordinators = self._get_coordinators()
+        if coordinators:
+            # Get average price from first coordinator
+            avg_price = coordinators[0].price_kwh
+            export_data["pricing"] = {
+                "average_price_kwh_eur": round(avg_price, 4),
+                "currency": "EUR",
+            }
+        
+        export_data["export_metadata"] = {
+            "timestamp": now.isoformat(),
+            "comparison_included": compare_previous,
+        }
+        
+        return export_data
+

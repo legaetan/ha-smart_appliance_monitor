@@ -203,6 +203,24 @@
       },
       "notification_unplugged": {
         "name": "Notifier débranché"
+      },
+      "ai_analysis": {
+        "name": "Analyse IA"
+      }
+    },
+    "sensor": {
+      "ai_analysis": {
+        "name": "Analyse IA",
+        "state": {
+          "optimized": "Optimisé",
+          "normal": "Normal",
+          "needs_improvement": "À améliorer",
+          "not_analyzed": "Non analysé",
+          "unknown": "Inconnu"
+        }
+      },
+      "energy_dashboard_ai_analysis": {
+        "name": "Analyse IA du tableau de bord énergétique"
       }
     }
   },
@@ -235,7 +253,24 @@
         "cycle_started": "Cycle démarré",
         "cycle_finished": "Cycle terminé",
         "alert_duration": "Alerte de durée",
-        "unplugged": "Alerte débranché"
+        "unplugged": "Alerte débranché",
+        "ai_analysis": "Analyse IA"
+      }
+    },
+    "ai_analysis_trigger": {
+      "options": {
+        "auto_cycle_end": "Automatique (Après chaque cycle)",
+        "manual": "Manuel (Via service)",
+        "periodic_daily": "Périodique (Quotidien)",
+        "periodic_weekly": "Périodique (Hebdomadaire)"
+      }
+    },
+    "ai_analysis_type": {
+      "options": {
+        "all": "Tous les types d'analyse",
+        "pattern": "Analyse des patterns",
+        "comparative": "Analyse comparative",
+        "recommendations": "Recommandations uniquement"
       }
     }
   }
