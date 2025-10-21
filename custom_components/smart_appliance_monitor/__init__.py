@@ -6,6 +6,7 @@ from pathlib import Path
 
 import voluptuous as vol
 
+from homeassistant.components.http import StaticPathConfig
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.const import Platform
 from homeassistant.core import HomeAssistant, ServiceCall
@@ -139,11 +140,11 @@ async def _register_frontend_resources(hass: HomeAssistant) -> None:
     # Register static path for cards - HACS compatible path
     await hass.http.async_register_static_paths(
         [
-            {
-                "url_path": "/hacsfiles/smart-appliance-cards",
-                "path": str(www_path),
-                "cache_headers": False,
-            }
+            StaticPathConfig(
+                url_path="/hacsfiles/smart-appliance-cards",
+                path=str(www_path),
+                cache_headers=False,
+            )
         ]
     )
     

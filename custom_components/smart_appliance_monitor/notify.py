@@ -78,6 +78,19 @@ class SmartApplianceNotifier:
             NOTIF_TYPE_ANOMALY: True,
         }
     
+    def set_enabled(self, enabled: bool) -> None:
+        """Active ou désactive toutes les notifications globalement.
+        
+        Args:
+            enabled: Si activé ou non
+        """
+        self.notifications_enabled = enabled
+        _LOGGER.debug(
+            "Notifications %s pour '%s'",
+            "activées" if enabled else "désactivées",
+            self.appliance_name,
+        )
+    
     def set_notification_type_enabled(self, notif_type: str, enabled: bool) -> None:
         """Active ou désactive un type de notification via switch.
         

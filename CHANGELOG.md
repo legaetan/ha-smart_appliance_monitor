@@ -5,6 +5,35 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.5.5] - 2025-10-21
+
+### Fixed
+
+#### Critical Bug Fixes
+- **Fixed StaticPathConfig API usage** - Corrected frontend resource registration
+  - Changed from dict to `StaticPathConfig` object for `async_register_static_paths()`
+  - Fixed `AttributeError: 'dict' object has no attribute 'url_path'` error
+  - Cards now properly registered without errors
+  
+- **Fixed missing set_enabled method** - Added global notification toggle
+  - Added `set_enabled()` method to `SmartApplianceNotifier` class
+  - Fixed `AttributeError: 'SmartApplianceNotifier' object has no attribute 'set_enabled'`
+  - State restoration now works correctly
+  - Notification switches now function properly
+
+### Technical Details
+
+**Files Modified:**
+- `custom_components/smart_appliance_monitor/__init__.py` - Added `StaticPathConfig` import and usage
+- `custom_components/smart_appliance_monitor/notify.py` - Added `set_enabled()` method
+
+**Breaking Changes:** None
+
+**Migration Notes:** 
+- Users who installed v0.5.4: Update to v0.5.5 to fix all startup and runtime errors
+- Integration will load successfully and all features will work correctly
+- State restoration from previous sessions now works without errors
+
 ## [0.5.4] - 2025-10-21
 
 ### Fixed
