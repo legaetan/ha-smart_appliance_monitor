@@ -5,6 +5,28 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.5.4] - 2025-10-21
+
+### Fixed
+
+#### Home Assistant API Compatibility
+- **Fixed AttributeError on startup** - Updated to use correct async API method
+  - Changed `hass.http.register_static_path()` to `hass.http.async_register_static_paths()`
+  - Fixed `'HomeAssistantHTTP' object has no attribute 'register_static_path'` error
+  - Cards now properly registered without errors
+  - Integration loads successfully on Home Assistant 2023.8+
+
+### Technical Details
+
+**Files Modified:**
+- `custom_components/smart_appliance_monitor/__init__.py` - Updated to use `async_register_static_paths()` API
+
+**Breaking Changes:** None
+
+**Migration Notes:** 
+- Users who installed v0.5.3: Update to v0.5.4 to fix startup errors
+- Cards will be properly registered at `/hacsfiles/smart-appliance-cards/` after update and restart
+
 ## [0.5.3] - 2025-10-21
 
 ### Fixed

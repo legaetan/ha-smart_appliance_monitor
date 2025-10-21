@@ -137,10 +137,14 @@ async def _register_frontend_resources(hass: HomeAssistant) -> None:
         return
     
     # Register static path for cards - HACS compatible path
-    hass.http.register_static_path(
-        "/hacsfiles/smart-appliance-cards",
-        str(www_path),
-        cache_headers=False
+    await hass.http.async_register_static_paths(
+        [
+            {
+                "url_path": "/hacsfiles/smart-appliance-cards",
+                "path": str(www_path),
+                "cache_headers": False,
+            }
+        ]
     )
     
     # Verify card files exist
