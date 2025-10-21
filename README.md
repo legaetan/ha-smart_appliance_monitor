@@ -114,6 +114,7 @@ Or browse locally: [docs/wiki-github/](docs/wiki-github/)
 - [Contributing Guide](CONTRIBUTING.md) - How to contribute to the project
 - [Architecture](ARCHITECTURE.md) - Technical architecture and component overview
 - [Changelog](CHANGELOG.md) - Version history and changes
+- [Release Notes](docs/release_notes/) - Detailed release notes for each version
 - [State Persistence](docs/PERSISTENCE.md) - Technical documentation on cycle persistence system (v0.5.1+)
 
 ## Entities Created
@@ -234,34 +235,9 @@ Then select `input_number.electricity_price` when configuring the integration.
 - ✅ **Usage Scheduling** - Time-based usage control
 - ✅ **Anomaly Detection** - Basic pattern-based detection
 
-## Planned for Future Releases
+## Future Features & Roadmap
 
-### v0.6.0 - Custom Cards & UI Enhancements
-- Custom Lovelace cards (smart-appliance-cycle-card, smart-appliance-stats-card)
-  - Cards are developed and available in `/www/smart-appliance-cards/`
-  - Require manual build: `npm install && npm run build`
-- Enhanced dashboard auto-generation with custom cards
-- Mobile app optimized views
-
-### v0.7.0 - Machine Learning & Predictions
-- Machine learning auto-calibration
-- Intelligent cycle pattern detection
-- Automatic threshold adjustment based on usage patterns
-- Cycle duration predictions
-- Consumption forecasting
-
-### v0.8.0 - Advanced Features
-- Multi-appliance groups and aggregated statistics
-- Advanced analytics dashboard
-- Comparative analysis between appliances
-- Cost optimization recommendations
-- Integration with dynamic pricing APIs
-
-### Future Considerations
-- Third-party API integration (energy providers)
-- Cloud backup of statistics
-- Community appliance profiles sharing
-- HACS publication (when ready)
+See [IDEAS.md](docs/IDEAS.md) for planned features, enhancements, and long-term roadmap.
 
 ## Contributing
 

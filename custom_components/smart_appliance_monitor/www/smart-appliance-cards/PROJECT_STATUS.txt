@@ -153,13 +153,14 @@ Team: Smart Appliance Monitor Team
 
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
-🐛 LIMITATIONS (v0.4.0)
+🐛 KNOWN LIMITATIONS (v0.4.0)
 
-  Planned for v0.4.1:
+  Future enhancements being considered:
   - Mini power graph (cycle card)
   - Real historical charts (stats card)
   - Real week/month statistics
 
+  See docs/IDEAS.md for complete roadmap.
   Cards are fully functional without these features.
 
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━

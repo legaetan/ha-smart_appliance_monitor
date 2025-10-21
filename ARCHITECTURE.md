@@ -486,21 +486,17 @@ custom_components/smart_appliance_monitor/
 - **Network**: None (local sensor polling)
 - **Storage**: Minimal (persisted in config entry)
 
-## Future Architecture Enhancements
-
-### Planned Improvements
-- Machine learning model integration for auto-calibration
-- Pattern recognition for cycle prediction
-- Energy Dashboard direct integration
-- Multi-appliance group entities
-- Advanced analytics engine
-- Export service for historical data
-
-### Scalability Considerations
+## Scalability Considerations
 - Current design supports unlimited appliances
 - No shared state between appliances
 - Independent coordinators per appliance
 - Stateless services
+
+---
+
+## Future Architecture Enhancements
+
+For planned architecture improvements and future enhancements, see [IDEAS.md](docs/IDEAS.md).
 
 ---
 

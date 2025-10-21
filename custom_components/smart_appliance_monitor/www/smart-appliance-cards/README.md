@@ -240,25 +240,17 @@ Contributions are welcome! See [CONTRIBUTING.md](../../CONTRIBUTING.md) for guid
 - Bug fixes and optimizations
 - Documentation improvements
 
-## 📋 Roadmap
+## 📋 Roadmap & Future Enhancements
 
-### v0.4.0 (Current)
+For planned features and future enhancements, see [IDEAS.md](../../../../docs/IDEAS.md).
+
+Current version includes:
 - ✅ Basic cycle card implementation
 - ✅ Basic stats card implementation
 - ✅ Visual editors
 - ✅ Auto-detection features
-
-### v0.4.1 (Planned)
-- [ ] Real power consumption graphs (Chart.js integration)
-- [ ] Historical data charts in stats card
-- [ ] More customization options
-- [ ] Compact mode for mobile
-
-### v0.5.0 (Future)
-- [ ] HACS publication
-- [ ] Advanced animations
-- [ ] Multi-appliance comparison view
-- [ ] Export data features
+- ✅ Bilingual support (EN/FR)
+- ✅ Automatic HACS installation
 
 ## 📄 License
 
