@@ -6,6 +6,14 @@ Ce dossier contient les notes de version détaillées pour chaque release de Sma
 
 ### Version 0.7.x - AI Analysis 🤖
 
+- **[v0.7.4](RELEASE_NOTES_v0.7.4.md)** - 21 octobre 2025 - Negative Energy Values Fix 🚨
+  - **CRITIQUE** : Correction des valeurs d'énergie négatives (-4551 kWh → 0 kWh)
+  - Cause : Reset des capteurs ESPHome créant des énergies de cycle négatives
+  - Validation multi-niveaux pour détecter et ignorer les énergies négatives
+  - Auto-récupération des statistiques corrompues au redémarrage
+  - Logging détaillé pour le debugging des problèmes de données
+  - Analyse IA maintenant fonctionnelle avec données valides
+
 - **[v0.7.3](RELEASE_NOTES_v0.7.3.md)** - 21 octobre 2025 - AI Analysis Bug Fixes 🐛
   - **CRITIQUE** : Correction du parsing des réponses IA (recommendations et insights vides)
   - Passage de JSON strict à parsing Markdown
@@ -145,6 +153,6 @@ Ce projet suit le [Semantic Versioning](https://semver.org/):
 
 ---
 
-**Dernière version** : v0.7.3  
+**Dernière version** : v0.7.4  
 **Date** : 21 octobre 2025
 
