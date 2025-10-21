@@ -5,6 +5,71 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.7.2] - 2025-10-21
+
+### Fixed
+
+**Service Registration**
+- Fixed critical bug preventing AI services from being registered on integration updates
+- Changed service registration check from `start_cycle` to `configure_ai` to ensure v0.7 services load
+- Added explicit logging when services are registered
+- All 13 services now properly available after update from v0.6 to v0.7
+
+**Issue**: Users upgrading from v0.6.0 to v0.7.0 would not get the 3 new AI services (`configure_ai`, `analyze_cycles`, `analyze_energy_dashboard`) because the code only checked if `start_cycle` service existed, which it did.
+
+**Solution**: Now checks for `configure_ai` service specifically, ensuring all services are re-registered when updating to v0.7+.
+
+### Documentation
+
+**Wiki Enhancements**
+- **NEW**: Created comprehensive [AI-Powered Analysis wiki page](https://github.com/legaetan/ha-smart_appliance_monitor/wiki/AI-Analysis)
+  - Complete AI features documentation (v0.7.0)
+  - Configuration examples for OpenAI, Claude, and Ollama
+  - All three services documented with examples
+  - Cost considerations and optimization tips
+  - Troubleshooting section with common issues
+  - 10+ automation examples
+  
+- **UPDATED**: Wiki sidebar now includes "Energy & AI (v0.6.0+)" section
+  - Added Energy Dashboard Integration link
+  - Added AI-Powered Analysis link
+  - Better organization of advanced features
+  
+- **UPDATED**: Features.md page
+  - Added v0.7.0 features section
+  - Added v0.6.0 features section
+  - Updated entity counts (32 entities per appliance in v0.7.0)
+  - Clear links to new documentation pages
+
+**Links Verified**
+- All internal wiki links checked and working
+- Cross-references between pages validated
+- External links to GitHub docs confirmed
+
+### Technical Details
+
+**Files Modified**:
+- `custom_components/smart_appliance_monitor/__init__.py` - Service registration fix
+- `custom_components/smart_appliance_monitor/manifest.json` - Version bump
+- `docs/wiki-github/AI-Analysis.md` - NEW comprehensive guide (500+ lines)
+- `docs/wiki-github/_Sidebar.md` - Added Energy & AI section
+- `docs/wiki-github/Features.md` - Updated with v0.6 and v0.7 features
+- `CHANGELOG.md` - This changelog
+
+### Migration Notes
+
+**From v0.7.0 or v0.7.1**:
+- **Action required**: Restart Home Assistant to register AI services
+- Services will automatically be available after restart
+- No configuration changes needed
+- Existing AI configurations preserved
+
+**From v0.6.0 or earlier**:
+- Update to v0.7.2 (skip v0.7.0/v0.7.1)
+- Restart Home Assistant
+- Configure AI using the new `configure_ai` service
+- See [AI-Powered Analysis Guide](https://github.com/legaetan/ha-smart_appliance_monitor/wiki/AI-Analysis)
+
 ## [0.7.1] - 2025-10-21
 
 ### Changed

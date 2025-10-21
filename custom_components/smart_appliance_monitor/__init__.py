@@ -157,8 +157,10 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     hass.async_create_task(_async_check_energy_sync(hass, coordinator))
     
     # Enregistrer les services (une seule fois)
-    if not hass.services.has_service(DOMAIN, "start_cycle"):
+    # Check for one of the latest services to ensure all are registered (v0.7.0+)
+    if not hass.services.has_service(DOMAIN, "configure_ai"):
         await async_setup_services(hass)
+        _LOGGER.info("Smart Appliance Monitor services registered (13 services including AI)")
     
     # Register frontend resources for custom Lovelace cards (once)
     if not hasattr(hass.data[DOMAIN], "_frontend_registered"):

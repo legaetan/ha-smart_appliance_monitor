@@ -6,6 +6,14 @@ Ce dossier contient les notes de version détaillées pour chaque release de Sma
 
 ### Version 0.7.x - AI Analysis 🤖
 
+- **[v0.7.2](RELEASE_NOTES_v0.7.2.md)** - 21 octobre 2025 - Bug Fixes & Documentation 🐛
+  - **CRITIQUE** : Correction du bug d'enregistrement des services AI
+  - Tous les 13 services maintenant disponibles après mise à jour
+  - Documentation wiki complète pour les fonctionnalités AI (500+ lignes)
+  - Sidebar wiki mise à jour avec section "Energy & AI"
+  - Liens wiki vérifiés et corrigés
+  - Guide de migration depuis v0.6.0, v0.7.0, et v0.7.1
+
 - **[v0.7.1](RELEASE_NOTES_v0.7.1.md)** - 21 octobre 2025 - Historical Release Notes Recovery 📚
   - Récupération de toutes les release notes historiques (v0.2.0 à v0.5.0)
   - Système de documentation permanent établi
@@ -129,6 +137,6 @@ Ce projet suit le [Semantic Versioning](https://semver.org/):
 
 ---
 
-**Dernière version** : v0.7.1  
+**Dernière version** : v0.7.2  
 **Date** : 21 octobre 2025
 
