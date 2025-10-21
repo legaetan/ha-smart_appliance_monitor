@@ -5,6 +5,25 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.7.1] - 2025-10-21
+
+### Changed
+
+**Documentation & Project Organization**
+- Release notes now permanently stored in `docs/release_notes/`
+- Updated `.cursorrules` with new release workflow
+- Release notes are versioned and committed to repository
+- Improved release checklist with testing guide requirements
+- Updated project structure documentation
+
+### Fixed
+
+**Release Process**
+- Release notes are no longer temporary files
+- Complete release history preserved in `docs/release_notes/`
+- Release notes index maintained in `docs/release_notes/README.md`
+- Better organization for long-term project maintenance
+
 ## [0.7.0] - 2025-10-21
 
 ### Added

@@ -6,6 +6,12 @@ Ce dossier contient les notes de version détaillées pour chaque release de Sma
 
 ### Version 0.7.x - AI Analysis 🤖
 
+- **[v0.7.1](RELEASE_NOTES_v0.7.1.md)** - 21 octobre 2025 - Historical Release Notes Recovery 📚
+  - Récupération de toutes les release notes historiques (v0.2.0 à v0.5.0)
+  - Système de documentation permanent établi
+  - Organisation complète des releases passées
+  - Workflow de release mis à jour
+
 - **[v0.7.0](RELEASE_NOTES_v0.7.0.md)** - 21 octobre 2025 - AI-Powered Cycle Analysis 🤖
   - Analyse IA des cycles d'appareils via Home Assistant AI Tasks
   - Support OpenAI, Claude, Ollama, et autres providers IA
@@ -26,7 +32,7 @@ Ce dossier contient les notes de version détaillées pour chaque release de Sma
   - Comparaisons multi-périodes
   - Template de dashboard personnalisé
 
-### Version 0.5.x - Features Avancées & Corrections
+### Version 0.5.x - Advanced Features & Fixes ⚡
 
 - **[v0.5.7](RELEASE_NOTES_v0.5.7.md)** - 21 octobre 2025 - Documentation & Roadmap 📚
   - Nouveau fichier IDEAS.md centralisé (297 lignes)
@@ -62,19 +68,47 @@ Ce dossier contient les notes de version détaillées pour chaque release de Sma
   - Restauration automatique après redémarrage HA
   - Validation intelligente des données
 
-### Version 0.5.0 - Advanced Features (20 octobre 2025)
+- **[v0.5.0](RELEASE_NOTES_v0.5.0.md)** - 21 octobre 2025 - Advanced Features Release 🚀
+  - Auto-shutdown automatique après cycles
+  - Energy Management avec limites et budget
+  - Usage Scheduling (heures autorisées, jours bloqués)
+  - Anomaly Detection intelligente
+  - Data Export (CSV/JSON)
+  - Energy Dashboard Integration
+  - 10 nouvelles entités par appareil (30 total)
 
-Voir [CHANGELOG.md](../../CHANGELOG.md) pour la version complète 0.5.0 incluant :
-- Energy Dashboard integration
-- Data export (CSV/JSON)
-- Auto-shutdown
-- Energy Management
-- Usage Scheduling
-- Anomaly Detection
+### Version 0.4.x - Configuration UX Improvements 🎨
 
-### Versions Antérieures
+- **[v0.4.1](RELEASE_NOTES_v0.4.1.md)** - 20 octobre 2025 - Bundled Dashboard Templates
+  - Templates inclus directement dans l'intégration
+  - 7 templates pour chaque type d'appareil
+  - Résolution automatique et génération immédiate
+  - Customization facile
 
-Pour les versions 0.1.0 à 0.4.x, consultez le [CHANGELOG.md](../../CHANGELOG.md) complet.
+- **[v0.4.0](RELEASE_NOTES_v0.4.0.md)** - 20 octobre 2025 - Enhanced Configuration UX
+  - Configuration multi-étapes (4 étapes)
+  - Unités naturelles (minutes/heures au lieu de secondes)
+  - Mode Expert pour options avancées
+  - Descriptions améliorées et aide contextuelle
+
+### Version 0.3.x - Dashboard System 📊
+
+- **[v0.3.0](RELEASE_NOTES_v0.3.0.md)** - 20 octobre 2025 - Dashboard Templates
+  - Système de templates dashboard complet
+  - 7 templates pré-configurés par type d'appareil
+  - Service `generate_dashboard_yaml` automatique
+  - Support Mushroom Cards et Mini Graph Card
+  - 6 sections par dashboard (status, cycle, power, controls, stats, alerts)
+
+### Version 0.2.x - Initial Release 🎉
+
+- **[v0.2.0](RELEASE_NOTES_v0.2.0.md)** - 20 octobre 2025 - Initial Public Release
+  - Première release publique
+  - Détection automatique de cycles
+  - 14 entités par appareil
+  - Configuration Flow UI complète
+  - Système de notifications (Telegram, Mobile App, Persistent)
+  - Support multi-langue (EN/FR)
 
 ---
 
@@ -95,6 +129,6 @@ Ce projet suit le [Semantic Versioning](https://semver.org/):
 
 ---
 
-**Dernière version** : v0.7.0  
+**Dernière version** : v0.7.1  
 **Date** : 21 octobre 2025
 
