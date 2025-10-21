@@ -26,6 +26,17 @@ Les idées sont organisées par **thème/catégorie** et **priorité** :
   - Dashboard programmatique via service
 
 ### Moyen terme
+- [ ] **Custom Energy Dashboard**
+  - Dashboard personnalisé inspiré du Energy Dashboard natif de HA
+  - Plus de contrôle et personnalisation :
+    - Périodes personnalisables (jour/semaine/mois/année/custom)
+    - Filtres avancés par appareil, type, pièce
+    - Vues personnalisées et layouts flexibles
+    - Comparaisons multi-périodes
+  - Utilise les données du fichier `.storage/energy`
+  - Compatible avec l'intégration Energy Storage File
+  - Export des données et rapports
+
 - [ ] **Graphiques Temps Réel** (Custom Cards v0.4.1)
   - Mini power graph dans cycle card
   - Historical data charts dans stats card
@@ -58,6 +69,28 @@ Les idées sont organisées par **thème/catégorie** et **priorité** :
 ## 🤖 2. Machine Learning & Intelligence
 
 ### Moyen terme
+- [ ] **Automatic Appliance Detection** 🆕
+  - Détection automatique d'appareils non configurés
+  - **Analyse des écarts de consommation** :
+    - Comparaison entre `energy_sources` (total) et somme des `device_consumption` (suivis)
+    - Détection de pics de consommation non attribués
+    - Calcul de la puissance moyenne sur période glissante (X minutes)
+    - Analyse de la durée et pattern du pic
+  - **Reconnaissance intelligente** :
+    - Recherche dans `APPLIANCE_PROFILES` basée sur :
+      - Puissance moyenne du pic
+      - Durée d'utilisation
+      - Pattern de consommation
+    - Matching avec les profils connus (grille-pain, micro-ondes, plaques induction, etc.)
+  - **Proposition automatique** :
+    - Suggestion de création d'appareil avec type détecté
+    - Pré-configuration des seuils basée sur les observations
+    - Notification pour validation utilisateur
+  - **Historique des détections** :
+    - Log des appareils détectés mais non configurés
+    - Statistiques sur la consommation non suivie
+    - Amélioration continue du matching
+
 - [ ] **Machine Learning Auto-Calibration** (v0.7.0)
   - Ajustement automatique des seuils
   - Apprentissage basé sur les patterns d'usage
@@ -132,6 +165,15 @@ Les idées sont organisées par **thème/catégorie** et **priorité** :
   - Statistiques long terme compatibles
 
 ### Moyen terme
+- [ ] **Energy Storage File Integration**
+  - Lecture du fichier `.storage/energy` de Home Assistant
+  - Récupération automatique des configurations :
+    - `energy_sources` - Sources d'énergie configurées
+    - `device_consumption` - Appareils de consommation
+    - `included_in_stat` - Statut d'inclusion dans les statistiques
+  - Synchronisation automatique avec Energy Dashboard
+  - Détection automatique des appareils déjà configurés
+  - Import des configurations existantes
 - [ ] **Third-Party API Integration** (Future)
   - APIs fournisseurs d'énergie (Enedis, etc.)
   - Services météo pour optimisation
@@ -219,6 +261,9 @@ Les idées sont organisées par **thème/catégorie** et **priorité** :
 |----------|-----------|---------|--------|--------|
 | 🔴 Haute | UI | Graphiques temps réel | Élevé | Moyen |
 | 🔴 Haute | Energy | Strict block mode | Élevé | Faible |
+| 🟡 Moyenne | Integrations | Energy Storage File | Élevé | Moyen |
+| 🟡 Moyenne | ML | Automatic Appliance Detection 🆕 | Très élevé | Élevé |
+| 🟡 Moyenne | UI | Custom Energy Dashboard | Élevé | Élevé |
 | 🟡 Moyenne | ML | Auto-calibration | Élevé | Élevé |
 | 🟡 Moyenne | UI | Mobile optimization | Moyen | Moyen |
 | 🟡 Moyenne | Analytics | Advanced dashboard | Élevé | Élevé |
