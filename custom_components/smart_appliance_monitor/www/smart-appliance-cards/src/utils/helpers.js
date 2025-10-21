@@ -14,42 +14,49 @@ export function getRelatedEntities(hass, mainEntity) {
   if (!mainEntity || !hass) return null;
   
   // Extract the base name from the entity ID
+  // Support both English (_state) and French (_etat)
   // e.g., "sensor.washing_machine_state" -> "washing_machine"
-  const match = mainEntity.match(/^sensor\.(.+)_state$/);
+  // e.g., "sensor.lave_linge_etat" -> "lave_linge"
+  const match = mainEntity.match(/^sensor\.(.+)_(state|etat)$/);
   if (!match) return null;
   
   const baseName = match[1];
+  const lang = match[2]; // 'state' or 'etat'
+  const isFrench = (lang === 'etat');
   
+  // Build entity names based on language
   return {
     // Main entity
     state: mainEntity,
     
-    // Sensors
-    cycle_duration: `sensor.${baseName}_cycle_duration`,
-    cycle_energy: `sensor.${baseName}_cycle_energy`,
-    cycle_cost: `sensor.${baseName}_cycle_cost`,
-    last_cycle_duration: `sensor.${baseName}_last_cycle_duration`,
-    last_cycle_energy: `sensor.${baseName}_last_cycle_energy`,
-    last_cycle_cost: `sensor.${baseName}_last_cycle_cost`,
-    daily_cycles: `sensor.${baseName}_daily_cycles`,
-    daily_cost: `sensor.${baseName}_daily_cost`,
-    monthly_cost: `sensor.${baseName}_monthly_cost`,
+    // Sensors - Support both English and French
+    cycle_duration: isFrench ? `sensor.${baseName}_duree_du_cycle` : `sensor.${baseName}_cycle_duration`,
+    cycle_energy: isFrench ? `sensor.${baseName}_energie_du_cycle` : `sensor.${baseName}_cycle_energy`,
+    cycle_cost: isFrench ? `sensor.${baseName}_cout_du_cycle` : `sensor.${baseName}_cycle_cost`,
+    last_cycle_duration: isFrench ? `sensor.${baseName}_duree_du_dernier_cycle` : `sensor.${baseName}_last_cycle_duration`,
+    last_cycle_energy: isFrench ? `sensor.${baseName}_energie_du_dernier_cycle` : `sensor.${baseName}_last_cycle_energy`,
+    last_cycle_cost: isFrench ? `sensor.${baseName}_cout_du_dernier_cycle` : `sensor.${baseName}_last_cycle_cost`,
+    daily_cycles: isFrench ? `sensor.${baseName}_cycles_du_jour` : `sensor.${baseName}_daily_cycles`,
+    daily_cost: isFrench ? `sensor.${baseName}_cout_du_jour` : `sensor.${baseName}_daily_cost`,
+    monthly_cost: isFrench ? `sensor.${baseName}_cout_du_mois` : `sensor.${baseName}_monthly_cost`,
+    daily_energy: isFrench ? `sensor.${baseName}_energie_du_jour` : `sensor.${baseName}_daily_energy`,
+    monthly_energy: isFrench ? `sensor.${baseName}_energie_du_mois` : `sensor.${baseName}_monthly_energy`,
     
     // Binary sensors
-    running: `binary_sensor.${baseName}_running`,
-    duration_alert: `binary_sensor.${baseName}_duration_alert`,
-    unplugged: `binary_sensor.${baseName}_unplugged`,
+    running: isFrench ? `binary_sensor.${baseName}_en_marche` : `binary_sensor.${baseName}_running`,
+    duration_alert: isFrench ? `binary_sensor.${baseName}_alerte_duree` : `binary_sensor.${baseName}_duration_alert`,
+    unplugged: isFrench ? `binary_sensor.${baseName}_debranche` : `binary_sensor.${baseName}_unplugged`,
     
     // Switches
-    monitoring: `switch.${baseName}_monitoring`,
+    monitoring: isFrench ? `switch.${baseName}_surveillance` : `switch.${baseName}_monitoring`,
     notifications: `switch.${baseName}_notifications`,
-    notify_started: `switch.${baseName}_notify_cycle_started`,
-    notify_finished: `switch.${baseName}_notify_cycle_finished`,
-    notify_alert: `switch.${baseName}_notify_alert_duration`,
-    notify_unplugged: `switch.${baseName}_notify_unplugged`,
+    notify_started: isFrench ? `switch.${baseName}_notification_cycle_demarre` : `switch.${baseName}_notify_cycle_started`,
+    notify_finished: isFrench ? `switch.${baseName}_notification_cycle_termine` : `switch.${baseName}_notify_cycle_finished`,
+    notify_alert: isFrench ? `switch.${baseName}_notification_alerte_duree` : `switch.${baseName}_notify_alert_duration`,
+    notify_unplugged: isFrench ? `switch.${baseName}_notification_debranche` : `switch.${baseName}_notify_unplugged`,
     
     // Button
-    reset_stats: `button.${baseName}_reset_statistics`
+    reset_stats: isFrench ? `button.${baseName}_reinitialiser_les_statistiques` : `button.${baseName}_reset_statistics`
   };
 }
 

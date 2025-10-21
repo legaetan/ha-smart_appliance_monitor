@@ -5,6 +5,36 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.5.6] - 2025-10-21
+
+### Fixed
+
+#### French Language Support for Custom Cards
+- **Added bilingual support for custom Lovelace cards** - Cards now work with French entity names
+  - Support for `_etat` suffix (French) in addition to `_state` (English)
+  - Automatic detection and mapping of French entity names:
+    - `duree_du_cycle` / `cycle_duration`
+    - `energie_du_cycle` / `cycle_energy`
+    - `cout_du_cycle` / `cycle_cost`
+    - `en_marche` / `running`
+    - `debranche` / `unplugged`
+    - `surveillance` / `monitoring`
+    - And all other entity translations
+  - Cards automatically detect language from entity suffix
+  - No configuration changes needed - works automatically
+
+### Technical Details
+
+**Files Modified:**
+- `custom_components/smart_appliance_monitor/www/smart-appliance-cards/src/utils/helpers.js` - Added bilingual entity mapping
+- `custom_components/smart_appliance_monitor/www/smart-appliance-cards/dist/*` - Rebuilt cards with language support
+
+**Breaking Changes:** None
+
+**Migration Notes:**
+- Existing installations with French entity names: Update to v0.5.6 and cards will work immediately
+- Existing installations with English entity names: No changes needed, backward compatible
+
 ## [0.5.5] - 2025-10-21
 
 ### Fixed
