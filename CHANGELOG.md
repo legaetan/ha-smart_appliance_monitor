@@ -5,6 +5,29 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.5.3] - 2025-10-21
+
+### Fixed
+
+#### HACS Installation Structure
+- **Fixed cards not being installed via HACS** - Moved www/ folder into integration directory
+  - Moved `www/` from repository root to `custom_components/smart_appliance_monitor/www/`
+  - Updated path resolution in `_register_frontend_resources()` function
+  - Cards now properly installed when updating via HACS
+  - Fixed path to be relative to integration folder instead of config root
+
+### Technical Details
+
+**Files Modified:**
+- `custom_components/smart_appliance_monitor/__init__.py` - Updated www_path to `Path(__file__).parent / "www" / ...`
+- Repository structure - Moved `www/` folder into integration directory
+
+**Breaking Changes:** None
+
+**Migration Notes:** 
+- Users who installed v0.5.2: Update to v0.5.3 to get cards automatically installed
+- Cards will be available at `/hacsfiles/smart-appliance-cards/` after update
+
 ## [0.5.2] - 2025-10-20
 
 ### Added

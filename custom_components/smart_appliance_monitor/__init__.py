@@ -129,8 +129,8 @@ async def async_reload_entry(hass: HomeAssistant, entry: ConfigEntry) -> None:
 
 async def _register_frontend_resources(hass: HomeAssistant) -> None:
     """Register frontend resources for custom Lovelace cards."""
-    # Get the path to the www directory (relative to config root)
-    www_path = Path(__file__).parent.parent.parent / "www" / "smart-appliance-cards" / "dist"
+    # Get the path to the www directory (in integration folder)
+    www_path = Path(__file__).parent / "www" / "smart-appliance-cards" / "dist"
     
     if not www_path.exists():
         _LOGGER.warning("Custom cards directory not found at %s", www_path)
