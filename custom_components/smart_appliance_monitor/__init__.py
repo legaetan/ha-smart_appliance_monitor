@@ -1079,18 +1079,25 @@ def _get_coordinator_from_entity_id(hass: HomeAssistant, entity_id: str) -> Smar
     if len(parts) != 2:
         return None
     
+    entity_suffix = parts[1]
+    
     # Essayer de trouver le coordinator correspondant
     for entry_id, coordinator in hass.data.get(DOMAIN, {}).items():
         if isinstance(coordinator, SmartApplianceCoordinator):
-            # Vérifier si l'entity_id correspond à cet appareil
-            # On vérifie avec le nom de l'appareil (en minuscules et sans espaces)
-            appliance_slug = coordinator.appliance_name.lower().replace(" ", "_")
-            if parts[1].startswith(appliance_slug):
+            # Normaliser le nom de l'appareil en 'slug'
+            appliance_slug = coordinator.appliance_name.lower().replace(" ", "_").replace("-", "_")
+            
+            # Vérifier si le début de l'entity_id correspond exactement au slug
+            # Ex: "chauffe_eau" dans "chauffe_eau_etat"
+            if entity_suffix.startswith(appliance_slug + "_"):
                 return coordinator
             
-            # Fallback: vérifier si l'entry_id est dans l'entity_id (ancien comportement)
+            # Fallback pour les noms qui ne correspondent pas parfaitement
+            # (par exemple si l'utilisateur renomme l'appareil mais pas les entités)
+            # Cette logique reste un peu fragile mais peut aider.
             if entry_id in entity_id or coordinator.entry.entry_id in entity_id:
                 return coordinator
     
+    _LOGGER.error("Unable to find coordinator for entity %s", entity_id)
     return None
 

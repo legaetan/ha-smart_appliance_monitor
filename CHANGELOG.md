@@ -5,6 +5,50 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.7.3] - 2025-10-21
+
+### Fixed
+
+**AI Analysis Response Parsing**
+- Fixed AI analysis results appearing empty (recommendations and insights fields)
+- Switched from strict JSON structure to Markdown-based AI responses
+- Implemented robust Markdown parser to extract structured data from AI responses
+- Corrected response key from `response["text"]` to `response["data"]` for AI Task integration
+- Added extensive debug logging to track AI response processing
+
+**Coordinator Entity Matching**
+- Fixed `Unable to find coordinator for entity` error when calling `analyze_cycles` service
+- Improved `_get_coordinator_from_entity_id()` function to handle underscores in appliance names
+- Now correctly matches entities like `sensor.chauffe_eau_etat` to "Chauffe-Eau" appliance
+- Made slug matching more robust with explicit `appliance_slug + "_"` check
+
+**AI Prompt Engineering**
+- Enhanced AI prompts to request structured Markdown format with explicit headers
+- Added mandatory requirements for concrete recommendations and insights
+- Improved guidance for AI to provide actionable, non-empty content
+- Set `structure` parameter to `None` to allow free-form Markdown responses
+
+### Changed
+
+**AI Client Implementation**
+- Completely rewrote `_process_cycle_analysis_response()` to parse Markdown instead of JSON
+- Added `parse_section()` helper function to extract content under Markdown headers
+- Enhanced error handling for malformed AI responses
+- Preserved `full_analysis` attribute with complete raw Markdown text
+
+### Technical Details
+
+**Files Modified**:
+- `custom_components/smart_appliance_monitor/ai_client.py` - Markdown parser implementation
+- `custom_components/smart_appliance_monitor/__init__.py` - Robust coordinator matching
+- `custom_components/smart_appliance_monitor/manifest.json` - Version bump to 0.7.3
+- `version` - Version bump to 0.7.3
+
+**Debugging Improvements**:
+- Added `_LOGGER.debug` statements for raw AI responses
+- Added logging for each parsed section (summary, status, recommendations, etc.)
+- Better error messages when coordinator cannot be found
+
 ## [0.7.2] - 2025-10-21
 
 ### Fixed

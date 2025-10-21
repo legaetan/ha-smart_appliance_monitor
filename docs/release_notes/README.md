@@ -6,6 +6,14 @@ Ce dossier contient les notes de version détaillées pour chaque release de Sma
 
 ### Version 0.7.x - AI Analysis 🤖
 
+- **[v0.7.3](RELEASE_NOTES_v0.7.3.md)** - 21 octobre 2025 - AI Analysis Bug Fixes 🐛
+  - **CRITIQUE** : Correction du parsing des réponses IA (recommendations et insights vides)
+  - Passage de JSON strict à parsing Markdown
+  - Correction du matching coordinator pour noms d'appareils avec underscores
+  - Amélioration des prompts IA avec structure Markdown explicite
+  - Ajout de logs debug détaillés pour le suivi des réponses IA
+  - Correction clé de réponse : `response["text"]` → `response["data"]`
+
 - **[v0.7.2](RELEASE_NOTES_v0.7.2.md)** - 21 octobre 2025 - Bug Fixes & Documentation 🐛
   - **CRITIQUE** : Correction du bug d'enregistrement des services AI
   - Tous les 13 services maintenant disponibles après mise à jour
@@ -137,6 +145,6 @@ Ce projet suit le [Semantic Versioning](https://semver.org/):
 
 ---
 
-**Dernière version** : v0.7.2  
+**Dernière version** : v0.7.3  
 **Date** : 21 octobre 2025
 
