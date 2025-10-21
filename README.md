@@ -34,6 +34,15 @@ Smart Appliance Monitor is a Home Assistant custom integration that automaticall
 - **Energy Dashboard Integration** - Native support for Home Assistant Energy Dashboard
 - **State Persistence** (v0.5.1) - Cycles and statistics are preserved across Home Assistant restarts
 
+### Energy Dashboard Suite (v0.6.0+) ⚡ *NEW*
+- **Automatic Sync Detection** - Check if devices are configured in Energy Dashboard on startup
+- **Energy Storage Reader** - Read-only access to `.storage/energy` for advanced analytics
+- **Sync Services** - Comprehensive sync checking and configuration export
+- **Custom Energy Dashboard** - Advanced energy analytics beyond native HA capabilities
+- **Period Comparisons** - Compare energy usage across custom time periods
+- **Top Consumers** - Identify and track your highest energy consumers
+- **Efficiency Scoring** - Get device efficiency scores and optimization recommendations
+
 ## Supported Appliances
 
 Works with any appliance connected via a smart plug with power monitoring:
@@ -161,26 +170,69 @@ For each configured appliance, the integration creates **up to 30 entities**:
 
 ## Services
 
-### `smart_appliance_monitor.start_cycle`
+### Core Services
+
+#### `smart_appliance_monitor.start_cycle`
 Manually start a cycle (useful for testing or manual tracking).
 
-### `smart_appliance_monitor.stop_monitoring`
+#### `smart_appliance_monitor.stop_monitoring`
 Stop monitoring for a specific appliance.
 
-### `smart_appliance_monitor.reset_statistics`
+#### `smart_appliance_monitor.reset_statistics`
 Reset all statistics for a specific appliance.
 
-### `smart_appliance_monitor.generate_dashboard_yaml`
+#### `smart_appliance_monitor.generate_dashboard_yaml`
 Generate optimized dashboard YAML for the appliance.
 
-### `smart_appliance_monitor.export_to_csv` ⚡ *NEW v0.5.0*
+### Data Export Services
+
+#### `smart_appliance_monitor.export_to_csv`
 Export appliance data to CSV format. Optionally save to file.
 
-### `smart_appliance_monitor.export_to_json` ⚡ *NEW v0.5.0*
+#### `smart_appliance_monitor.export_to_json`
 Export appliance data to JSON format. Optionally save to file.
 
-### `smart_appliance_monitor.force_shutdown` ⚡ *NEW v0.5.0*
+### Energy Management Services
+
+#### `smart_appliance_monitor.force_shutdown`
 Manually trigger auto-shutdown for testing (requires auto-shutdown to be enabled).
+
+### Energy Dashboard Services ⚡ *NEW v0.6.0*
+
+#### `smart_appliance_monitor.sync_with_energy_dashboard`
+Check synchronization status between SAM devices and Home Assistant Energy Dashboard. Generates a detailed report showing which devices are synced, which are missing, and provides setup instructions.
+
+```yaml
+# Sync all devices
+service: smart_appliance_monitor.sync_with_energy_dashboard
+
+# Sync specific device
+service: smart_appliance_monitor.sync_with_energy_dashboard
+data:
+  entity_id: sensor.washing_machine_state
+```
+
+#### `smart_appliance_monitor.export_energy_config`
+Export Energy Dashboard configuration for a specific device. Provides JSON configuration and step-by-step instructions to add the device to Energy Dashboard manually.
+
+```yaml
+service: smart_appliance_monitor.export_energy_config
+data:
+  entity_id: sensor.dishwasher_state
+```
+
+#### `smart_appliance_monitor.get_energy_data`
+Retrieve aggregated energy data for SAM devices with period filtering and device breakdown. Perfect for custom dashboards and data analysis.
+
+```yaml
+service: smart_appliance_monitor.get_energy_data
+data:
+  period_start: "2025-10-21T00:00:00"
+  period_end: "2025-10-21T23:59:59"
+  devices:
+    - "Washing Machine"
+    - "Dishwasher"
+```
 
 ## Dynamic Pricing
 
@@ -221,7 +273,34 @@ Then select `input_number.electricity_price` when configuring the integration.
 
 ## Recent Improvements
 
-### v0.5.1 (Latest) ✅
+### v0.6.0 (Latest) ✅ *NEW*
+- ✅ **Energy Dashboard Integration Suite** - Comprehensive integration with HA Energy Dashboard
+  - Automatic sync detection on appliance startup
+  - Read-only access to `.storage/energy` file for safe analytics
+  - Sync status checking for all devices
+  - Configuration export with step-by-step instructions
+  - Parent sensor suggestions for hierarchical organization
+- ✅ **Advanced Energy Analytics** - Custom energy dashboard backend
+  - Period data analysis (today, yesterday, custom periods)
+  - Device breakdown with consumption percentages
+  - Period comparisons (today vs yesterday)
+  - Top consumers identification and ranking
+  - Energy efficiency scoring system
+  - Dashboard summary with key metrics
+- ✅ **New Services** - Three powerful new services
+  - `sync_with_energy_dashboard` - Check sync status
+  - `export_energy_config` - Export JSON configuration
+  - `get_energy_data` - Retrieve aggregated energy data
+- ✅ **Custom Energy Dashboard Template** - Ready-to-use dashboard YAML
+  - Summary cards with totals and comparisons
+  - Device breakdown visualizations
+  - Energy timeline and trends
+  - Top consumers ranking
+  - Cost analysis and efficiency scores
+  - Quick actions and integration status
+- ✅ **Complete Documentation** - New Energy Dashboard guide
+
+### v0.5.1 ✅
 - ✅ **State Persistence** - Cycles and statistics preserved across Home Assistant restarts
   - No more lost data when restarting HA during a cycle
   - Automatic save/restore of cycle state, statistics, and history

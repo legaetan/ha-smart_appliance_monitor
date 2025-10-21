@@ -74,6 +74,26 @@ SERVICE_FORCE_SHUTDOWN_SCHEMA = vol.Schema(
     }
 )
 
+SERVICE_SYNC_WITH_ENERGY_DASHBOARD_SCHEMA = vol.Schema(
+    {
+        vol.Optional("entity_id"): cv.entity_id,
+    }
+)
+
+SERVICE_EXPORT_ENERGY_CONFIG_SCHEMA = vol.Schema(
+    {
+        vol.Required("entity_id"): cv.entity_id,
+    }
+)
+
+SERVICE_GET_ENERGY_DATA_SCHEMA = vol.Schema(
+    {
+        vol.Optional("period_start"): cv.string,
+        vol.Optional("period_end"): cv.string,
+        vol.Optional("devices"): cv.ensure_list,
+    }
+)
+
 
 async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     """Set up Smart Appliance Monitor from a config entry."""
@@ -94,6 +114,9 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     
     # Charger les platforms
     await hass.config_entries.async_forward_entry_setups(entry, PLATFORMS)
+    
+    # Energy Dashboard synchronization check (async)
+    hass.async_create_task(_async_check_energy_sync(hass, coordinator))
     
     # Enregistrer les services (une seule fois)
     if not hass.services.has_service(DOMAIN, "start_cycle"):
@@ -126,6 +149,48 @@ async def async_unload_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
 async def async_reload_entry(hass: HomeAssistant, entry: ConfigEntry) -> None:
     """Reload config entry when options change."""
     await hass.config_entries.async_reload(entry.entry_id)
+
+
+async def _async_check_energy_sync(
+    hass: HomeAssistant,
+    coordinator: SmartApplianceCoordinator,
+) -> None:
+    """Check Energy Dashboard synchronization on startup.
+    
+    Args:
+        hass: Home Assistant instance
+        coordinator: Appliance coordinator
+    """
+    from .energy import EnergyDashboardSync
+    
+    try:
+        sync_handler = EnergyDashboardSync(hass, coordinator)
+        sync_status = await sync_handler.get_sync_status()
+        
+        status = sync_status.get("status")
+        if status == "synced":
+            _LOGGER.info(
+                "✅ %s is synced with Energy Dashboard",
+                coordinator.appliance_name
+            )
+        elif status == "not_configured":
+            _LOGGER.warning(
+                "⚠️ %s is NOT in Energy Dashboard. "
+                "Use 'smart_appliance_monitor.sync_with_energy_dashboard' to get instructions.",
+                coordinator.appliance_name
+            )
+        else:
+            _LOGGER.debug(
+                "Cannot check Energy Dashboard sync for %s: %s",
+                coordinator.appliance_name,
+                sync_status.get("message")
+            )
+    except Exception as err:
+        _LOGGER.debug(
+            "Energy Dashboard sync check failed for %s: %s",
+            coordinator.appliance_name,
+            err
+        )
 
 
 async def _register_frontend_resources(hass: HomeAssistant) -> None:
@@ -468,6 +533,239 @@ async def async_setup_services(hass: HomeAssistant) -> None:
         _LOGGER.info("Force shutdown for '%s'", coordinator.appliance_name)
         await coordinator._on_auto_shutdown()
     
+    async def handle_sync_with_energy_dashboard(call: ServiceCall) -> None:
+        """Handle sync_with_energy_dashboard service call."""
+        entity_id = call.data.get("entity_id")
+        
+        from .energy import EnergyDashboardSync
+        from .energy_storage import EnergyStorageReader
+        
+        # If entity_id provided, sync specific appliance
+        if entity_id:
+            coordinator = _get_coordinator_from_entity_id(hass, entity_id)
+            if coordinator is None:
+                _LOGGER.error("Unable to find coordinator for entity %s", entity_id)
+                return
+            
+            coordinators = [coordinator]
+        else:
+            # Sync all SAM appliances
+            coordinators = [
+                coord for coord in hass.data.get(DOMAIN, {}).values()
+                if isinstance(coord, SmartApplianceCoordinator)
+            ]
+        
+        _LOGGER.info("Syncing %d appliance(s) with Energy Dashboard", len(coordinators))
+        
+        # Generate sync report
+        synced = []
+        not_configured = []
+        
+        for coord in coordinators:
+            sync_handler = EnergyDashboardSync(hass, coord)
+            sync_status = await sync_handler.get_sync_status()
+            
+            if sync_status["status"] == "synced":
+                synced.append(sync_status)
+            elif sync_status["status"] == "not_configured":
+                not_configured.append(sync_status)
+        
+        # Create notification with report
+        message_lines = [
+            f"**Energy Dashboard Sync Report**\n",
+            f"**Total SAM devices**: {len(coordinators)}",
+            f"**Synced**: {len(synced)}",
+            f"**Not configured**: {len(not_configured)}\n",
+        ]
+        
+        if synced:
+            message_lines.append("**✅ Synced devices:**")
+            for status in synced:
+                message_lines.append(f"- {status['appliance_name']}")
+            message_lines.append("")
+        
+        if not_configured:
+            message_lines.append("**⚠️ Not in Energy Dashboard:**")
+            for status in not_configured:
+                message_lines.append(f"- {status['appliance_name']}")
+                message_lines.append(f"  Sensor: `{status['energy_sensor']}`")
+            message_lines.append("")
+            message_lines.append(
+                "**To add**: Go to Settings → Dashboards → Energy → Add Consumption"
+            )
+        
+        await hass.services.async_call(
+            "persistent_notification",
+            "create",
+            {
+                "title": "🔄 Energy Dashboard Sync",
+                "message": "\n".join(message_lines),
+                "notification_id": "energy_dashboard_sync",
+            },
+        )
+        
+        _LOGGER.info("Energy Dashboard sync completed: %d synced, %d not configured", 
+                     len(synced), len(not_configured))
+    
+    async def handle_export_energy_config(call: ServiceCall) -> None:
+        """Handle export_energy_config service call."""
+        entity_id = call.data["entity_id"]
+        
+        coordinator = _get_coordinator_from_entity_id(hass, entity_id)
+        if coordinator is None:
+            _LOGGER.error("Unable to find coordinator for entity %s", entity_id)
+            return
+        
+        from .energy import EnergyDashboardSync
+        import json
+        
+        sync_handler = EnergyDashboardSync(hass, coordinator)
+        suggested_config = await sync_handler.suggest_energy_config()
+        
+        # Format as JSON for easy copy-paste
+        json_config = json.dumps(suggested_config, indent=2, ensure_ascii=False)
+        
+        # Get current sync status
+        sync_status = await sync_handler.get_sync_status()
+        
+        message = [
+            f"**Energy Dashboard Configuration Export**\n",
+            f"**Appliance**: {coordinator.appliance_name}",
+            f"**Current Status**: {sync_status['status']}\n",
+        ]
+        
+        if sync_status["status"] == "synced":
+            message.append("✅ This appliance is already configured in Energy Dashboard.")
+        else:
+            message.append("**Configuration to add:**\n")
+            message.append("```json")
+            message.append(json_config)
+            message.append("```\n")
+            message.append("**Instructions:**")
+            message.append("1. Go to Settings → Dashboards → Energy")
+            message.append("2. Click 'Add Consumption'")
+            message.append(f"3. Select sensor: `{suggested_config['stat_consumption']}`")
+            message.append("4. Enter name (optional)")
+            
+            if "included_in_stat" in suggested_config:
+                message.append(f"5. Check 'Include in parent' and select: `{suggested_config['included_in_stat']}`")
+            
+            message.append("6. Save")
+        
+        await hass.services.async_call(
+            "persistent_notification",
+            "create",
+            {
+                "title": f"📤 Energy Config - {coordinator.appliance_name}",
+                "message": "\n".join(message),
+                "notification_id": f"energy_config_export_{coordinator.entry.entry_id}",
+            },
+        )
+        
+        _LOGGER.info(
+            "Energy config exported for '%s': %s",
+            coordinator.appliance_name,
+            json_config
+        )
+    
+    async def handle_get_energy_data(call: ServiceCall) -> None:
+        """Handle get_energy_data service call."""
+        from datetime import datetime, timedelta
+        from .energy_storage import EnergyStorageReader
+        
+        # Parse parameters
+        period_start = call.data.get("period_start")
+        period_end = call.data.get("period_end")
+        devices = call.data.get("devices", [])
+        
+        # Default to today if not specified
+        if not period_start:
+            period_start = datetime.now().replace(hour=0, minute=0, second=0, microsecond=0)
+        else:
+            period_start = datetime.fromisoformat(period_start)
+        
+        if not period_end:
+            period_end = datetime.now()
+        else:
+            period_end = datetime.fromisoformat(period_end)
+        
+        # Get all SAM coordinators or filter by devices
+        coordinators = [
+            coord for coord in hass.data.get(DOMAIN, {}).values()
+            if isinstance(coord, SmartApplianceCoordinator)
+        ]
+        
+        if devices:
+            coordinators = [
+                coord for coord in coordinators
+                if coord.appliance_name in devices
+            ]
+        
+        # Collect energy data
+        energy_data = {
+            "period": {
+                "start": period_start.isoformat(),
+                "end": period_end.isoformat(),
+            },
+            "devices": [],
+            "total_energy_kwh": 0.0,
+            "total_cost": 0.0,
+        }
+        
+        for coord in coordinators:
+            device_data = {
+                "name": coord.appliance_name,
+                "type": coord.appliance_type,
+                "daily_energy_kwh": round(coord.daily_stats.get("total_energy", 0), 3),
+                "daily_cost": round(coord.daily_stats.get("total_cost", 0), 2),
+                "monthly_energy_kwh": round(coord.monthly_stats.get("total_energy", 0), 3),
+                "monthly_cost": round(coord.monthly_stats.get("total_cost", 0), 2),
+            }
+            
+            energy_data["devices"].append(device_data)
+            energy_data["total_energy_kwh"] += device_data["daily_energy_kwh"]
+            energy_data["total_cost"] += device_data["daily_cost"]
+        
+        # Round totals
+        energy_data["total_energy_kwh"] = round(energy_data["total_energy_kwh"], 3)
+        energy_data["total_cost"] = round(energy_data["total_cost"], 2)
+        
+        # Fire event with data (for custom cards to listen)
+        hass.bus.async_fire(
+            f"{DOMAIN}_energy_data",
+            energy_data
+        )
+        
+        _LOGGER.info(
+            "Energy data retrieved for %d devices: %.3f kWh, %.2f €",
+            len(coordinators),
+            energy_data["total_energy_kwh"],
+            energy_data["total_cost"]
+        )
+        
+        # Also create a notification
+        message = [
+            f"**Energy Data Report**\n",
+            f"**Period**: {period_start.strftime('%Y-%m-%d %H:%M')} → {period_end.strftime('%Y-%m-%d %H:%M')}",
+            f"**Devices**: {len(coordinators)}",
+            f"**Total Energy**: {energy_data['total_energy_kwh']} kWh",
+            f"**Total Cost**: {energy_data['total_cost']} €\n",
+            "**Breakdown:**",
+        ]
+        
+        for device in energy_data["devices"]:
+            message.append(f"- **{device['name']}**: {device['daily_energy_kwh']} kWh (€{device['daily_cost']})")
+        
+        await hass.services.async_call(
+            "persistent_notification",
+            "create",
+            {
+                "title": "⚡ Energy Data",
+                "message": "\n".join(message),
+                "notification_id": "energy_data_report",
+            },
+        )
+    
     # Register services
     hass.services.async_register(
         DOMAIN,
@@ -516,6 +814,27 @@ async def async_setup_services(hass: HomeAssistant) -> None:
         "force_shutdown",
         handle_force_shutdown,
         schema=SERVICE_FORCE_SHUTDOWN_SCHEMA,
+    )
+    
+    hass.services.async_register(
+        DOMAIN,
+        "sync_with_energy_dashboard",
+        handle_sync_with_energy_dashboard,
+        schema=SERVICE_SYNC_WITH_ENERGY_DASHBOARD_SCHEMA,
+    )
+    
+    hass.services.async_register(
+        DOMAIN,
+        "export_energy_config",
+        handle_export_energy_config,
+        schema=SERVICE_EXPORT_ENERGY_CONFIG_SCHEMA,
+    )
+    
+    hass.services.async_register(
+        DOMAIN,
+        "get_energy_data",
+        handle_get_energy_data,
+        schema=SERVICE_GET_ENERGY_DATA_SCHEMA,
     )
     
     _LOGGER.info("Services Smart Appliance Monitor enregistrés")

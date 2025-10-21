@@ -12,6 +12,7 @@ from homeassistant.helpers import entity_registry as er
 
 from .const import DOMAIN
 from .coordinator import SmartApplianceCoordinator
+from .energy_storage import EnergyStorageReader, EnergyStorageError
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -205,4 +206,218 @@ class EnergyDashboardHelper:
             "device_consumption": True,
             "unit_of_measurement": UnitOfEnergy.KILO_WATT_HOUR,
         }
+
+
+class EnergyDashboardSync:
+    """Synchronization handler between SAM and Energy Dashboard."""
+    
+    def __init__(
+        self,
+        hass: HomeAssistant,
+        coordinator: SmartApplianceCoordinator,
+    ) -> None:
+        """Initialize the sync handler.
+        
+        Args:
+            hass: Home Assistant instance
+            coordinator: Appliance coordinator
+        """
+        self.hass = hass
+        self.coordinator = coordinator
+        self.storage_reader = EnergyStorageReader(hass)
+    
+    async def get_sync_status(self) -> dict[str, Any]:
+        """Get synchronization status for this appliance.
+        
+        Returns:
+            Dict with sync status and details
+        """
+        appliance_name_slug = self.coordinator.appliance_name.lower().replace(' ', '_')
+        daily_energy_sensor = f"sensor.{appliance_name_slug}_daily_energy"
+        
+        try:
+            # Check if sensor is in Energy Dashboard
+            device_config = await self.storage_reader.find_device_by_sensor(
+                daily_energy_sensor
+            )
+            
+            if device_config:
+                status = "synced"
+                message = f"Appliance '{self.coordinator.appliance_name}' is configured in Energy Dashboard"
+                
+                # Check if it's included in another stat
+                parent_stat = device_config.get("included_in_stat")
+                if parent_stat:
+                    message += f" (included in {parent_stat})"
+                
+            else:
+                status = "not_configured"
+                message = f"Appliance '{self.coordinator.appliance_name}' is NOT in Energy Dashboard"
+            
+            return {
+                "status": status,
+                "message": message,
+                "appliance_name": self.coordinator.appliance_name,
+                "energy_sensor": daily_energy_sensor,
+                "dashboard_config": device_config,
+            }
+            
+        except EnergyStorageError as err:
+            _LOGGER.warning("Cannot read energy storage: %s", err)
+            return {
+                "status": "error",
+                "message": f"Cannot read Energy Dashboard configuration: {err}",
+                "appliance_name": self.coordinator.appliance_name,
+                "energy_sensor": daily_energy_sensor,
+                "dashboard_config": None,
+            }
+    
+    async def suggest_energy_config(self) -> dict[str, Any]:
+        """Generate suggested configuration for Energy Dashboard.
+        
+        Returns:
+            Configuration ready to be added to Energy Dashboard
+        """
+        appliance_name_slug = self.coordinator.appliance_name.lower().replace(' ', '_')
+        
+        config = {
+            "stat_consumption": f"sensor.{appliance_name_slug}_daily_energy",
+            "name": self.coordinator.appliance_name,
+        }
+        
+        # Try to find a parent sensor if this is a sub-device
+        # For example, if bureau_energy exists and contains this device
+        try:
+            devices = await self.storage_reader.get_device_consumption()
+            
+            # Look for potential parent sensors
+            # This is a heuristic: check if there's a sensor that might be a parent
+            # based on naming (e.g., "bureau_energy" for "lumiere_bureau_energy")
+            potential_parents = []
+            for device in devices:
+                parent_sensor = device.get("stat_consumption", "")
+                # Extract base name (remove sensor. prefix)
+                if parent_sensor.startswith("sensor."):
+                    parent_base = parent_sensor.replace("sensor.", "").replace("_energy", "")
+                    appliance_base = appliance_name_slug.replace("_energy", "")
+                    
+                    # Check if appliance name contains parent name
+                    if parent_base in appliance_base and parent_base != appliance_base:
+                        potential_parents.append(parent_sensor)
+            
+            if potential_parents:
+                # Suggest the first potential parent
+                config["included_in_stat"] = potential_parents[0]
+                _LOGGER.info(
+                    "Suggested parent sensor for %s: %s",
+                    self.coordinator.appliance_name,
+                    potential_parents[0]
+                )
+        
+        except EnergyStorageError:
+            pass  # No parent suggestion if can't read storage
+        
+        return config
+    
+    async def find_similar_devices(self) -> list[dict[str, Any]]:
+        """Find devices in Energy Dashboard that could use SAM monitoring.
+        
+        Returns:
+            List of similar devices that are candidates for SAM
+        """
+        try:
+            devices = await self.storage_reader.get_device_consumption()
+            similar = []
+            
+            for device in devices:
+                sensor = device.get("stat_consumption", "")
+                name = device.get("name", "")
+                
+                # Skip if this is already a SAM device
+                # SAM sensors typically follow pattern: sensor.{name}_daily_energy
+                if not sensor or not sensor.endswith("_energy"):
+                    continue
+                
+                # Extract potential appliance name
+                # sensor.refrigerateur_energie -> refrigerateur
+                base_name = sensor.replace("sensor.", "").replace("_energie", "").replace("_energy", "")
+                
+                # This device could benefit from SAM monitoring
+                similar.append({
+                    "sensor": sensor,
+                    "name": name or base_name.replace("_", " ").title(),
+                    "dashboard_config": device,
+                    "suggestion": f"Consider adding '{name or base_name}' to Smart Appliance Monitor",
+                })
+            
+            return similar
+            
+        except EnergyStorageError as err:
+            _LOGGER.warning("Cannot find similar devices: %s", err)
+            return []
+    
+    async def generate_sync_report(self) -> dict[str, Any]:
+        """Generate comprehensive sync report.
+        
+        Returns:
+            Complete sync report with status and recommendations
+        """
+        sync_status = await self.get_sync_status()
+        suggested_config = await self.suggest_energy_config()
+        similar_devices = await self.find_similar_devices()
+        
+        return {
+            "appliance": {
+                "name": self.coordinator.appliance_name,
+                "type": self.coordinator.appliance_type,
+            },
+            "sync_status": sync_status,
+            "suggested_config": suggested_config,
+            "similar_devices": similar_devices,
+            "instructions": await self._get_instructions(sync_status["status"]),
+        }
+    
+    async def _get_instructions(self, status: str) -> dict[str, str]:
+        """Get user instructions based on sync status.
+        
+        Args:
+            status: Current sync status
+            
+        Returns:
+            Instructions in English and French
+        """
+        appliance_name_slug = self.coordinator.appliance_name.lower().replace(' ', '_')
+        sensor = f"sensor.{appliance_name_slug}_daily_energy"
+        
+        if status == "synced":
+            return {
+                "en": f"✅ {self.coordinator.appliance_name} is already configured in Energy Dashboard.",
+                "fr": f"✅ {self.coordinator.appliance_name} est déjà configuré dans le tableau de bord Énergie.",
+            }
+        elif status == "not_configured":
+            return {
+                "en": (
+                    f"⚠️ {self.coordinator.appliance_name} is NOT in Energy Dashboard.\n\n"
+                    "To add it:\n"
+                    "1. Go to Settings → Dashboards → Energy\n"
+                    "2. Click 'Add Consumption'\n"
+                    f"3. Select sensor: {sensor}\n"
+                    "4. Save\n\n"
+                    f"Or use the service: smart_appliance_monitor.export_energy_config"
+                ),
+                "fr": (
+                    f"⚠️ {self.coordinator.appliance_name} n'est PAS dans le tableau de bord Énergie.\n\n"
+                    "Pour l'ajouter :\n"
+                    "1. Allez dans Paramètres → Tableaux de bord → Énergie\n"
+                    "2. Cliquez sur 'Ajouter une consommation'\n"
+                    f"3. Sélectionnez le capteur : {sensor}\n"
+                    "4. Enregistrez\n\n"
+                    f"Ou utilisez le service : smart_appliance_monitor.export_energy_config"
+                ),
+            }
+        else:  # error
+            return {
+                "en": "❌ Cannot read Energy Dashboard configuration. Check your Home Assistant setup.",
+                "fr": "❌ Impossible de lire la configuration du tableau de bord Énergie. Vérifiez votre installation Home Assistant.",
+            }
 

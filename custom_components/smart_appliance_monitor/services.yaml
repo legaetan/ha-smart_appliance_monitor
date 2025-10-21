@@ -129,3 +129,56 @@ force_shutdown:
       selector:
         entity:
           integration: smart_appliance_monitor
+
+sync_with_energy_dashboard:
+  name: Sync with Energy Dashboard
+  description: Checks synchronization status between Smart Appliance Monitor devices and Home Assistant Energy Dashboard. Generates a detailed report with synced devices, missing devices, and recommendations.
+  fields:
+    entity_id:
+      name: Entity (optional)
+      description: Specific appliance entity to sync. If not provided, syncs all SAM devices.
+      required: false
+      selector:
+        entity:
+          integration: smart_appliance_monitor
+          domain: sensor
+
+export_energy_config:
+  name: Export Energy Dashboard Config
+  description: Exports the Energy Dashboard configuration for a specific appliance. Provides JSON configuration and step-by-step instructions to add the device to Energy Dashboard.
+  target:
+    entity:
+      integration: smart_appliance_monitor
+      domain: sensor
+  fields:
+    entity_id:
+      name: Entity
+      description: The appliance monitor entity
+      required: true
+      selector:
+        entity:
+          integration: smart_appliance_monitor
+
+get_energy_data:
+  name: Get Energy Data
+  description: Retrieves aggregated energy data for SAM devices. Returns energy consumption, costs, and device breakdown for a specified period. Fires an event with the data for custom dashboards.
+  fields:
+    period_start:
+      name: Period Start
+      description: Start of the period (ISO format, e.g., "2025-10-21T00:00:00"). Defaults to today at midnight.
+      required: false
+      selector:
+        text:
+    period_end:
+      name: Period End
+      description: End of the period (ISO format, e.g., "2025-10-21T23:59:59"). Defaults to now.
+      required: false
+      selector:
+        text:
+    devices:
+      name: Devices
+      description: Optional list of device names to include. If not provided, includes all SAM devices.
+      required: false
+      advanced: true
+      selector:
+        object:

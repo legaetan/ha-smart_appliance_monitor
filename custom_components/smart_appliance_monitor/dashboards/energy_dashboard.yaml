@@ -1,0 +1,287 @@
+# Custom Energy Dashboard Template for Smart Appliance Monitor
+# This dashboard provides advanced energy analytics and visualizations
+# for all Smart Appliance Monitor devices.
+
+title: Energy Dashboard (SAM)
+icon: mdi:lightning-bolt
+path: sam-energy
+
+cards:
+  # Summary Card - Top row
+  - type: vertical-stack
+    cards:
+      - type: markdown
+        content: |
+          # ⚡ Energy Dashboard
+          **Smart Appliance Monitor** - Advanced Energy Analytics
+      
+      # Today's Energy Summary
+      - type: horizontal-stack
+        cards:
+          - type: custom:button-card
+            name: "Total Energy Today"
+            icon: mdi:lightning-bolt
+            entity: sensor.sam_total_daily_energy
+            show_state: true
+            state_display: "[[[ return `${states['sensor.sam_total_daily_energy'].state} kWh`; ]]]"
+            styles:
+              card:
+                - background: linear-gradient(135deg, #667eea 0%, #764ba2 100%)
+                - color: white
+              name:
+                - font-size: 14px
+              state:
+                - font-size: 24px
+                - font-weight: bold
+          
+          - type: custom:button-card
+            name: "Total Cost Today"
+            icon: mdi:currency-eur
+            entity: sensor.sam_total_daily_cost
+            show_state: true
+            state_display: "[[[ return `${states['sensor.sam_total_daily_cost'].state} €`; ]]]"
+            styles:
+              card:
+                - background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%)
+                - color: white
+              name:
+                - font-size: 14px
+              state:
+                - font-size: 24px
+                - font-weight: bold
+          
+          - type: custom:button-card
+            name: "Active Devices"
+            icon: mdi:power-plug
+            entity: sensor.sam_active_devices
+            show_state: true
+            styles:
+              card:
+                - background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%)
+                - color: white
+              name:
+                - font-size: 14px
+              state:
+                - font-size: 24px
+                - font-weight: bold
+
+  # Energy Breakdown by Device
+  - type: vertical-stack
+    cards:
+      - type: markdown
+        content: |
+          ## 📊 Energy Breakdown by Device
+      
+      # Loop through each SAM device
+      # This is a placeholder - actual implementation would dynamically generate cards
+      - type: entities
+        title: "Device Consumption"
+        entities:
+          - type: custom:bar-card
+            entity: sensor.{APPLIANCE_ID}_daily_energy
+            name: "{APPLIANCE_NAME}"
+            icon: "{ICON}"
+            unit_of_measurement: kWh
+            severity:
+              - value: 0
+                color: '#2ecc71'
+              - value: 5
+                color: '#f39c12'
+              - value: 10
+                color: '#e74c3c'
+
+  # Energy Timeline (Hourly)
+  - type: vertical-stack
+    cards:
+      - type: markdown
+        content: |
+          ## 📈 Energy Timeline (Today)
+      
+      - type: custom:apexcharts-card
+        header:
+          show: false
+        graph_span: 24h
+        span:
+          start: day
+        series:
+          - entity: sensor.{APPLIANCE_ID}_daily_energy
+            name: "{APPLIANCE_NAME}"
+            type: column
+            group_by:
+              func: diff
+              duration: 1h
+
+  # Top Consumers
+  - type: vertical-stack
+    cards:
+      - type: markdown
+        content: |
+          ## 🏆 Top Energy Consumers
+      
+      - type: custom:auto-entities
+        card:
+          type: entities
+          title: "Top 5 Consumers"
+        filter:
+          include:
+            - entity_id: "sensor.*_daily_energy"
+              integration: smart_appliance_monitor
+        sort:
+          method: state
+          numeric: true
+          reverse: true
+        show_empty: false
+
+  # Monthly Comparison
+  - type: vertical-stack
+    cards:
+      - type: markdown
+        content: |
+          ## 📆 Monthly Overview
+      
+      - type: statistics-graph
+        title: "Monthly Energy Consumption"
+        entities:
+          - sensor.{APPLIANCE_ID}_monthly_energy
+        stat_types:
+          - mean
+          - max
+          - min
+        period:
+          calendar:
+            period: month
+
+  # Cost Analysis
+  - type: vertical-stack
+    cards:
+      - type: markdown
+        content: |
+          ## 💰 Cost Analysis
+      
+      - type: custom:apexcharts-card
+        header:
+          show: true
+          title: "Daily Cost Breakdown"
+        graph_span: 7d
+        series:
+          - entity: sensor.{APPLIANCE_ID}_daily_cost
+            name: "{APPLIANCE_NAME}"
+            type: column
+            group_by:
+              func: last
+              duration: 1d
+
+  # Efficiency Score
+  - type: vertical-stack
+    cards:
+      - type: markdown
+        content: |
+          ## 🎯 Efficiency Score
+      
+      - type: custom:button-card
+        name: "Overall Efficiency"
+        icon: mdi:leaf
+        entity: sensor.sam_efficiency_score
+        show_state: true
+        styles:
+          card:
+            - background: |
+                [[[
+                  const score = states['sensor.sam_efficiency_score'].state;
+                  if (score > 80) return 'linear-gradient(135deg, #11998e 0%, #38ef7d 100%)';
+                  if (score > 50) return 'linear-gradient(135deg, #f2994a 0%, #f2c94c 100%)';
+                  return 'linear-gradient(135deg, #eb3349 0%, #f45c43 100%)';
+                ]]]
+            - color: white
+          name:
+            - font-size: 16px
+          state:
+            - font-size: 32px
+            - font-weight: bold
+
+  # Quick Actions
+  - type: vertical-stack
+    cards:
+      - type: markdown
+        content: |
+          ## ⚙️ Quick Actions
+      
+      - type: horizontal-stack
+        cards:
+          - type: button
+            name: "Sync with Energy Dashboard"
+            icon: mdi:sync
+            tap_action:
+              action: call-service
+              service: smart_appliance_monitor.sync_with_energy_dashboard
+              service_data: {}
+          
+          - type: button
+            name: "Export Energy Data"
+            icon: mdi:download
+            tap_action:
+              action: call-service
+              service: smart_appliance_monitor.get_energy_data
+              service_data:
+                period_start: "{{ now().replace(hour=0, minute=0, second=0).isoformat() }}"
+                period_end: "{{ now().isoformat() }}"
+          
+          - type: button
+            name: "View Energy Dashboard"
+            icon: mdi:chart-line
+            tap_action:
+              action: navigate
+              navigation_path: /energy
+
+  # Integration Status
+  - type: vertical-stack
+    cards:
+      - type: markdown
+        content: |
+          ## 🔗 Integration Status
+      
+      - type: entities
+        entities:
+          - type: custom:template-entity-row
+            name: "Energy Dashboard Sync"
+            icon: mdi:sync
+            state: "{{ states('sensor.sam_energy_dashboard_sync_status') }}"
+          
+          - type: custom:template-entity-row
+            name: "Total SAM Devices"
+            icon: mdi:counter
+            state: "{{ states.sensor | selectattr('entity_id', 'search', '_daily_energy') | selectattr('attributes.integration', 'eq', 'smart_appliance_monitor') | list | count }}"
+          
+          - type: custom:template-entity-row
+            name: "Last Update"
+            icon: mdi:clock-outline
+            state: "{{ now().strftime('%H:%M:%S') }}"
+
+  # Instructions
+  - type: markdown
+    content: |
+      ---
+      
+      ### 📚 How to Use This Dashboard
+      
+      **Energy Monitoring**:
+      - View real-time energy consumption for all SAM devices
+      - Compare today vs yesterday energy usage
+      - Track top consumers and optimize usage
+      
+      **Synchronization**:
+      - Use "Sync with Energy Dashboard" to check integration status
+      - Export configuration for manual Energy Dashboard setup
+      
+      **Custom Cards Required**:
+      - `button-card`
+      - `bar-card`
+      - `apexcharts-card`
+      - `auto-entities`
+      
+      Install via HACS for full functionality.
+      
+      ---
+      
+      **Smart Appliance Monitor** - [Documentation](https://github.com/legaetan/ha-smart_appliance_monitor)
+

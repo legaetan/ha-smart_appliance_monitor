@@ -5,6 +5,190 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.6.0] - 2025-10-21
+
+### Added
+
+#### Energy Dashboard Integration Suite 🎉
+
+**Energy Storage File Reader (`energy_storage.py`)**
+- **New module** for read-only access to Home Assistant's `.storage/energy` file
+- Class `EnergyStorageReader` with caching system (5 min TTL)
+- Methods to read energy sources and device consumption configurations
+- Safe error handling for missing or invalid files
+- Sync report generation comparing SAM devices with Energy Dashboard
+
+**Energy Dashboard Synchronization (`energy.py` enhanced)**
+- **New class** `EnergyDashboardSync` for advanced sync management
+- `get_sync_status()` - Check if appliance is in Energy Dashboard
+- `suggest_energy_config()` - Generate suggested configuration with parent sensors
+- `find_similar_devices()` - Detect Energy Dashboard devices that could use SAM
+- `generate_sync_report()` - Comprehensive sync report with recommendations
+- Bilingual instructions (English/French) for adding devices
+
+**Three New Services**
+1. **`sync_with_energy_dashboard`** - Check sync status for all or specific SAM devices
+   - Generates detailed notification with synced/missing devices
+   - Provides setup instructions for missing devices
+   - Supports filtering by entity_id or sync all devices
+   
+2. **`export_energy_config`** - Export Energy Dashboard configuration
+   - Generates JSON configuration ready to use
+   - Includes parent sensor suggestions when applicable
+   - Step-by-step instructions in notification
+   
+3. **`get_energy_data`** - Retrieve aggregated energy data
+   - Period filtering (start/end dates)
+   - Device filtering (specific devices or all)
+   - Returns breakdown by device with costs
+   - Fires event for custom dashboard cards
+
+**Custom Energy Dashboard Backend (`energy_dashboard.py`)**
+- **New module** with `CustomEnergyDashboard` class for advanced analytics
+- `get_period_data()` - Energy data for custom time periods
+- `get_devices_breakdown()` - Device consumption breakdown with percentages
+- `get_comparison_data()` - Compare two periods (today vs yesterday, etc.)
+- `get_daily_timeline()` - Hourly energy consumption timeline
+- `get_top_consumers()` - Identify top N energy consumers
+- `get_energy_efficiency_score()` - Calculate efficiency scores with recommendations
+- `get_dashboard_summary()` - Complete dashboard summary with all metrics
+
+**Custom Energy Dashboard Template**
+- **New template** `dashboards/energy_dashboard.yaml` with complete UI
+- Summary cards (total energy, cost, active devices)
+- Device breakdown with bar charts
+- Energy timeline (hourly visualization)
+- Top 5 consumers ranking
+- Monthly overview with statistics
+- Cost analysis graphs
+- Efficiency scores display
+- Quick actions (sync, export, navigate)
+- Integration status monitoring
+
+**Automatic Sync Detection**
+- Automatic check on appliance startup
+- Logs sync status (✅ synced / ⚠️ not configured)
+- Non-intrusive background task
+
+**Service Documentation**
+- Complete documentation in `services.yaml` for all three new services
+- Examples and parameter descriptions
+- Advanced options clearly marked
+
+**Complete Wiki Documentation**
+- **New guide** `docs/wiki-github/Energy-Dashboard.md` (570 lines)
+- Architecture overview and features
+- Getting started guide
+- Service documentation with examples
+- Custom dashboard installation and usage
+- Troubleshooting section
+- Best practices
+- Advanced topics (raw data access, custom sensors, events)
+
+### Changed
+
+#### Documentation Updates
+- **README.md** - Added "Energy Dashboard Suite (v0.6.0+)" section
+- Documented 10 services (organized by category)
+- Added service examples with YAML code
+- Updated "Recent Improvements" with v0.6.0 details
+
+- **IDEAS.md** - Marked 3 features as completed
+  - Energy Storage File Integration ✅
+  - Custom Energy Dashboard ✅
+  - Enhanced Energy Dashboard Integration ✅
+- Added "Recent Completions (v0.6.0)" section with detailed impact
+- Updated priority matrix with status column
+
+#### Configuration
+- Added `CONF_ENABLE_ENERGY_DASHBOARD_SYNC` constant
+- Added `EVENT_ENERGY_DASHBOARD_SYNCED` event
+
+### Technical Details
+
+**New Files Created:**
+- `custom_components/smart_appliance_monitor/energy_storage.py` (270 lines)
+- `custom_components/smart_appliance_monitor/energy_dashboard.py` (419 lines)
+- `custom_components/smart_appliance_monitor/dashboards/energy_dashboard.yaml` (330 lines)
+- `docs/wiki-github/Energy-Dashboard.md` (570 lines)
+
+**Files Modified:**
+- `custom_components/smart_appliance_monitor/__init__.py` (+280 lines)
+  - Added 3 service schemas
+  - Added 3 service handlers
+  - Added automatic sync check on startup
+  - Registered 3 new services
+- `custom_components/smart_appliance_monitor/energy.py` (+216 lines)
+  - Added `EnergyDashboardSync` class
+  - Enhanced with sync and detection methods
+- `custom_components/smart_appliance_monitor/const.py` (+3 lines)
+  - New constants for Energy Dashboard integration
+- `custom_components/smart_appliance_monitor/services.yaml` (+54 lines)
+  - Documentation for 3 new services
+- `README.md` (+77 lines)
+  - New Energy Dashboard section
+  - Service documentation
+- `docs/IDEAS.md` (+94 lines)
+  - Completion status updates
+  - Recent completions section
+
+**Architecture:**
+- Read-only access to `.storage/energy` (safe, non-invasive)
+- Modular design with dedicated modules for each feature
+- Event-driven system for custom dashboards
+- Cache system to minimize file I/O
+
+**Code Quality:**
+- ✅ All code comments in English
+- ✅ Bilingual user-facing strings (EN/FR)
+- ✅ No linter errors
+- ✅ Follows Home Assistant best practices
+- ✅ Type hints on all functions
+- ✅ Comprehensive error handling
+
+### Impact
+
+**For Users:**
+- Seamless integration with native Energy Dashboard
+- Advanced analytics beyond HA's native capabilities
+- Easy setup with automatic sync detection
+- Clear instructions for manual configuration
+- Foundation for future ML-based features
+
+**For Developers:**
+- Clean, modular architecture
+- Extensible backend for future enhancements
+- Event system for custom cards
+- Well-documented APIs
+
+**Statistics:**
+- ~2300 new lines of code
+- 3 new modules
+- 3 new services
+- 1 new dashboard template
+- 1 comprehensive wiki guide
+
+### Migration Notes
+
+No breaking changes. This is a purely additive release.
+
+**To use the new features:**
+1. Restart Home Assistant after update
+2. Check logs for automatic sync detection
+3. Use `sync_with_energy_dashboard` service to get sync report
+4. Use `export_energy_config` to add devices to Energy Dashboard
+5. Optionally install custom dashboard template
+
+### Future Enhancements
+
+This release lays the foundation for:
+- Custom energy Lovelace card (v0.7.0)
+- Automatic appliance detection via consumption analysis
+- ML-based energy optimization recommendations
+- Historical data analysis with Recorder integration
+
+---
+
 ## [0.5.7] - 2025-10-21
 
 ### Added

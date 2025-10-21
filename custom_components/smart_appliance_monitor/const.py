@@ -47,6 +47,9 @@ CONF_SCHEDULING_MODE = "scheduling_mode"
 # Anomaly Detection Configuration
 CONF_ENABLE_ANOMALY_DETECTION = "enable_anomaly_detection"
 
+# Energy Dashboard Integration
+CONF_ENABLE_ENERGY_DASHBOARD_SYNC = "enable_energy_dashboard_sync"
+
 # Appliance Types
 APPLIANCE_TYPE_OVEN = "oven"
 APPLIANCE_TYPE_DISHWASHER = "dishwasher"
@@ -92,6 +95,7 @@ EVENT_ENERGY_LIMIT_EXCEEDED = "energy_limit_exceeded"
 EVENT_BUDGET_EXCEEDED = "budget_exceeded"
 EVENT_USAGE_OUT_OF_SCHEDULE = "usage_out_of_schedule"
 EVENT_ANOMALY_DETECTED = "anomaly_detected"
+EVENT_ENERGY_DASHBOARD_SYNCED = "energy_dashboard_synced"
 
 # Notification Types
 NOTIF_TYPE_CYCLE_STARTED = "cycle_started"

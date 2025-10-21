@@ -26,16 +26,18 @@ Les idées sont organisées par **thème/catégorie** et **priorité** :
   - Dashboard programmatique via service
 
 ### Moyen terme
-- [ ] **Custom Energy Dashboard**
-  - Dashboard personnalisé inspiré du Energy Dashboard natif de HA
-  - Plus de contrôle et personnalisation :
-    - Périodes personnalisables (jour/semaine/mois/année/custom)
-    - Filtres avancés par appareil, type, pièce
-    - Vues personnalisées et layouts flexibles
-    - Comparaisons multi-périodes
-  - Utilise les données du fichier `.storage/energy`
-  - Compatible avec l'intégration Energy Storage File
-  - Export des données et rapports
+- [x] **Custom Energy Dashboard** ✅ **COMPLETED v0.6.0**
+  - ✅ Backend d'analytics avancées (energy_dashboard.py)
+  - ✅ Template de dashboard personnalisé (energy_dashboard.yaml)
+  - ✅ Plus de contrôle et personnalisation :
+    - ✅ Périodes personnalisables (aujourd'hui, hier, semaine, mois, custom)
+    - ✅ Filtres par appareil et type
+    - ✅ Comparaisons multi-périodes (aujourd'hui vs hier)
+    - ✅ Top consumers et efficiency scores
+  - ✅ Utilise les données du fichier `.storage/energy`
+  - ✅ Compatible avec l'intégration Energy Storage File
+  - ✅ Service get_energy_data pour export des données
+  - 🚧 Custom Lovelace card (prévue pour v0.7.0)
 
 - [ ] **Graphiques Temps Réel** (Custom Cards v0.4.1)
   - Mini power graph dans cycle card
@@ -159,21 +161,23 @@ Les idées sont organisées par **thème/catégorie** et **priorité** :
 ## 🔌 4. Integrations & Ecosystem
 
 ### Court terme
-- [ ] **Enhanced Energy Dashboard Integration**
-  - Intégration native HA Energy Dashboard
-  - Déjà implémentée en v0.5.0, à améliorer
-  - Statistiques long terme compatibles
+- [x] **Enhanced Energy Dashboard Integration** ✅ **COMPLETED v0.6.0**
+  - ✅ Intégration native HA Energy Dashboard (déjà en v0.5.0)
+  - ✅ Synchronisation automatique au démarrage
+  - ✅ Services pour vérification et export de configuration
+  - ✅ Détection des appareils manquants
+  - ✅ Statistiques long terme compatibles
 
 ### Moyen terme
-- [ ] **Energy Storage File Integration**
-  - Lecture du fichier `.storage/energy` de Home Assistant
-  - Récupération automatique des configurations :
-    - `energy_sources` - Sources d'énergie configurées
-    - `device_consumption` - Appareils de consommation
-    - `included_in_stat` - Statut d'inclusion dans les statistiques
-  - Synchronisation automatique avec Energy Dashboard
-  - Détection automatique des appareils déjà configurés
-  - Import des configurations existantes
+- [x] **Energy Storage File Integration** ✅ **COMPLETED v0.6.0**
+  - ✅ Lecture du fichier `.storage/energy` de Home Assistant (read-only)
+  - ✅ Récupération automatique des configurations :
+    - ✅ `energy_sources` - Sources d'énergie configurées
+    - ✅ `device_consumption` - Appareils de consommation
+    - ✅ `included_in_stat` - Statut d'inclusion dans les statistiques
+  - ✅ Synchronisation automatique avec Energy Dashboard au démarrage
+  - ✅ Détection automatique des appareils déjà configurés
+  - ✅ Services pour export et synchronisation
 - [ ] **Third-Party API Integration** (Future)
   - APIs fournisseurs d'énergie (Enedis, etc.)
   - Services météo pour optimisation
@@ -257,18 +261,18 @@ Les idées sont organisées par **thème/catégorie** et **priorité** :
 
 ## 📊 Matrice de Priorité
 
-| Priorité | Catégorie | Feature | Impact | Effort |
-|----------|-----------|---------|--------|--------|
-| 🔴 Haute | UI | Graphiques temps réel | Élevé | Moyen |
-| 🔴 Haute | Energy | Strict block mode | Élevé | Faible |
-| 🟡 Moyenne | Integrations | Energy Storage File | Élevé | Moyen |
-| 🟡 Moyenne | ML | Automatic Appliance Detection 🆕 | Très élevé | Élevé |
-| 🟡 Moyenne | UI | Custom Energy Dashboard | Élevé | Élevé |
-| 🟡 Moyenne | ML | Auto-calibration | Élevé | Élevé |
-| 🟡 Moyenne | UI | Mobile optimization | Moyen | Moyen |
-| 🟡 Moyenne | Analytics | Advanced dashboard | Élevé | Élevé |
-| 🟢 Basse | Cloud | Backup statistics | Faible | Élevé |
-| 🟢 Basse | Ecosystem | HACS publication | Moyen | Moyen |
+| Priorité | Catégorie | Feature | Impact | Effort | Status |
+|----------|-----------|---------|--------|--------|--------|
+| 🔴 Haute | UI | Graphiques temps réel | Élevé | Moyen | 📋 Planned |
+| 🔴 Haute | Energy | Strict block mode | Élevé | Faible | 📋 Planned |
+| ~~🟡 Moyenne~~ | ~~Integrations~~ | ~~Energy Storage File~~ | ~~Élevé~~ | ~~Moyen~~ | ✅ **Done v0.6.0** |
+| 🟡 Moyenne | ML | Automatic Appliance Detection 🆕 | Très élevé | Élevé | 📋 Planned |
+| ~~🟡 Moyenne~~ | ~~UI~~ | ~~Custom Energy Dashboard~~ | ~~Élevé~~ | ~~Élevé~~ | ✅ **Done v0.6.0** |
+| 🟡 Moyenne | ML | Auto-calibration | Élevé | Élevé | 📋 Planned |
+| 🟡 Moyenne | UI | Mobile optimization | Moyen | Moyen | 📋 Planned |
+| ~~🟡 Moyenne~~ | ~~Analytics~~ | ~~Advanced dashboard~~ | ~~Élevé~~ | ~~Élevé~~ | ✅ **Done v0.6.0** |
+| 🟢 Basse | Cloud | Backup statistics | Faible | Élevé | 📋 Planned |
+| 🟢 Basse | Ecosystem | HACS publication | Moyen | Moyen | 📋 Planned |
 
 ---
 
@@ -291,6 +295,62 @@ Vous avez une idée ? Vous voulez contribuer ?
 
 ---
 
-**Dernière mise à jour** : Octobre 2025  
+**Dernière mise à jour** : Octobre 2025 (v0.6.0 - Energy Dashboard Integration)
 **Prochaine révision** : Tous les 3 mois ou à chaque release majeure
+
+---
+
+## 🎉 Recent Completions (v0.6.0)
+
+### Energy Dashboard Integration Suite ✅
+
+**Completed Features:**
+- ✅ Energy Storage File Reader (`energy_storage.py`)
+  - Read-only access to `.storage/energy`
+  - Cache system with automatic invalidation
+  - Complete parsing of energy sources and device consumption
+  
+- ✅ Energy Dashboard Sync (`energy.py` enhanced)
+  - Automatic sync check on appliance startup
+  - Sync status reporting (synced/not_configured/error)
+  - Parent sensor suggestions for hierarchical organization
+  - Similar device detection in Energy Dashboard
+  
+- ✅ New Services
+  - `sync_with_energy_dashboard` - Check sync status for all or specific devices
+  - `export_energy_config` - Export JSON configuration with instructions
+  - `get_energy_data` - Retrieve aggregated energy data with breakdown
+  
+- ✅ Custom Energy Dashboard Backend (`energy_dashboard.py`)
+  - Period data analysis (today, yesterday, custom periods)
+  - Device breakdown with percentages
+  - Period comparisons (today vs yesterday)
+  - Top consumers identification
+  - Efficiency scoring system
+  - Dashboard summary with key metrics
+  
+- ✅ Dashboard Template (`dashboards/energy_dashboard.yaml`)
+  - Complete custom Energy Dashboard layout
+  - Summary cards with totals
+  - Device breakdown visualizations
+  - Energy timeline (hourly)
+  - Top consumers ranking
+  - Monthly overview
+  - Cost analysis
+  - Efficiency scores
+  - Quick actions (sync, export, navigate)
+  - Integration status display
+  
+- ✅ Documentation (`docs/wiki-github/Energy-Dashboard.md`)
+  - Complete user guide
+  - Service documentation with examples
+  - Troubleshooting section
+  - Best practices
+  - Advanced topics
+
+**Impact:**
+- Seamless integration with HA native Energy Dashboard
+- Advanced analytics beyond native capabilities
+- User-friendly sync and configuration tools
+- Foundation for future ML-based detection features
 
