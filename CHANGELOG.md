@@ -5,6 +5,59 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.5.7] - 2025-10-21
+
+### Added
+
+#### Documentation Consolidation & Future Roadmap
+- **Created central IDEAS.md** - Comprehensive future features and roadmap (297 lines)
+  - Organized by 6 themes: UI, ML, Energy, Integrations, Architecture, Advanced
+  - Sub-organized by priority: Court terme / Moyen terme / Long terme
+  - Includes priority matrix with impact and effort estimates
+  - **3 major new feature ideas added:**
+    1. **Energy Storage File Integration** - Auto-sync with HA's `.storage/energy` config
+    2. **Custom Energy Dashboard** - Advanced customizable energy monitoring dashboard
+    3. **Automatic Appliance Detection** 🔥 - Smart detection of unconfigured appliances
+- **Reorganized release notes** - Created `docs/release_notes/` with comprehensive index
+  - All release notes (v0.5.1 to v0.5.6) moved to dedicated folder
+  - Added index file with quick navigation
+- **Cleaned all documentation** - Removed scattered roadmap references
+  - README.md: Simplified with reference to IDEAS.md
+  - ARCHITECTURE.md: Focused on current architecture
+  - Custom cards docs: Consolidated roadmap
+  - Wiki pages: Updated "future feature" mentions with links to IDEAS.md
+
+### Changed
+
+#### Documentation Structure
+- **Release notes location** - Moved from root to `docs/release_notes/`
+- **Future features reference** - All docs now point to central IDEAS.md
+- **Wiki references** - Replaced "(future feature)" with "(voir IDEAS.md)"
+
+### Technical Details
+
+**New Files:**
+- `docs/IDEAS.md` - Central roadmap and future features hub
+- `docs/release_notes/README.md` - Release notes index
+- `docs/release_notes/RELEASE_NOTES_docs_2025-10-21.md` - This documentation release
+
+**Files Modified:**
+- `README.md` - Added IDEAS.md reference, cleaned roadmap
+- `ARCHITECTURE.md` - Removed future enhancements section
+- `custom_components/smart_appliance_monitor/www/smart-appliance-cards/README.md` - Updated roadmap
+- `custom_components/smart_appliance_monitor/www/smart-appliance-cards/PROJECT_STATUS.txt` - Updated limitations
+- `docs/wiki-github/Advanced-Features.md` - Updated future feature references
+- `docs/wiki-github/Scheduling.md` - Updated future feature references
+- `docs/wiki-github/Dashboards.md` - Updated future feature references
+- `docs/wiki-github/Advanced-Notifications.md` - Updated future feature references
+
+**Breaking Changes:** None - Documentation only
+
+**Migration Notes:**
+- No action required - this is a documentation-only release
+- Integration functionality remains at v0.5.6 level
+- New IDEAS.md provides clear vision for project future
+
 ## [0.5.6] - 2025-10-21
 
 ### Fixed
