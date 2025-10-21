@@ -5,6 +5,49 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.7.4] - 2025-10-21
+
+### Fixed
+
+**Negative Energy Values Validation**
+- Fixed critical issue causing negative energy consumption values in statistics
+- Root cause: Energy sensor resets (e.g., ESPHome device reboots) created negative cycle energy values
+- Added comprehensive validation in `_on_cycle_finished()` to detect and skip negative cycle energies
+- Added validation on state restoration to automatically reset corrupted negative statistics
+- Negative values now logged as warnings with clear indication of data integrity issues
+
+**Data Integrity Protection**
+- Implemented automatic recovery when negative totals are detected
+- Daily and monthly statistics automatically reset to safe values (0 or current cycle energy)
+- Prevents cascading data corruption across multiple cycles
+- Detailed error logging for debugging data issues
+
+### Changed
+
+**Coordinator Statistics Handling**
+- Enhanced `_on_cycle_finished()` with multi-level validation:
+  1. Detect negative cycle energy (sensor reset indicator)
+  2. Skip adding negative values to cumulative totals
+  3. Check if totals became negative despite validation
+  4. Auto-reset negative totals with error logging
+- Enhanced `restore_state()` to validate and correct negative values on integration load
+- All negative value detections include appliance name and context in logs
+
+### Technical Details
+
+**Files Modified**:
+- `custom_components/smart_appliance_monitor/coordinator.py` - Added validation logic
+
+**Impact**: 
+- Prevents future negative value accumulation
+- Automatic recovery from existing corrupted statistics
+- AI analysis now receives valid data for accurate recommendations
+- Energy Dashboard integration no longer affected by data corruption
+
+**Migration Notes**:
+- Existing installations with negative values: Values will be automatically corrected on next cycle completion
+- Manual reset still available via "Reset Statistics" button if immediate correction needed
+
 ## [0.7.3] - 2025-10-21
 
 ### Fixed

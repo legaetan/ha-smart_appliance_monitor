@@ -384,12 +384,43 @@ class SmartApplianceCoordinator(DataUpdateCoordinator):
             cost,
         )
         
-        # Mise à jour des statistiques
+        # Mise à jour des statistiques (avec validation pour éviter valeurs négatives)
         self.daily_stats["cycles"] += 1
-        self.daily_stats["total_energy"] += energy
-        self.daily_stats["total_cost"] += cost
-        self.monthly_stats["total_energy"] += energy
-        self.monthly_stats["total_cost"] += cost
+        
+        # Validation : si l'énergie du cycle est négative, c'est une erreur de données
+        if energy < 0:
+            _LOGGER.warning(
+                "Énergie de cycle négative détectée (%.3f kWh) pour '%s'. "
+                "Cela indique probablement un reset du compteur. Cycle ignoré dans les stats.",
+                energy,
+                self.appliance_name,
+            )
+        else:
+            self.daily_stats["total_energy"] += energy
+            self.daily_stats["total_cost"] += cost
+            self.monthly_stats["total_energy"] += energy
+            self.monthly_stats["total_cost"] += cost
+        
+        # Validation finale : si les totaux sont négatifs, réinitialiser
+        if self.daily_stats["total_energy"] < 0:
+            _LOGGER.error(
+                "Total d'énergie quotidienne négatif détecté (%.3f kWh) pour '%s'. "
+                "Réinitialisation des statistiques quotidiennes.",
+                self.daily_stats["total_energy"],
+                self.appliance_name,
+            )
+            self.daily_stats["total_energy"] = max(0, energy)
+            self.daily_stats["total_cost"] = max(0, cost)
+        
+        if self.monthly_stats["total_energy"] < 0:
+            _LOGGER.error(
+                "Total d'énergie mensuelle négatif détecté (%.3f kWh) pour '%s'. "
+                "Réinitialisation des statistiques mensuelles.",
+                self.monthly_stats["total_energy"],
+                self.appliance_name,
+            )
+            self.monthly_stats["total_energy"] = max(0, energy)
+            self.monthly_stats["total_cost"] = max(0, cost)
         
         # Ajouter à l'historique pour la détection d'anomalies
         if self.anomaly_detection_enabled:
@@ -1016,6 +1047,16 @@ class SmartApplianceCoordinator(DataUpdateCoordinator):
                 saved_date = datetime.fromisoformat(saved_daily_stats["date"]).date()
                 if saved_date == datetime.now().date():
                     self.daily_stats = self._deserialize_stats(saved_daily_stats)
+                    # Validation : corriger les valeurs négatives
+                    if self.daily_stats.get("total_energy", 0) < 0:
+                        _LOGGER.warning(
+                            "Énergie quotidienne négative détectée lors de la restauration "
+                            "(%.3f kWh) pour '%s'. Réinitialisation à 0.",
+                            self.daily_stats["total_energy"],
+                            self.appliance_name,
+                        )
+                        self.daily_stats["total_energy"] = 0.0
+                        self.daily_stats["total_cost"] = 0.0
                 else:
                     _LOGGER.debug(
                         "Stats journalières obsolètes (date: %s), réinitialisation",
@@ -1032,6 +1073,16 @@ class SmartApplianceCoordinator(DataUpdateCoordinator):
                     and saved_monthly_stats["month"] == now.month
                 ):
                     self.monthly_stats = saved_monthly_stats
+                    # Validation : corriger les valeurs négatives
+                    if self.monthly_stats.get("total_energy", 0) < 0:
+                        _LOGGER.warning(
+                            "Énergie mensuelle négative détectée lors de la restauration "
+                            "(%.3f kWh) pour '%s'. Réinitialisation à 0.",
+                            self.monthly_stats["total_energy"],
+                            self.appliance_name,
+                        )
+                        self.monthly_stats["total_energy"] = 0.0
+                        self.monthly_stats["total_cost"] = 0.0
                 else:
                     _LOGGER.debug(
                         "Stats mensuelles obsolètes (mois: %s/%s), réinitialisation",
