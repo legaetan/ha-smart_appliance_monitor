@@ -330,3 +330,4 @@ Thank you to the users who reported the service registration issue and helped te
 
 *Smart Appliance Monitor v0.7.2 - Making your home smarter, one appliance at a time.*
 
+

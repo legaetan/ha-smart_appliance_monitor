@@ -5,6 +5,95 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.7.6] - 2025-10-22
+
+### Fixed
+
+**AI Analysis Storage and Persistence**
+- Fixed AI analysis results not being saved to storage immediately after completion
+- Fixed `last_ai_analysis_result` remaining `null` after AI analysis completes
+- Fixed cycle history (`cycle_history`) always being empty in storage files
+- Fixed AI analysis failing with `'>' not supported between instances of 'NoneType' and 'int'` error when AI returns `None` for energy savings
+- Added immediate state save (`await self._save_state()`) after AI analysis completion
+
+**Cycle History Management**
+- Cycle history now saved **always** for all appliances (not only when anomaly detection is enabled)
+- Cycles are now properly stored in `.storage/smart_appliance_monitor.{entry_id}` files
+- Historical cycle data now available for AI analysis and statistics
+
+### Changed
+
+**Storage Behavior**
+- AI analysis results are now persisted immediately when analysis completes (no delay)
+- Cycle history is maintained for all appliances regardless of anomaly detection setting
+- Maximum cycle history size: 10 cycles (configurable via `_max_history_size`)
+
+### Technical Details
+
+**Files Modified**:
+- `custom_components/smart_appliance_monitor/coordinator.py`:
+  - Added `await self._save_state()` in `async_trigger_ai_analysis()` after storing result (line 683)
+  - Removed conditional `if self.anomaly_detection_enabled` for cycle history storage (line 426)
+  - Cycle history now populated for all appliances
+- `custom_components/smart_appliance_monitor/ai_client.py`:
+  - Fixed `_build_full_analysis_text()` to handle `None` values from AI using `or 0` operator (line 403-404)
+
+**Impact**: 
+- AI analysis results now persist correctly across Home Assistant restarts
+- Cycle history is available for all appliances, improving AI analysis quality
+- No more empty `cycle_history` arrays in storage files
+
+## [0.7.5] - 2025-10-22
+
+### Fixed
+
+**AI Analysis Robustness**
+- Fixed AI analysis failing when OpenAI/Google AI returns `None` for energy savings values
+- Fixed coordinator lookup using entity registry instead of fragile name-based matching
+- Fixed AI analysis state persistence across Home Assistant restarts
+- Fixed AI switch persistence - switches now remain enabled after HA restart
+- Fixed MAX_TOKENS errors by using structured responses from `ai_task.generate_data`
+- Fixed dashboard recommendations display format (now shows proper bullet lists instead of Python arrays)
+
+**Coordinator Entity Lookup**
+- Refactored `_get_coordinator_from_entity_id()` to use entity registry and `entry_id`
+- Eliminates failures when appliance names contain spaces or special characters
+- More reliable service calls (AI analysis, export, etc.) for all appliances
+
+**AI Analysis State Management**
+- Added `last_ai_analysis_result` to persistent storage
+- Analysis results now survive Home Assistant restarts
+- Sensors show previous analysis status instead of defaulting to "not_analyzed"
+
+### Changed
+
+**AI Integration Improvements**
+- AI analysis now uses structured responses via `ai_task.generate_data` (more reliable)
+- Simplified AI prompts to reduce token usage and prevent timeouts
+- Added safe float conversion with None handling for AI response values
+- Switch state changes immediately trigger state persistence (no delay)
+
+### Technical Details
+
+**Files Modified**:
+- `custom_components/smart_appliance_monitor/__init__.py` - Entity registry-based coordinator lookup
+- `custom_components/smart_appliance_monitor/coordinator.py` - Persistent AI results, async switch saves
+- `custom_components/smart_appliance_monitor/ai_client.py` - Structured responses, safe float conversion
+- `custom_components/smart_appliance_monitor/switch.py` - Async switch state methods
+- `custom_components/smart_appliance_monitor/const.py` - Added CYCLE_ANALYSIS_STRUCTURE
+- `dashboards/sam-energy-dashboard.yaml` - Fixed recommendations formatting with Jinja loops
+
+**Impact**: 
+- AI analysis now works reliably for all appliances regardless of naming
+- Analysis results persist across reboots
+- Reduced AI timeout errors through structured responses
+- Better user experience with preserved switch states
+
+**Migration Notes**:
+- Existing installations: First AI analysis after upgrade will populate persistent storage
+- Dashboard templates automatically updated for better formatting
+- No manual intervention required
+
 ## [0.7.4] - 2025-10-21
 
 ### Fixed

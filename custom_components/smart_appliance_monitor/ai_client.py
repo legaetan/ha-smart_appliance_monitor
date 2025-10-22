@@ -13,7 +13,7 @@ from homeassistant.core import HomeAssistant, ServiceResponse
 from homeassistant.exceptions import HomeAssistantError
 
 from .const import (
-    ANALYSIS_STRUCTURE,
+    CYCLE_ANALYSIS_STRUCTURE,
     ENERGY_DASHBOARD_ANALYSIS_STRUCTURE,
     AI_ANALYSIS_TYPE_PATTERN,
     AI_ANALYSIS_TYPE_COMPARATIVE,
@@ -36,6 +36,7 @@ class SmartApplianceAIClient:
         """
         self.hass = hass
         self.ai_task_entity = ai_task_entity
+        self.language = hass.config.language
 
     async def async_analyze_cycle_data(
         self,
@@ -71,7 +72,7 @@ class SmartApplianceAIClient:
             response = await self._call_ai_task(
                 task_name=f"Cycle Analysis - {appliance_name}",
                 instructions=prompt,
-                structure=None,  # Pass None to expect raw text response
+                structure=CYCLE_ANALYSIS_STRUCTURE,
             )
             
             # Process and validate response
@@ -199,43 +200,15 @@ class SmartApplianceAIClient:
             Formatted prompt string
         """
         prompt_parts = [
-            f"You are an energy efficiency expert. Your task is to analyze the energy consumption data of a {appliance_type} named '{appliance_name}' and provide a structured report in Markdown format.",
-            "You MUST provide concrete, actionable insights and recommendations.",
-            "",
-            "## Context",
-            f"Appliance Type: {appliance_type}",
-            f"Analysis Type Requested: {analysis_type}",
-            f"The data provided contains the history of the last {data.get('cycle_count_analyzed', 'several')} cycles.",
+            f"Analyze the energy data for the appliance '{appliance_name}' ({appliance_type}).",
+            "Provide a concise, structured report.",
+            f"The response MUST be in {self.language}.",
             "",
             "## Data to Analyze",
             json.dumps(data, indent=2),
             "",
-            "## Your Analysis Tasks & Output Format",
-            "Please structure your response using the following Markdown headers. Provide detailed information under each header.",
-            "",
-            "### Summary",
-            "Provide a 2-3 sentence overview of your key findings. Start with a conclusion.",
-            "",
-            "### Status",
-            "Your final judgment. Choose one and only one word: 'optimized', 'normal', or 'needs_improvement'.",
-            "",
-            "### Recommendations",
-            "Provide a bulleted list of actionable recommendations. You must provide at least two.",
-            "(e.g., - Use the eco program for non-urgent loads.)",
-            "(e.g., - Try to run the appliance after 10 PM to benefit from off-peak electricity rates.)",
-            "",
-            "### Potential Savings",
-            "Provide estimated monthly savings if recommendations are followed. Use the format 'kWh: [value], EUR: [value]'. Be realistic. Assume a price of 0.20 EUR/kWh if not provided.",
-            "(e.g., kWh: 5.5, EUR: 1.10)",
-            "",
-            "### Optimal Hours",
-            "Recommend the best usage hours as a time range.",
-            "(e.g., 22:00-06:00 for off-peak rates)",
-            "",
-            "### Insights",
-            "Provide a bulleted list of key observations from your analysis. You must provide at least one insight.",
-            "(e.g., - The appliance is often used during peak hours on weekdays.)",
-            "(e.g., - Cycle duration varies significantly, suggesting loads may be inconsistent.)",
+            "## Your Task",
+            "Based on the data, provide a summary, status, recommendations, potential savings, optimal hours, and key insights.",
         ]
         
         return "\n".join(prompt_parts)
@@ -257,113 +230,66 @@ class SmartApplianceAIClient:
             Formatted prompt string
         """
         prompt_parts = [
-            "You are a home energy efficiency consultant analyzing overall household energy consumption.",
-            "",
-            "## Context",
-            f"Analysis Period: {period}",
-            f"Comparison with Previous Period: {'Yes' if compare_previous else 'No'}",
+            "Analyze the following household energy data.",
+            f"Provide a concise analysis in {self.language}.",
             "",
             "## Energy Data",
             json.dumps(dashboard_data, indent=2),
             "",
             "## Your Task",
+            "1. Assess overall energy efficiency.",
+            "2. Identify top energy consumers.",
+            "3. Provide actionable recommendations to save energy.",
             "",
-            "Analyze the entire home's energy consumption and provide:",
-            "",
-            "1. **Global Assessment**: Overall energy efficiency of the home",
-            "2. **Top Consumers**: Identify which appliances use the most energy",
-            "3. **Optimization Opportunities**: Where can savings be made?",
-            "4. **Usage Patterns**: Peak hours, inefficient times, trends",
-            "5. **Actionable Recommendations**: Specific steps to reduce consumption",
-            "",
+            "## Output Requirements (be brief)",
+            "- **efficiency_score**: 0-100",
+            "- **global_recommendations**: Top recommendations for the home (bullet points).",
+            "- **top_optimization_opportunities**: Top 3 opportunities.",
+            "- **estimated_monthly_savings_eur**: A single number.",
+            "- **peak_hours**: Time range.",
+            "- **off_peak_recommendations**: Brief suggestions.",
+            "- **inefficient_devices**: List of devices.",
+            "- **consumption_trend**: 'increasing', 'stable', or 'decreasing'.",
         ]
-        
-        if compare_previous:
-            prompt_parts.extend([
-                "6. **Trend Analysis**: Compare with previous period and explain changes",
-                "",
-            ])
-        
-        prompt_parts.extend([
-            "## Output Requirements",
-            "- **efficiency_score**: 0-100 score for overall home energy efficiency",
-            "- **global_recommendations**: Top recommendations for the entire home (one per line)",
-            "- **top_optimization_opportunities**: Top 3 specific opportunities with highest impact",
-            "- **estimated_monthly_savings_eur**: Realistic estimate of monthly savings if recommendations followed",
-            "- **peak_hours**: When does the home use most energy?",
-            "- **off_peak_recommendations**: Which appliances should be moved to off-peak hours?",
-            "- **inefficient_devices**: Which devices are using more energy than expected?",
-            "- **consumption_trend**: 'increasing', 'stable', or 'decreasing'",
-            "",
-            "Focus on practical, household-level advice that can make a real difference.",
-        ])
         
         return "\n".join(prompt_parts)
 
     def _process_cycle_analysis_response(self, response: ServiceResponse) -> dict[str, Any]:
-        """Process and validate cycle analysis response from Markdown.
+        """Process and validate cycle analysis response from structured data.
         
         Args:
-            response: Raw AI Task response (containing Markdown text)
+            response: Raw AI Task response (containing structured data)
             
         Returns:
             Processed and validated response as a dictionary
         """
-        if not isinstance(response, dict) or "data" not in response:
-            _LOGGER.warning("AI Task response is not in the expected format: %s", response)
+        if not isinstance(response, dict):
+            _LOGGER.warning("AI Task response is not a dictionary: %s", response)
             return {}
 
-        text = response["data"]
-        _LOGGER.debug("Raw AI response text to be parsed: %s", text)
-        result = {}
+        # Extract the "data" key from the AI Task response
+        data = response.get("data", {})
+        _LOGGER.debug("Raw AI structured response to be processed: %s", data)
         
-        # Helper to parse sections
-        def parse_section(content, header):
+        # Helper to safely convert to float, handling None values
+        def safe_float(value, default=0.0):
+            if value is None:
+                return default
             try:
-                # Find the header and the next header to delimit the section
-                start = content.index(header) + len(header)
-                next_header_start = len(content)
-                
-                # Find the beginning of the next section
-                for h in ["### Summary", "### Status", "### Recommendations", "### Potential Savings", "### Optimal Hours", "### Insights"]:
-                    pos = content.find(h, start)
-                    if pos != -1:
-                        next_header_start = min(next_header_start, pos)
-                
-                section_content = content[start:next_header_start].strip()
-                return section_content
-            except ValueError:
-                return ""
-
-        # Parse each section from the Markdown response
-        result["summary"] = parse_section(text, "### Summary")
-        _LOGGER.debug("Parsed summary: %s", result["summary"])
-
-        result["status"] = parse_section(text, "### Status").lower().strip().replace("'", "") or "normal"
-        _LOGGER.debug("Parsed status: %s", result["status"])
+                return float(value)
+            except (ValueError, TypeError):
+                return default
         
-        recommendations_text = parse_section(text, "### Recommendations")
-        result["recommendations"] = self._parse_recommendations(recommendations_text)
-        _LOGGER.debug("Parsed recommendations: %s", result["recommendations"])
-        
-        savings_text = parse_section(text, "### Potential Savings")
-        _LOGGER.debug("Parsing savings text: %s", savings_text)
-        try:
-            kwh_part = savings_text.split("kWh:")[1].split(",")[0].strip()
-            eur_part = savings_text.split("EUR:")[1].strip()
-            result["energy_savings_kwh"] = float(kwh_part)
-            result["energy_savings_eur"] = float(eur_part)
-        except (IndexError, ValueError):
-            result["energy_savings_kwh"] = 0.0
-            result["energy_savings_eur"] = 0.0
-            
-        result["optimal_hours"] = parse_section(text, "### Optimal Hours")
-        _LOGGER.debug("Parsed optimal hours: %s", result["optimal_hours"])
-
-        result["insights"] = parse_section(text, "### Insights")
-        _LOGGER.debug("Parsed insights: %s", result["insights"])
-        
-        result["full_analysis"] = text # Store the raw markdown response
+        result = {
+            "summary": data.get("summary", ""),
+            "status": data.get("status", "normal"),
+            "recommendations": self._parse_recommendations(data.get("recommendations", "")),
+            "energy_savings_kwh": safe_float(data.get("energy_savings_kwh"), 0.0),
+            "energy_savings_eur": safe_float(data.get("energy_savings_eur"), 0.0),
+            "optimal_hours": data.get("optimal_hours", ""),
+            "insights": data.get("insights", ""),
+            "full_analysis": self._build_full_analysis_text(data),
+        }
         
         return result
 
@@ -444,28 +370,40 @@ class SmartApplianceAIClient:
         """Build full analysis text from structured data.
         
         Args:
-            data: Structured analysis data
+            data: Structured analysis data (with recommendations already parsed as list)
             
         Returns:
-            Formatted full analysis text
+            Formatted full analysis text in Markdown
         """
         parts = []
         
-        if data.get("summary"):
-            parts.append(f"Summary: {data['summary']}")
+        if summary := data.get("summary"):
+            parts.append(f"**Résumé:** {summary}")
         
-        if data.get("insights"):
-            parts.append(f"\nInsights:\n{data['insights']}")
+        if recommendations := data.get("recommendations"):
+            # Recommendations are already a list
+            if isinstance(recommendations, list) and recommendations:
+                parts.append("\n**Recommandations:**")
+                for rec in recommendations:
+                    parts.append(f"- {rec}")
+            elif isinstance(recommendations, str):
+                # If it's still a string, parse it
+                recs = self._parse_recommendations(recommendations)
+                if recs:
+                    parts.append("\n**Recommandations:**")
+                    for rec in recs:
+                        parts.append(f"- {rec}")
         
-        if data.get("recommendations"):
-            recs = self._parse_recommendations(data["recommendations"])
-            if recs:
-                parts.append("\nRecommendations:")
-                for i, rec in enumerate(recs, 1):
-                    parts.append(f"{i}. {rec}")
+        if insights := data.get("insights"):
+            parts.append(f"\n**Insights:**\n{insights}")
         
-        if data.get("optimal_hours"):
-            parts.append(f"\nOptimal Usage Hours: {data['optimal_hours']}")
+        if optimal_hours := data.get("optimal_hours"):
+            parts.append(f"\n**Heures Optimales:** {optimal_hours}")
+        
+        savings_kwh = data.get("energy_savings_kwh") or 0
+        savings_eur = data.get("energy_savings_eur") or 0
+        if savings_kwh > 0 or savings_eur > 0:
+            parts.append(f"\n**Économies Potentielles:** {savings_kwh} kWh / {savings_eur} EUR")
         
         return "\n".join(parts) if parts else "Analysis completed"
 

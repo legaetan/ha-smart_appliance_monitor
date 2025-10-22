@@ -77,7 +77,7 @@ class SmartApplianceMonitoringSwitch(SmartApplianceEntity, SwitchEntity):
             "Activation de la surveillance pour '%s'",
             self.coordinator.appliance_name,
         )
-        self.coordinator.set_monitoring_enabled(True)
+        await self.coordinator.set_monitoring_enabled(True)
         await self.coordinator.async_request_refresh()
         self.async_write_ha_state()
     
@@ -87,7 +87,7 @@ class SmartApplianceMonitoringSwitch(SmartApplianceEntity, SwitchEntity):
             "Désactivation de la surveillance pour '%s'",
             self.coordinator.appliance_name,
         )
-        self.coordinator.set_monitoring_enabled(False)
+        await self.coordinator.set_monitoring_enabled(False)
         await self.coordinator.async_request_refresh()
         self.async_write_ha_state()
     
@@ -125,7 +125,7 @@ class SmartApplianceNotificationsSwitch(SmartApplianceEntity, SwitchEntity):
             "Activation des notifications pour '%s'",
             self.coordinator.appliance_name,
         )
-        self.coordinator.set_notifications_enabled(True)
+        await self.coordinator.set_notifications_enabled(True)
         await self.coordinator.async_request_refresh()
         self.async_write_ha_state()
     
@@ -135,7 +135,7 @@ class SmartApplianceNotificationsSwitch(SmartApplianceEntity, SwitchEntity):
             "Désactivation des notifications pour '%s'",
             self.coordinator.appliance_name,
         )
-        self.coordinator.set_notifications_enabled(False)
+        await self.coordinator.set_notifications_enabled(False)
         await self.coordinator.async_request_refresh()
         self.async_write_ha_state()
 
@@ -421,7 +421,7 @@ class SmartApplianceAIAnalysisSwitch(SmartApplianceEntity, SwitchEntity):
             "Enabling AI analysis for '%s'",
             self.coordinator.appliance_name,
         )
-        self.coordinator.set_ai_analysis_enabled(True)
+        await self.coordinator.set_ai_analysis_enabled(True)
         await self.coordinator.async_request_refresh()
         self.async_write_ha_state()
     
@@ -431,7 +431,7 @@ class SmartApplianceAIAnalysisSwitch(SmartApplianceEntity, SwitchEntity):
             "Disabling AI analysis for '%s'",
             self.coordinator.appliance_name,
         )
-        self.coordinator.set_ai_analysis_enabled(False)
+        await self.coordinator.set_ai_analysis_enabled(False)
         await self.coordinator.async_request_refresh()
         self.async_write_ha_state()
     

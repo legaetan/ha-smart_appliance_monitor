@@ -84,6 +84,7 @@ SESSION_BASED_TYPES = [APPLIANCE_TYPE_MONITOR, APPLIANCE_TYPE_NAS, APPLIANCE_TYP
 STATE_IDLE = "idle"
 STATE_RUNNING = "running"
 STATE_FINISHED = "finished"
+STATE_ANALYZING = "analyzing"
 
 # Events
 EVENT_CYCLE_STARTED = "cycle_started"
@@ -297,41 +298,31 @@ NOTIF_TYPE_AI_ANALYSIS = "ai_analysis"
 SENSOR_AI_ANALYSIS = "ai_analysis"
 
 # AI Analysis Structure for ai_task.generate_data
-ANALYSIS_STRUCTURE = {
-    "summary": {
-        "selector": {"text": {}},
-        "description": "Short summary of the analysis",
-        "required": True,
-    },
+CYCLE_ANALYSIS_STRUCTURE = {
+    "summary": {"selector": {"text": {}}, "description": "Short summary (2-3 sentences max)."},
     "status": {
-        "selector": {
-            "select": {
-                "options": ["optimized", "normal", "needs_improvement"],
-            }
-        },
-        "description": "Overall status of appliance efficiency",
-        "required": True,
+        "selector": {"select": {"options": ["optimized", "normal", "needs_improvement"]}},
+        "description": "Overall status.",
     },
     "recommendations": {
         "selector": {"text": {}},
-        "description": "List of recommendations (one per line)",
-        "required": True,
+        "description": "Bulleted list of recommendations.",
     },
     "energy_savings_kwh": {
         "selector": {"number": {"min": 0, "step": 0.01}},
-        "description": "Potential energy savings in kWh",
+        "description": "Potential energy savings in kWh.",
     },
     "energy_savings_eur": {
         "selector": {"number": {"min": 0, "step": 0.01}},
-        "description": "Potential cost savings in EUR",
+        "description": "Potential cost savings in EUR.",
     },
     "optimal_hours": {
         "selector": {"text": {}},
-        "description": "Recommended usage hours",
+        "description": "Recommended usage hours (e.g., 22:00-06:00).",
     },
     "insights": {
         "selector": {"text": {}},
-        "description": "Key insights from the analysis",
+        "description": "Bulleted list of key insights.",
     },
 }
 

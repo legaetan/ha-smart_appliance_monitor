@@ -69,6 +69,7 @@ from .const import (
     EVENT_AI_ANALYSIS_COMPLETED,
     EVENT_AI_ANALYSIS_FAILED,
     AI_TRIGGER_AUTO_CYCLE_END,
+    STATE_ANALYZING,
 )
 from .state_machine import CycleStateMachine
 from .notify import SmartApplianceNotifier
@@ -422,17 +423,16 @@ class SmartApplianceCoordinator(DataUpdateCoordinator):
             self.monthly_stats["total_energy"] = max(0, energy)
             self.monthly_stats["total_cost"] = max(0, cost)
         
-        # Ajouter à l'historique pour la détection d'anomalies
-        if self.anomaly_detection_enabled:
-            self._cycle_history.append({
-                "duration": duration,
-                "energy": energy,
-                "cost": cost,
-                "timestamp": datetime.now(),
-            })
-            # Limiter la taille de l'historique
-            if len(self._cycle_history) > self._max_history_size:
-                self._cycle_history.pop(0)
+        # Ajouter à l'historique des cycles (toujours, pas seulement pour la détection d'anomalies)
+        self._cycle_history.append({
+            "duration": duration,
+            "energy": energy,
+            "cost": cost,
+            "timestamp": datetime.now(),
+        })
+        # Limiter la taille de l'historique
+        if len(self._cycle_history) > self._max_history_size:
+            self._cycle_history.pop(0)
         
         # Réinitialiser le timer d'auto-shutdown
         self._auto_shutdown_timer = None
@@ -537,7 +537,7 @@ class SmartApplianceCoordinator(DataUpdateCoordinator):
         self.daily_stats = self._init_daily_stats()
         self.monthly_stats = self._init_monthly_stats()
     
-    def set_monitoring_enabled(self, enabled: bool) -> None:
+    async def set_monitoring_enabled(self, enabled: bool) -> None:
         """Active ou désactive la surveillance.
         
         Args:
@@ -549,8 +549,9 @@ class SmartApplianceCoordinator(DataUpdateCoordinator):
             self.appliance_name,
         )
         self.monitoring_enabled = enabled
+        await self._save_state()
     
-    def set_notifications_enabled(self, enabled: bool) -> None:
+    async def set_notifications_enabled(self, enabled: bool) -> None:
         """Active ou désactive les notifications.
         
         Args:
@@ -563,6 +564,7 @@ class SmartApplianceCoordinator(DataUpdateCoordinator):
         )
         self.notifications_enabled = enabled
         self.notifier.set_enabled(enabled)
+        await self._save_state()
     
     def set_auto_shutdown_enabled(self, enabled: bool) -> None:
         """Active ou désactive l'extinction automatique."""
@@ -583,7 +585,7 @@ class SmartApplianceCoordinator(DataUpdateCoordinator):
         """Active ou désactive la planification."""
         self.scheduling_enabled = enabled
     
-    def set_ai_analysis_enabled(self, enabled: bool) -> None:
+    async def set_ai_analysis_enabled(self, enabled: bool) -> None:
         """Enable or disable AI analysis.
         
         Args:
@@ -595,6 +597,7 @@ class SmartApplianceCoordinator(DataUpdateCoordinator):
             self.appliance_name,
         )
         self.ai_analysis_enabled = enabled
+        await self._save_state()
     
     async def load_global_ai_config(self) -> None:
         """Load AI configuration from global config."""
@@ -647,6 +650,13 @@ class SmartApplianceCoordinator(DataUpdateCoordinator):
                 analysis_type,
                 cycle_count,
             )
+
+            # Reset previous analysis result and notify sensor update
+            self.last_ai_analysis_result = {
+                "status": STATE_ANALYZING,
+                "timestamp": datetime.now().isoformat(),
+            }
+            self.async_update_listeners()
             
             # Export data for AI analysis
             exporter = SmartApplianceDataExporter(self)
@@ -667,6 +677,9 @@ class SmartApplianceCoordinator(DataUpdateCoordinator):
             # Store result
             result["cycle_count_analyzed"] = cycle_count
             self.last_ai_analysis_result = result
+            
+            # Save state immediately to persist the analysis result
+            await self._save_state()
             
             # Fire event
             self.hass.bus.fire(
@@ -1007,6 +1020,8 @@ class SmartApplianceCoordinator(DataUpdateCoordinator):
                 ],
                 "monitoring_enabled": self.monitoring_enabled,
                 "notifications_enabled": self.notifications_enabled,
+                "ai_analysis_enabled": self.ai_analysis_enabled,
+                "last_ai_analysis_result": self.last_ai_analysis_result,
             }
             
             await self._store.async_save(data)
@@ -1099,7 +1114,11 @@ class SmartApplianceCoordinator(DataUpdateCoordinator):
             # Restaurer les switches
             self.monitoring_enabled = data.get("monitoring_enabled", True)
             self.notifications_enabled = data.get("notifications_enabled", True)
+            self.ai_analysis_enabled = data.get("ai_analysis_enabled", False)
             self.notifier.set_enabled(self.notifications_enabled)
+            
+            # Restaurer les résultats d'analyse AI
+            self.last_ai_analysis_result = data.get("last_ai_analysis_result", None)
             
             _LOGGER.info(
                 "État restauré pour '%s' - État: %s, Cycle en cours: %s",

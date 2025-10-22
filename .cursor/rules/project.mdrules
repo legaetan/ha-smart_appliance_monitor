@@ -38,7 +38,30 @@ This is a **Home Assistant custom integration** for monitoring appliances using 
 
 ## Release Workflow
 
-Follow this exact workflow for creating releases (based on v0.5.1 experience):
+### Pre-Release Testing Procedure
+
+**When user requests a release, ALWAYS ask:**
+
+1. **"Veux-tu tester les modifications avant la release ?"**
+   
+   **Si OUI:**
+   - Copy files from dev to production (relative to HA config directory):
+     ```bash
+     # From HA config root: /config/
+     # This syncs all backend files but excludes the 'www' directory to avoid slow copies.
+     rsync -av --delete --exclude='www' ___dev/ha-smart_appliance_monitor/custom_components/smart_appliance_monitor/ custom_components/smart_appliance_monitor/
+     # If you modified frontend cards, sync the www directory separately:
+     # rsync -av --delete ___dev/ha-smart_appliance_monitor/custom_components/smart_appliance_monitor/www/ custom_components/smart_appliance_monitor/www/
+     ```
+   - Ask: "**Veux-tu que je redémarre Home Assistant maintenant ?**"
+     - If confirmed: `HA_TOKEN=$(cat /config/.ha_token) && curl -X POST -H "Authorization: Bearer $HA_TOKEN" -H "Content-Type: application/json" https://home.lega.wtf/api/services/homeassistant/restart`
+   - **WAIT for user to test manually**
+   - Ask: **"Tests terminés ? Veux-tu continuer avec la release ou faire des modifications ?"**
+     - If "continuer" → Proceed to Step 1
+     - If "modifications" → Return to development
+
+   **Si NON:**
+   - Proceed directly to Step 1
 
 ### Step 1: Update Version and Documentation
 
@@ -246,6 +269,23 @@ from .const import DOMAIN
 - **Check coordinator matching**: Appliance names with underscores need proper slug handling
 
 ### Testing
+
+**Manual Testing Procedure:**
+1. Copy component to production (from HA config root):
+   ```bash
+   # Relative paths from /config/
+   # This syncs all backend files but excludes the 'www' directory to avoid slow copies.
+   rsync -av --delete --exclude='www' ___dev/ha-smart_appliance_monitor/custom_components/smart_appliance_monitor/ custom_components/smart_appliance_monitor/
+   # If you modified frontend cards, sync the www directory separately:
+   # rsync -av --delete ___dev/ha-smart_appliance_monitor/custom_components/smart_appliance_monitor/www/ custom_components/smart_appliance_monitor/www/
+   ```
+2. Restart Home Assistant: `HA_TOKEN=$(cat /config/.ha_token) && curl -X POST -H "Authorization: Bearer $HA_TOKEN" -H "Content-Type: application/json" https://home.lega.wtf/api/services/homeassistant/restart` (only if user confirms)
+3. User tests manually on their HA instance
+4. Wait for user confirmation before proceeding with release
+
+**Note**: All paths are relative to Home Assistant config directory (/config/)
+
+**Automated Testing:**
 - Run tests before committing: `pytest tests/`
 - Test on a real Home Assistant instance when possible
 - Verify persistence after restart for cycle-related changes
@@ -256,19 +296,34 @@ from .const import DOMAIN
 
 ## Release Checklist
 
-Before creating a release, ensure:
+**Interactive Release Process:**
 
-- [ ] Version updated in `version` and `manifest.json`
-- [ ] CHANGELOG.md updated with all changes
-- [ ] README.md updated if needed
-- [ ] Release notes created in `docs/release_notes/RELEASE_NOTES_vX.Y.Z.md`
-- [ ] Release notes index updated in `docs/release_notes/README.md`
-- [ ] Wiki updated if needed (and changes committed/pushed)
-- [ ] All tests passing
-- [ ] No linter errors
-- [ ] All documentation in English (release notes, README, code comments)
-- [ ] French translations updated if UI changed
-- [ ] Testing guides created/updated for new features (e.g., `docs/TESTING_*.md`)
+When user requests a release, follow this conversational flow:
+
+1. **Ask**: "Veux-tu tester les modifications avant la release ?"
+   - If YES: Copy to production, ask about restart, WAIT for user testing
+   - If NO: Skip to version update
+
+2. **Ask**: "Tests terminés ? Veux-tu continuer avec la release ou faire des modifications ?"
+   - If "continuer": Proceed with release steps
+   - If "modifications": Return to development
+
+3. **Execute release steps** (only after user confirmation):
+   - [ ] Version updated in `version` and `manifest.json`
+   - [ ] CHANGELOG.md updated with all changes
+   - [ ] README.md updated if needed
+   - [ ] Release notes created in `docs/release_notes/RELEASE_NOTES_vX.Y.Z.md`
+   - [ ] Release notes index updated in `docs/release_notes/README.md`
+   - [ ] Wiki updated if needed (and changes committed/pushed)
+   - [ ] All tests passing
+   - [ ] No linter errors
+   - [ ] All documentation in English (release notes, README, code comments)
+   - [ ] French translations updated if UI changed
+   - [ ] Testing guides created/updated for new features (e.g., `docs/TESTING_*.md`)
+   - [ ] Commit, tag, and push to GitHub
+   - [ ] Create GitHub release with `gh release create`
+
+**IMPORTANT**: Never proceed with release without explicit user confirmation at each step
 
 ## Questions?
 

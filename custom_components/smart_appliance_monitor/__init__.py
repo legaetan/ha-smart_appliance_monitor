@@ -1072,32 +1072,32 @@ async def async_setup_services(hass: HomeAssistant) -> None:
 
 
 def _get_coordinator_from_entity_id(hass: HomeAssistant, entity_id: str) -> SmartApplianceCoordinator | None:
-    """Get coordinator from entity_id."""
-    # Extraire le nom de l'appareil de l'entity_id
-    # Format: sensor.{appliance_name}_{type} ou domain.{appliance_name}_{type}
-    parts = entity_id.split(".", 1)
-    if len(parts) != 2:
+    """Get coordinator from entity_id using the entity registry."""
+    # Utiliser le registre des entités pour obtenir le unique_id
+    from homeassistant.helpers import entity_registry as er
+    
+    entity_reg = er.async_get(hass)
+    entity_entry = entity_reg.async_get(entity_id)
+    
+    if not entity_entry or not entity_entry.unique_id:
+        _LOGGER.error("Unable to find entity %s in registry", entity_id)
         return None
     
-    entity_suffix = parts[1]
+    # Le unique_id est au format {entry_id}_{entity_type}
+    # Extraire l'entry_id
+    unique_id_parts = entity_entry.unique_id.split("_", 1)
+    if len(unique_id_parts) < 1:
+        _LOGGER.error("Invalid unique_id format for entity %s: %s", entity_id, entity_entry.unique_id)
+        return None
     
-    # Essayer de trouver le coordinator correspondant
-    for entry_id, coordinator in hass.data.get(DOMAIN, {}).items():
-        if isinstance(coordinator, SmartApplianceCoordinator):
-            # Normaliser le nom de l'appareil en 'slug'
-            appliance_slug = coordinator.appliance_name.lower().replace(" ", "_").replace("-", "_")
-            
-            # Vérifier si le début de l'entity_id correspond exactement au slug
-            # Ex: "chauffe_eau" dans "chauffe_eau_etat"
-            if entity_suffix.startswith(appliance_slug + "_"):
-                return coordinator
-            
-            # Fallback pour les noms qui ne correspondent pas parfaitement
-            # (par exemple si l'utilisateur renomme l'appareil mais pas les entités)
-            # Cette logique reste un peu fragile mais peut aider.
-            if entry_id in entity_id or coordinator.entry.entry_id in entity_id:
-                return coordinator
+    entry_id = unique_id_parts[0]
     
-    _LOGGER.error("Unable to find coordinator for entity %s", entity_id)
-    return None
+    # Trouver le coordinator correspondant à cet entry_id
+    coordinator = hass.data.get(DOMAIN, {}).get(entry_id)
+    
+    if not coordinator or not isinstance(coordinator, SmartApplianceCoordinator):
+        _LOGGER.error("Unable to find coordinator for entity %s (entry_id: %s)", entity_id, entry_id)
+        return None
+    
+    return coordinator
 

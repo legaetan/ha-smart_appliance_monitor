@@ -23,6 +23,7 @@ from .const import (
     STATE_IDLE,
     STATE_RUNNING,
     STATE_FINISHED,
+    STATE_ANALYZING,
 )
 from .coordinator import SmartApplianceCoordinator
 from .entity import SmartApplianceEntity
@@ -576,6 +577,8 @@ class SmartApplianceAIAnalysisSensor(SmartApplianceEntity, SensorEntity):
             return "mdi:brain-alert"
         elif status == "not_analyzed":
             return "mdi:brain-off"
+        elif status == STATE_ANALYZING:
+            return "mdi:brain-sync"
         else:
             return "mdi:brain"
     
