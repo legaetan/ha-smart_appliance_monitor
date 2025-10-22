@@ -6,6 +6,14 @@ Ce dossier contient les notes de version détaillées pour chaque release de Sma
 
 ### Version 0.8.x - Cycle History System 📊
 
+- **[v0.8.1](RELEASE_NOTES_v0.8.1.md)** - 22 octobre 2025 - Documentation Update 📚
+  - **CORRECTIONS** : Audit complet de la documentation
+  - Correction des versions obsolètes dans wiki et README
+  - Correction du comptage d'entités (32→33)
+  - Nouvelle page wiki Cycle-History.md (540+ lignes)
+  - Documentation complète des services v0.8.0
+  - Mise à jour de tous les liens et références
+
 - **[v0.8.0](RELEASE_NOTES_v0.8.0.md)** - 22 octobre 2025 - Cycle History System 🎉
   - **NOUVELLE FONCTIONNALITÉ** : Système d'historique persistant des cycles
   - Service `get_cycle_history` pour requêtes avec filtres avancés
@@ -165,6 +173,6 @@ Ce projet suit le [Semantic Versioning](https://semver.org/):
 
 ---
 
-**Dernière version** : v0.7.4  
-**Date** : 21 octobre 2025
+**Dernière version** : v0.8.1  
+**Date** : 22 octobre 2025
 

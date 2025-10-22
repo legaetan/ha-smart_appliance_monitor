@@ -207,6 +207,60 @@ Export appliance data to JSON format. Optionally save to file.
 #### `smart_appliance_monitor.force_shutdown`
 Manually trigger auto-shutdown for testing (requires auto-shutdown to be enabled).
 
+### Cycle History Services ⚡ *NEW v0.8.0*
+
+#### `smart_appliance_monitor.get_cycle_history`
+Retrieve historical cycles from Recorder with advanced filtering options. Perfect for custom analysis and reporting.
+
+```yaml
+# Get all cycles in the last 30 days
+service: smart_appliance_monitor.get_cycle_history
+data:
+  entity_id: sensor.washing_machine_state
+
+# Get cycles with specific filters
+service: smart_appliance_monitor.get_cycle_history
+data:
+  entity_id: sensor.dishwasher_state
+  period_start: "2025-09-01T00:00:00"
+  period_end: "2025-10-22T23:59:59"
+  min_duration: 40  # Minimum 40 minutes
+  max_energy: 1.5   # Maximum 1.5 kWh
+  limit: 50         # Return max 50 cycles
+```
+
+**Response**: Returns cycles and statistics via notification and fires `smart_appliance_monitor_cycle_history` event.
+
+#### `smart_appliance_monitor.import_historical_cycles`
+Import historical cycles from power sensor data that existed before the integration was configured. Analyzes past power consumption to reconstruct cycles.
+
+```yaml
+# Preview import (dry-run mode)
+service: smart_appliance_monitor.import_historical_cycles
+data:
+  entity_id: sensor.washing_machine_state
+  period_start: "2025-07-01T00:00:00"
+  dry_run: true  # Preview without saving
+
+# Actual import
+service: smart_appliance_monitor.import_historical_cycles
+data:
+  entity_id: sensor.washing_machine_state
+  period_start: "2025-07-01T00:00:00"
+  period_end: "2025-10-22T23:59:59"
+  dry_run: false
+```
+
+**Features**:
+- Analyzes historical power sensor data
+- Applies detection thresholds to identify cycles
+- Calculates duration, energy, and cost for each cycle
+- Dry-run mode for preview before importing
+- Monthly statistics breakdown
+- Notification with import results
+
+See [TESTING_AI.md](docs/TESTING_AI.md) for detailed setup and testing instructions.
+
 ### Energy Dashboard Services ⚡ *NEW v0.6.0*
 
 #### `smart_appliance_monitor.sync_with_energy_dashboard`
@@ -487,7 +541,38 @@ data:
 
 ## Recent Improvements
 
-### v0.6.0 (Latest) ✅ *NEW*
+### v0.8.0 (Latest) ✅ *NEW*
+- ✅ **Cycle History System** - Complete historical cycle tracking and analysis
+  - Persistent storage via Home Assistant Recorder (unlimited cycles)
+  - Hybrid architecture: 30 recent cycles in memory for fast access
+  - Query service with advanced filters (period, duration, energy)
+  - Historical import from raw sensor data
+  - Monthly statistics and aggregated reporting
+- ✅ **New Services** - Two powerful cycle history services
+  - `get_cycle_history` - Query cycles with flexible filtering
+  - `import_historical_cycles` - Reconstruct past cycles from sensor history
+- ✅ **Enhanced Cycle Data** - Complete metadata tracking
+  - Start/end timestamps with energy readings
+  - Peak power consumption tracking
+  - Import source flags for data provenance
+
+### v0.7.x ✅
+- ✅ **AI-Powered Cycle Analysis** - Intelligent energy optimization (v0.7.0)
+  - Pattern analysis, comparative analysis, personalized recommendations
+  - Support for OpenAI, Claude, Ollama, and any HA-compatible AI
+  - Automatic and manual analysis triggers
+  - Energy savings estimation (kWh and EUR)
+  - Global dashboard analysis for entire home
+- ✅ **Three AI Services** - Complete AI integration
+  - `configure_ai` - Global AI configuration
+  - `analyze_cycles` - Per-appliance cycle analysis
+  - `analyze_energy_dashboard` - Whole-home energy analysis
+- ✅ **Bug Fixes** (v0.7.1-v0.7.4)
+  - Fixed negative energy values from sensor resets
+  - Improved AI response parsing and coordinator matching
+  - Enhanced state persistence for AI results
+
+### v0.6.0 ✅
 - ✅ **Energy Dashboard Integration Suite** - Comprehensive integration with HA Energy Dashboard
   - Automatic sync detection on appliance startup
   - Read-only access to `.storage/energy` file for safe analytics

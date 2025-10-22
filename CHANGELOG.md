@@ -5,6 +5,52 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.8.1] - 2025-10-22
+
+### Fixed
+
+**Documentation Audit and Corrections**
+- Fixed obsolete version numbers across all documentation (0.5.1→0.8.0 in wiki, 0.6.0→0.8.0 in README)
+- Corrected entity count in Features.md (32→33 entities: 14 sensors per appliance + 1 global AI sensor)
+- Fixed missing EnergyDashboardAIAnalysisSensor documentation
+- Corrected "Latest" version indicators in README and release notes index
+
+### Added
+
+**Documentation Enhancements**
+- Created comprehensive Cycle-History.md wiki page (540+ lines)
+  - Complete guide for cycle history system
+  - Service documentation with all parameters
+  - 5 detailed use cases
+  - Best practices and troubleshooting
+  - Event documentation
+- Added v0.8.0 services documentation in Features.md and README.md
+  - `get_cycle_history` service fully documented
+  - `import_historical_cycles` service with examples and warnings
+- Added "What's New" sections for v0.8.0, v0.7.0, v0.6.0 in wiki Home page
+- Added Cycle-History link to wiki sidebar
+
+### Changed
+
+**Documentation Updates**
+- Updated Installation.md with all new modules (ai_client.py, history.py, import_history.py, energy_storage.py, energy_dashboard.py, storage_config.py)
+- Updated Advanced-Features.md to reference v0.5.0 through v0.8.0
+- Updated README.md "Recent Improvements" section with proper version ordering
+- Updated Home Assistant version requirement (2024.1→2023.8) in Installation.md
+- Reorganized wiki structure with better feature version indicators
+
+### Documentation Files Modified
+- `docs/wiki-github/Home.md` - Version and features update
+- `docs/wiki-github/Features.md` - Entity count, services, v0.8.0 section
+- `docs/wiki-github/Cycle-History.md` - **NEW comprehensive guide**
+- `docs/wiki-github/_Sidebar.md` - Added Cycle-History link
+- `docs/wiki-github/Installation.md` - Updated file structure
+- `docs/wiki-github/Advanced-Features.md` - Version references
+- `README.md` - Recent improvements, services documentation
+- `docs/release_notes/README.md` - Latest version indicator
+
+**Impact**: All documentation now accurately reflects v0.8.0 codebase with complete feature coverage
+
 ## [0.8.0] - 2025-10-22
 
 ### Added
