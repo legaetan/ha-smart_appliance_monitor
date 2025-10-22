@@ -4,6 +4,18 @@ Ce dossier contient les notes de version détaillées pour chaque release de Sma
 
 ## 📋 Index des Versions
 
+### Version 0.8.x - Cycle History System 📊
+
+- **[v0.8.0](RELEASE_NOTES_v0.8.0.md)** - 22 octobre 2025 - Cycle History System 🎉
+  - **NOUVELLE FONCTIONNALITÉ** : Système d'historique persistant des cycles
+  - Service `get_cycle_history` pour requêtes avec filtres avancés
+  - Service `import_historical_cycles` pour reconstruction de cycles passés
+  - Stockage hybride : 30 cycles en mémoire + illimité dans Recorder
+  - Enregistrement automatique dans la base de données HA
+  - Support mode `replace_existing` pour nettoyage et réimport
+  - Requêtes SQL optimisées pour Recorder moderne
+  - Documentation complète avec exemples et avertissements
+
 ### Version 0.7.x - AI Analysis 🤖
 
 - **[v0.7.4](RELEASE_NOTES_v0.7.4.md)** - 21 octobre 2025 - Negative Energy Values Fix 🚨

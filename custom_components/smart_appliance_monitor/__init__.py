@@ -121,6 +121,29 @@ SERVICE_CONFIGURE_AI_SCHEMA = vol.Schema(
     }
 )
 
+SERVICE_GET_CYCLE_HISTORY_SCHEMA = vol.Schema(
+    {
+        vol.Required("entity_id"): cv.entity_id,
+        vol.Optional("period_start"): cv.string,
+        vol.Optional("period_end"): cv.string,
+        vol.Optional("min_duration"): cv.positive_float,
+        vol.Optional("max_duration"): cv.positive_float,
+        vol.Optional("min_energy"): cv.positive_float,
+        vol.Optional("max_energy"): cv.positive_float,
+        vol.Optional("limit"): cv.positive_int,
+    }
+)
+
+SERVICE_IMPORT_HISTORICAL_CYCLES_SCHEMA = vol.Schema(
+    {
+        vol.Required("entity_id"): cv.entity_id,
+        vol.Optional("period_start"): cv.string,
+        vol.Optional("period_end"): cv.string,
+        vol.Optional("dry_run", default=False): cv.boolean,
+        vol.Optional("replace_existing", default=False): cv.boolean,
+    }
+)
+
 
 async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     """Set up Smart Appliance Monitor from a config entry."""
@@ -158,9 +181,9 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     
     # Enregistrer les services (une seule fois)
     # Check for one of the latest services to ensure all are registered (v0.7.0+)
-    if not hass.services.has_service(DOMAIN, "configure_ai"):
+    if not hass.services.has_service(DOMAIN, "import_historical_cycles"):
         await async_setup_services(hass)
-        _LOGGER.info("Smart Appliance Monitor services registered (13 services including AI)")
+        _LOGGER.info("Smart Appliance Monitor services registered (15 services including history)")
     
     # Register frontend resources for custom Lovelace cards (once)
     if not hasattr(hass.data[DOMAIN], "_frontend_registered"):
@@ -976,6 +999,287 @@ async def async_setup_services(hass: HomeAssistant) -> None:
         else:
             _LOGGER.warning("No configuration changes provided")
     
+    async def handle_get_cycle_history(call: ServiceCall) -> None:
+        """Handle get_cycle_history service call."""
+        from datetime import datetime
+        from .history import CycleHistoryManager
+        
+        entity_id = call.data["entity_id"]
+        period_start = call.data.get("period_start")
+        period_end = call.data.get("period_end")
+        min_duration = call.data.get("min_duration")
+        max_duration = call.data.get("max_duration")
+        min_energy = call.data.get("min_energy")
+        max_energy = call.data.get("max_energy")
+        limit = call.data.get("limit")
+        
+        coordinator = _get_coordinator_from_entity_id(hass, entity_id)
+        if coordinator is None:
+            _LOGGER.error("Unable to find coordinator for entity %s", entity_id)
+            return
+        
+        # Parse datetime strings
+        if period_start:
+            period_start = datetime.fromisoformat(period_start)
+        if period_end:
+            period_end = datetime.fromisoformat(period_end)
+        
+        _LOGGER.info(
+            "Retrieving cycle history for '%s'",
+            coordinator.appliance_name,
+        )
+        
+        # Create history manager and query cycles
+        history_manager = CycleHistoryManager(
+            hass,
+            coordinator.entry.entry_id,
+            coordinator.appliance_name,
+        )
+        
+        cycles = await history_manager.async_get_cycles(
+            period_start=period_start,
+            period_end=period_end,
+            min_duration=min_duration,
+            max_duration=max_duration,
+            min_energy=min_energy,
+            max_energy=max_energy,
+            limit=limit,
+        )
+        
+        # Get statistics
+        stats = await history_manager.async_get_cycle_statistics(
+            period_start=period_start,
+            period_end=period_end,
+        )
+        
+        # Fire event with data
+        hass.bus.async_fire(
+            f"{DOMAIN}_cycle_history",
+            {
+                "appliance_name": coordinator.appliance_name,
+                "cycles": cycles,
+                "statistics": stats,
+            },
+        )
+        
+        # Create notification
+        period_str = ""
+        if period_start:
+            period_str = f"{period_start.strftime('%Y-%m-%d')}"
+        if period_end:
+            if period_str:
+                period_str += f" → {period_end.strftime('%Y-%m-%d')}"
+            else:
+                period_str = f"jusqu'au {period_end.strftime('%Y-%m-%d')}"
+        
+        message = [
+            f"**Historique des Cycles - {coordinator.appliance_name}**\n",
+            f"**Période**: {period_str}",
+            f"**Cycles trouvés**: {stats['cycle_count']}\n",
+        ]
+        
+        if stats["cycle_count"] > 0:
+            message.append("**Statistiques:**")
+            message.append(f"- Énergie totale: {stats['total_energy']} kWh")
+            message.append(f"- Coût total: {stats['total_cost']} €")
+            message.append(f"- Durée moyenne: {stats['avg_duration']} min")
+            message.append(f"- Énergie moyenne: {stats['avg_energy']} kWh")
+            message.append(f"- Coût moyen: {stats['avg_cost']} €\n")
+            
+            if len(cycles) <= 10:
+                message.append("**Derniers cycles:**")
+                for i, cycle in enumerate(cycles[:10], 1):
+                    cycle_time = cycle["timestamp"].strftime("%Y-%m-%d %H:%M")
+                    message.append(
+                        f"{i}. {cycle_time} - {cycle['duration']}min, "
+                        f"{cycle['energy']}kWh, {cycle['cost']}€"
+                    )
+            else:
+                message.append(f"Les données complètes sont disponibles dans l'événement `{DOMAIN}_cycle_history`.")
+        
+        await hass.services.async_call(
+            "persistent_notification",
+            "create",
+            {
+                "title": f"📊 Historique - {coordinator.appliance_name}",
+                "message": "\n".join(message),
+                "notification_id": f"cycle_history_{coordinator.entry.entry_id}",
+            },
+        )
+        
+        _LOGGER.info(
+            "Retrieved %d cycles for '%s' (period: %s)",
+            len(cycles),
+            coordinator.appliance_name,
+            period_str,
+        )
+    
+    async def handle_import_historical_cycles(call: ServiceCall) -> None:
+        """Handle import_historical_cycles service call."""
+        from datetime import datetime
+        from .import_history import HistoricalCycleImporter
+        from .history import CycleHistoryManager
+        
+        entity_id = call.data["entity_id"]
+        period_start = call.data.get("period_start")
+        period_end = call.data.get("period_end")
+        dry_run = call.data.get("dry_run", False)
+        replace_existing = call.data.get("replace_existing", False)
+        
+        coordinator = _get_coordinator_from_entity_id(hass, entity_id)
+        if coordinator is None:
+            _LOGGER.error("Unable to find coordinator for entity %s", entity_id)
+            return
+        
+        # Parse datetime strings
+        if period_start:
+            period_start = datetime.fromisoformat(period_start)
+        if period_end:
+            period_end = datetime.fromisoformat(period_end)
+        
+        # Check if cycles already exist in this period
+        existing_cycles_count = 0
+        if replace_existing:  # Vérifier aussi en dry-run pour informer l'utilisateur
+            history_manager = CycleHistoryManager(
+                hass,
+                coordinator.entry.entry_id,
+                coordinator.appliance_name,
+            )
+            existing_cycles = await history_manager.async_get_cycles(
+                period_start=period_start,
+                period_end=period_end,
+            )
+            existing_cycles_count = len(existing_cycles)
+            
+            if existing_cycles_count > 0:
+                if not dry_run:
+                    _LOGGER.warning(
+                        "Replacing %d existing cycles for '%s' in the specified period",
+                        existing_cycles_count,
+                        coordinator.appliance_name,
+                    )
+                else:
+                    _LOGGER.info(
+                        "Found %d existing cycles for '%s' that would be replaced",
+                        existing_cycles_count,
+                        coordinator.appliance_name,
+                    )
+                # Note: We can't delete events from Recorder, so we'll mark new ones as "reimported"
+        
+        mode_str = "Analyse (dry-run)" if dry_run else ("Réimport" if replace_existing else "Import")
+        _LOGGER.info(
+            "%s des cycles historiques pour '%s'",
+            mode_str,
+            coordinator.appliance_name,
+        )
+        
+        # Create importer
+        importer = HistoricalCycleImporter(
+            hass=hass,
+            appliance_id=coordinator.entry.entry_id,
+            appliance_name=coordinator.appliance_name,
+            appliance_type=coordinator.appliance_type,
+            power_sensor=coordinator.power_sensor,
+            energy_sensor=coordinator.energy_sensor,
+            start_threshold=coordinator.start_threshold,
+            stop_threshold=coordinator.stop_threshold,
+            start_delay=coordinator.start_delay,
+            stop_delay=coordinator.stop_delay,
+            price_kwh=coordinator.price_kwh,
+        )
+        
+        # Import cycles
+        result = await importer.async_import_cycles(
+            period_start=period_start,
+            period_end=period_end,
+            dry_run=dry_run,
+            replace_existing=replace_existing,
+        )
+        
+        # Add info about replaced cycles
+        if replace_existing and existing_cycles_count > 0:
+            result["replaced_cycles_count"] = existing_cycles_count
+        
+        # Fire event with result
+        hass.bus.async_fire(
+            f"{DOMAIN}_import_completed",
+            {
+                "appliance_name": coordinator.appliance_name,
+                "success": result["success"],
+                "cycles_detected": result["cycles_detected"],
+                "dry_run": dry_run,
+            },
+        )
+        
+        # Create notification
+        if result["success"]:
+            period_str = f"{result['period_start'][:10]} → {result['period_end'][:10]}"
+            
+            message = [
+                f"**{mode_str} des Cycles - {coordinator.appliance_name}**\n",
+                f"**Période**: {period_str}",
+                f"**Cycles détectés**: {result['cycles_detected']}",
+            ]
+            
+            # Afficher les cycles existants même en dry-run
+            if replace_existing:
+                if existing_cycles_count > 0:
+                    message.append(f"**⚠️ Cycles existants dans la période**: {existing_cycles_count}")
+                    if dry_run:
+                        message.append("_(Ces cycles seraient supprimés et remplacés si dry_run: false)_")
+                    else:
+                        message.append("_(Cycles supprimés et remplacés)_")
+                else:
+                    message.append("**✓ Aucun cycle existant** dans cette période")
+            
+            message.append("")
+            
+            if result["cycles_detected"] > 0:
+                stats_by_month = result.get("stats_by_month", {})
+                if stats_by_month:
+                    message.append("**Statistiques par mois:**")
+                    for month, stats in sorted(stats_by_month.items(), reverse=True):
+                        message.append(
+                            f"- {month}: {stats['cycle_count']} cycles, "
+                            f"{stats['total_energy']} kWh, {stats['total_cost']} €"
+                        )
+                    message.append("")
+                
+                if dry_run:
+                    message.append("⚠️ **Mode analyse**: Les cycles n'ont pas été sauvegardés.")
+                    message.append("Relancez sans `dry_run: true` pour importer.")
+                else:
+                    message.append("✅ **Cycles importés avec succès !**")
+                    message.append("Les données sont maintenant disponibles via `get_cycle_history`.")
+            else:
+                message.append("Aucun cycle détecté dans la période spécifiée.")
+                message.append("Vérifiez que les capteurs ont des données historiques.")
+            
+            title = f"{'📊' if dry_run else '✅'} Import - {coordinator.appliance_name}"
+        else:
+            message = [
+                f"**Erreur lors de l'import - {coordinator.appliance_name}**\n",
+                f"**Erreur**: {result.get('error', 'Unknown error')}",
+            ]
+            title = f"❌ Erreur Import - {coordinator.appliance_name}"
+        
+        await hass.services.async_call(
+            "persistent_notification",
+            "create",
+            {
+                "title": title,
+                "message": "\n".join(message),
+                "notification_id": f"import_history_{coordinator.entry.entry_id}",
+            },
+        )
+        
+        _LOGGER.info(
+            "Historical import completed for '%s': %d cycles detected (%s)",
+            coordinator.appliance_name,
+            result["cycles_detected"],
+            "dry-run" if dry_run else "saved",
+        )
+    
     # Register services
     hass.services.async_register(
         DOMAIN,
@@ -1068,7 +1372,21 @@ async def async_setup_services(hass: HomeAssistant) -> None:
         schema=SERVICE_CONFIGURE_AI_SCHEMA,
     )
     
-    _LOGGER.info("Services Smart Appliance Monitor enregistrés")
+    hass.services.async_register(
+        DOMAIN,
+        "get_cycle_history",
+        handle_get_cycle_history,
+        schema=SERVICE_GET_CYCLE_HISTORY_SCHEMA,
+    )
+    
+    hass.services.async_register(
+        DOMAIN,
+        "import_historical_cycles",
+        handle_import_historical_cycles,
+        schema=SERVICE_IMPORT_HISTORICAL_CYCLES_SCHEMA,
+    )
+    
+    _LOGGER.info("Services Smart Appliance Monitor enregistrés (15 services)")
 
 
 def _get_coordinator_from_entity_id(hass: HomeAssistant, entity_id: str) -> SmartApplianceCoordinator | None:

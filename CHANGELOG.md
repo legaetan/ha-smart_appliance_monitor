@@ -5,6 +5,77 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.8.0] - 2025-10-22
+
+### Added
+
+**Cycle History System**
+- Added persistent cycle history storage via Home Assistant Recorder
+- Added `get_cycle_history` service for querying historical cycles with advanced filters
+- Added `import_historical_cycles` service for reconstructing cycles from raw sensor data
+- Added hybrid storage: 30 recent cycles in memory + unlimited cycles in Recorder database
+- Added automatic cycle event recording to Recorder (no configuration required)
+
+**History Services**
+- `get_cycle_history`: Query cycles with filters (period, duration, energy, limit)
+  - Returns cycles with start/end times, energy, cost, duration, peak power
+  - Provides aggregated statistics (total energy, cost, average duration)
+  - Fires `smart_appliance_monitor_cycle_history` event with complete data
+- `import_historical_cycles`: Reconstruct past cycles from sensor history
+  - Supports dry-run mode for preview before import
+  - Detects cycles that occurred before integration installation
+  - Supports `replace_existing` mode to clean and reimport with different thresholds
+  - Provides monthly statistics breakdown
+
+**Database Integration**
+- Cycles automatically stored as events in Home Assistant Recorder
+- SQL queries optimized for modern Recorder structure (event_type_id, time_fired_ts)
+- Automatic deletion of existing cycles when using `replace_existing: true`
+- Support for querying cycles across appliance lifetime
+
+### Changed
+
+**Cycle Storage**
+- Increased in-memory cycle history from 10 to 30 cycles
+- Enhanced cycle events with complete metadata (start_time, end_time, start_energy, end_energy, peak_power)
+- All cycles now include `imported` and `reimported` flags for tracking data source
+
+**Documentation**
+- Added comprehensive Cycle History System section in README
+- Added step-by-step import examples with warnings
+- Updated services.yaml with detailed parameter descriptions
+- Added cautionary notes about `replace_existing` parameter
+
+### Fixed
+
+**Recorder Compatibility**
+- Fixed SQL queries to use modern Recorder schema (event_type_id instead of event_type)
+- Fixed event querying to properly join event_data table
+- Fixed timestamp handling to use time_fired_ts (float) instead of time_fired (datetime)
+- Added graceful handling when event types don't exist in database
+
+**File Changes**
+- `custom_components/smart_appliance_monitor/__init__.py`: Added history service handlers
+- `custom_components/smart_appliance_monitor/history.py` (new): Cycle history manager
+- `custom_components/smart_appliance_monitor/import_history.py` (new): Historical cycle importer
+- `custom_components/smart_appliance_monitor/coordinator.py`: Increased cycle history size, enriched events
+- `custom_components/smart_appliance_monitor/services.yaml`: Added new services documentation
+- `custom_components/smart_appliance_monitor/manifest.json`: Version bump to 0.8.0
+- `README.md`: Added Cycle History System documentation
+
+### Migration Notes
+
+**From v0.7.x to v0.8.0**
+- No breaking changes - existing cycles continue working normally
+- New services available immediately after update
+- Existing cycle events in Recorder are compatible with new system
+- Use `replace_existing: true` with caution - it permanently deletes cycles
+
+**Important Warnings**
+- `replace_existing: true` permanently deletes existing cycles in the specified period
+- Always test with `dry_run: true` before actual import
+- Historical import requires sensor data to exist in Recorder (respects purge_keep_days)
+
 ## [0.7.6] - 2025-10-22
 
 ### Fixed

@@ -317,3 +317,133 @@ configure_ai:
               value: periodic_daily
             - label: Periodic (Weekly)
               value: periodic_weekly
+
+get_cycle_history:
+  name: Get Cycle History
+  description: Retrieves cycle history from Recorder with optional filters. Returns cycles and statistics for the specified period.
+  target:
+    entity:
+      integration: smart_appliance_monitor
+      domain: sensor
+  fields:
+    entity_id:
+      name: Entity
+      description: The appliance monitor entity
+      required: true
+      selector:
+        entity:
+          integration: smart_appliance_monitor
+    period_start:
+      name: Period Start
+      description: Start of the period (ISO format, e.g., "2025-09-01T00:00:00"). Defaults to 30 days ago.
+      required: false
+      example: "2025-09-01T00:00:00"
+      selector:
+        text:
+    period_end:
+      name: Period End
+      description: End of the period (ISO format, e.g., "2025-10-22T23:59:59"). Defaults to now.
+      required: false
+      example: "2025-10-22T23:59:59"
+      selector:
+        text:
+    min_duration:
+      name: Minimum Duration
+      description: Minimum cycle duration in minutes
+      required: false
+      advanced: true
+      selector:
+        number:
+          min: 0
+          max: 1440
+          mode: box
+          unit_of_measurement: "min"
+    max_duration:
+      name: Maximum Duration
+      description: Maximum cycle duration in minutes
+      required: false
+      advanced: true
+      selector:
+        number:
+          min: 0
+          max: 1440
+          mode: box
+          unit_of_measurement: "min"
+    min_energy:
+      name: Minimum Energy
+      description: Minimum energy consumption in kWh
+      required: false
+      advanced: true
+      selector:
+        number:
+          min: 0
+          max: 100
+          step: 0.1
+          mode: box
+          unit_of_measurement: "kWh"
+    max_energy:
+      name: Maximum Energy
+      description: Maximum energy consumption in kWh
+      required: false
+      advanced: true
+      selector:
+        number:
+          min: 0
+          max: 100
+          step: 0.1
+          mode: box
+          unit_of_measurement: "kWh"
+    limit:
+      name: Result Limit
+      description: Maximum number of cycles to return
+      required: false
+      advanced: true
+      selector:
+        number:
+          min: 1
+          max: 1000
+          mode: box
+
+import_historical_cycles:
+  name: Import Historical Cycles
+  description: Import historical cycles from power sensor data. Analyzes past data to detect cycles that occurred before the integration was configured. Supports dry-run mode for preview and replace mode to reimport with corrected settings.
+  target:
+    entity:
+      integration: smart_appliance_monitor
+      domain: sensor
+  fields:
+    entity_id:
+      name: Entity
+      description: The appliance monitor entity
+      required: true
+      selector:
+        entity:
+          integration: smart_appliance_monitor
+    period_start:
+      name: Period Start
+      description: Start of the import period (ISO format, e.g., "2025-07-01T00:00:00"). Defaults to 30 days ago.
+      required: false
+      example: "2025-07-01T00:00:00"
+      selector:
+        text:
+    period_end:
+      name: Period End
+      description: End of the import period (ISO format, e.g., "2025-10-22T23:59:59"). Defaults to now.
+      required: false
+      example: "2025-10-22T23:59:59"
+      selector:
+        text:
+    dry_run:
+      name: Dry Run (Preview Mode)
+      description: If enabled, analyze and show results without saving cycles. Use this to preview what will be imported.
+      default: false
+      selector:
+        boolean:
+    replace_existing:
+      name: Replace Existing Cycles
+      description: If enabled, DELETE all existing cycles in this period for this appliance and import fresh data. Useful when changing detection thresholds or correcting data. CAUTION: This permanently removes old cycles from the database.
+      default: false
+      advanced: true
+      selector:
+        boolean:
+

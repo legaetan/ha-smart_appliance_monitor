@@ -193,7 +193,7 @@ class SmartApplianceCoordinator(DataUpdateCoordinator):
         # Anomaly detection
         self.anomaly_detection_enabled = entry.options.get(CONF_ENABLE_ANOMALY_DETECTION, False)
         self._cycle_history: list[dict[str, Any]] = []
-        self._max_history_size = 10
+        self._max_history_size = 30
         
         # AI Analysis
         self.ai_analysis_enabled = False  # Will be loaded from global config
@@ -440,16 +440,22 @@ class SmartApplianceCoordinator(DataUpdateCoordinator):
         # Réinitialiser le flag de limite cycle
         self._energy_limit_cycle_notified = False
         
-        # Émission d'un événement
+        # Émission d'un événement enrichi pour stockage Recorder
         self.hass.bus.async_fire(
             f"{DOMAIN}_cycle_finished",
             {
                 "appliance_name": self.appliance_name,
                 "appliance_type": self.appliance_type,
+                "appliance_id": self.entry.entry_id,
                 "entry_id": self.entry.entry_id,
                 "duration": duration,
                 "energy": energy,
                 "cost": round(cost, 2),
+                "peak_power": cycle.get("peak_power", 0),
+                "start_time": cycle.get("start_time").isoformat() if cycle.get("start_time") else None,
+                "end_time": cycle.get("end_time").isoformat() if cycle.get("end_time") else None,
+                "start_energy": cycle.get("start_energy", 0),
+                "end_energy": cycle.get("end_energy", 0),
             },
         )
         

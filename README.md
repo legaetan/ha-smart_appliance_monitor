@@ -290,6 +290,58 @@ data:
 
 **Analysis Results**: Includes efficiency score (0-100), top consumers, optimization opportunities, and estimated monthly savings.
 
+### Cycle History Services ⚡ *NEW v0.8.0*
+
+#### `smart_appliance_monitor.get_cycle_history`
+Retrieve historical cycles from Recorder with advanced filtering options. Perfect for custom analysis and reporting.
+
+```yaml
+# Get all cycles in the last 30 days
+service: smart_appliance_monitor.get_cycle_history
+data:
+  entity_id: sensor.washing_machine_state
+
+# Get cycles with specific filters
+service: smart_appliance_monitor.get_cycle_history
+data:
+  entity_id: sensor.dishwasher_state
+  period_start: "2025-09-01T00:00:00"
+  period_end: "2025-10-22T23:59:59"
+  min_duration: 40  # Minimum 40 minutes
+  max_energy: 1.5   # Maximum 1.5 kWh
+  limit: 50         # Return max 50 cycles
+```
+
+**Response**: Returns cycles and statistics via notification and fires `smart_appliance_monitor_cycle_history` event.
+
+#### `smart_appliance_monitor.import_historical_cycles`
+Import historical cycles from power sensor data that existed before the integration was configured. Analyzes past power consumption to reconstruct cycles.
+
+```yaml
+# Preview import (dry-run mode)
+service: smart_appliance_monitor.import_historical_cycles
+data:
+  entity_id: sensor.washing_machine_state
+  period_start: "2025-07-01T00:00:00"
+  dry_run: true  # Preview without saving
+
+# Actual import
+service: smart_appliance_monitor.import_historical_cycles
+data:
+  entity_id: sensor.washing_machine_state
+  period_start: "2025-07-01T00:00:00"
+  period_end: "2025-10-22T23:59:59"
+  dry_run: false
+```
+
+**Features**:
+- Analyzes historical power sensor data
+- Applies detection thresholds to identify cycles
+- Calculates duration, energy, and cost for each cycle
+- Dry-run mode for preview before importing
+- Monthly statistics breakdown
+- Notification with import results
+
 See [TESTING_AI.md](docs/TESTING_AI.md) for detailed setup and testing instructions.
 
 ## Dynamic Pricing
@@ -328,6 +380,110 @@ automation:
 ```
 
 Then select `input_number.electricity_price` when configuring the integration.
+
+## Cycle History System ⚡ *NEW v0.8.0*
+
+Smart Appliance Monitor features a hybrid cycle history system that combines in-memory storage with long-term persistence via Home Assistant Recorder.
+
+### Architecture
+
+**Hybrid Storage**:
+- **30 last cycles in memory** - Fast access for anomaly detection and AI analysis
+- **Complete history in Recorder** - All cycles stored automatically in HA database for long-term analysis
+- **Automatic synchronization** - Every completed cycle is saved to both systems
+
+> 💡 **Note**: Cycle events are automatically recorded by Home Assistant. No additional configuration required!
+
+### Accessing Historical Data
+
+#### Query Recent Cycles
+
+Use `get_cycle_history` service to retrieve cycles with optional filters:
+
+```yaml
+service: smart_appliance_monitor.get_cycle_history
+data:
+  entity_id: sensor.washing_machine_state
+  period_start: "2025-09-01T00:00:00"
+  period_end: "2025-10-22T23:59:59"
+  min_duration: 30    # Optional: cycles longer than 30 min
+  max_energy: 2.0     # Optional: cycles under 2 kWh
+  limit: 100          # Optional: max 100 results
+```
+
+#### Import Pre-existing Data
+
+If your power sensors were already configured in Home Assistant before installing Smart Appliance Monitor, you can import historical cycles:
+
+**Step 1: Preview (Dry-run)**
+```yaml
+service: smart_appliance_monitor.import_historical_cycles
+data:
+  entity_id: sensor.washing_machine_state
+  period_start: "2025-07-01T00:00:00"
+  dry_run: true
+```
+
+This analyzes your sensor data and shows what cycles would be imported without actually saving them.
+
+**Step 2: Import**
+```yaml
+service: smart_appliance_monitor.import_historical_cycles
+data:
+  entity_id: sensor.washing_machine_state
+  period_start: "2025-07-01T00:00:00"
+  dry_run: false
+```
+
+**Step 3: Re-import with Different Settings (Optional)**
+
+If you need to re-import with corrected thresholds or settings:
+
+```yaml
+service: smart_appliance_monitor.import_historical_cycles
+data:
+  entity_id: sensor.washing_machine_state
+  period_start: "2025-07-01T00:00:00"
+  replace_existing: true  # ⚠️ Deletes existing cycles first
+  dry_run: true          # Preview what will be replaced
+```
+
+> ⚠️ **Warning**: `replace_existing: true` will **permanently delete** all existing cycles for this appliance in the specified period before importing. Always use `dry_run: true` first to preview!
+
+### Use Cases
+
+1. **Long-term Analysis**: Track appliance usage patterns over months or years
+2. **Cost Tracking**: Calculate total energy costs across any time period
+3. **Efficiency Comparison**: Compare cycles before and after maintenance
+4. **Historical Import**: Recover data from before the integration was installed
+5. **Custom Reports**: Build dashboards with historical cycle data
+6. **AI Analysis**: Analyze long-term patterns with more data points
+
+### Events
+
+- `smart_appliance_monitor_cycle_history` - Fired when querying history, contains cycles and statistics
+- `smart_appliance_monitor_import_completed` - Fired when import completes, contains result summary
+
+### Limitations
+
+- Historical import requires power sensor data to exist in Recorder
+- Recorder retention policy affects how far back you can query (default: 10 days)
+- Large imports (100+ cycles) may take several minutes
+- Imported cycles use historical timestamps in data but event timestamp is current
+
+### Best Practices
+
+1. **Configure Recorder retention**: Extend retention in `configuration.yaml` if you want longer history:
+   ```yaml
+   recorder:
+     purge_keep_days: 90  # Keep 90 days of history
+   ```
+
+2. **Start with dry-run**: Always preview imports first to verify results
+
+3. **Import incrementally**: For very long periods (1+ year), import in smaller chunks (3-6 months)
+
+4. **Regular backups**: Recorder database contains all historical cycles, backup regularly
 
 ## Recent Improvements
 
