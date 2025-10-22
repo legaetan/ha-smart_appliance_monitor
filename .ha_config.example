@@ -1,0 +1,15 @@
+# Home Assistant Configuration
+# Copy this file to .ha_config and fill in your actual values
+# .ha_config is gitignored and will not be committed
+
+# Your Home Assistant instance URL
+HA_URL="https://ha.url.com"
+
+# Your Home Assistant Long-Lived Access Token
+# Create one at: Profile > Security > Long-Lived Access Tokens
+HA_TOKEN="your-long-lived-access-token-here"
+
+# SSH connection (if using rsync/scp for sync)
+# HA_SSH_USER="your-ssh-user"
+# HA_SSH_HOST="your-ha-server-ip-or-hostname"
+

@@ -137,10 +137,12 @@ Thumbs.db
 home-assistant.log
 home-assistant_v2.db
 
+# Local HA configuration (contains secrets)
+.ha_config
+
 # Release artifacts
 smart_appliance_monitor-*.zip
 
-RELEASE_NOTES_v*.md
 RELEASE_SUMMARY_v*.md
 
 # Frontend cards - npm dependencies and build artifacts
@@ -148,3 +150,4 @@ custom_components/smart_appliance_monitor/www/smart-appliance-cards/node_modules
 custom_components/smart_appliance_monitor/www/smart-appliance-cards/package-lock.json
 # But keep compiled dist files for distribution
 !custom_components/smart_appliance_monitor/www/smart-appliance-cards/dist/
+ha-smart_appliance_monitor.code-workspace

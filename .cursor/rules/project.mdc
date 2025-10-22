@@ -1,3 +1,7 @@
+---
+alwaysApply: true
+---
+
 # Smart Appliance Monitor - Cursor Rules
 
 ## Project Overview
@@ -45,16 +49,14 @@ This is a **Home Assistant custom integration** for monitoring appliances using 
 1. **"Veux-tu tester les modifications avant la release ?"**
    
    **Si OUI:**
-   - Copy files from dev to production (relative to HA config directory):
-     ```bash
-     # From HA config root: /config/
-     # This syncs all backend files but excludes the 'www' directory to avoid slow copies.
-     rsync -av --delete --exclude='www' ___dev/ha-smart_appliance_monitor/custom_components/smart_appliance_monitor/ custom_components/smart_appliance_monitor/
-     # If you modified frontend cards, sync the www directory separately:
-     # rsync -av --delete ___dev/ha-smart_appliance_monitor/custom_components/smart_appliance_monitor/www/ custom_components/smart_appliance_monitor/www/
-     ```
+   - **Manual sync required:**
+     - Copy files from your development workspace to HA server
+     - Source: `custom_components/smart_appliance_monitor/`
+     - Destination on HA: `/config/custom_components/smart_appliance_monitor/`
+     - Method: Use your preferred sync method (Syncthing, rsync, scp, etc.)
+     - **Tip**: You may want to exclude the `www/` directory if frontend files are unchanged (large files, slower sync)
    - Ask: "**Veux-tu que je redémarre Home Assistant maintenant ?**"
-     - If confirmed: `HA_TOKEN=$(cat /config/.ha_token) && curl -X POST -H "Authorization: Bearer $HA_TOKEN" -H "Content-Type: application/json" https://home.lega.wtf/api/services/homeassistant/restart`
+     - If confirmed: `source .ha_config && curl -X POST -H "Authorization: Bearer $HA_TOKEN" -H "Content-Type: application/json" "$HA_URL/api/services/homeassistant/restart"`
    - **WAIT for user to test manually**
    - Ask: **"Tests terminés ? Veux-tu continuer avec la release ou faire des modifications ?"**
      - If "continuer" → Proceed to Step 1
@@ -197,7 +199,9 @@ ha-smart_appliance_monitor/
 ├── CHANGELOG.md                     # Version history
 ├── README.md                        # Main documentation
 ├── version                          # Version number
-└── .cursorrules                     # This file
+└── .cursor/                         # Cursor IDE configuration
+    └── rules/                       # AI assistant rules
+        └── project.mdc              # This file
 ```
 
 ### File Naming Conventions
@@ -257,6 +261,14 @@ from .const import DOMAIN
 - Python cache files (`__pycache__/`, `*.pyc`)
 - IDE files (`.vscode/`, `.idea/`)
 - Temporary development notes (`notes.md`, `todo.md`, etc.)
+- Development test files in project root (`TEST_*.md`, `*_updated.md`, `*_draft.md`, etc.)
+
+### Cleanup Before Release
+Before creating a release, clean up temporary development files from the project root:
+- Remove duplicate/updated versions of documentation (e.g., `README_updated.md`)
+- Remove test guides in root if they exist in proper location (e.g., `TEST_CYCLE_HISTORY.md` should only be in `docs/`)
+- Keep only one version of each document in its proper location
+- Command to find temp files: `find . -maxdepth 1 -name "*_updated.md" -o -name "TEST_*.md" -o -name "*_draft.md"`
 
 ### Always Remember
 - Wiki is a submodule - commit and push wiki changes separately FIRST
@@ -271,19 +283,19 @@ from .const import DOMAIN
 ### Testing
 
 **Manual Testing Procedure:**
-1. Copy component to production (from HA config root):
-   ```bash
-   # Relative paths from /config/
-   # This syncs all backend files but excludes the 'www' directory to avoid slow copies.
-   rsync -av --delete --exclude='www' ___dev/ha-smart_appliance_monitor/custom_components/smart_appliance_monitor/ custom_components/smart_appliance_monitor/
-   # If you modified frontend cards, sync the www directory separately:
-   # rsync -av --delete ___dev/ha-smart_appliance_monitor/custom_components/smart_appliance_monitor/www/ custom_components/smart_appliance_monitor/www/
-   ```
-2. Restart Home Assistant: `HA_TOKEN=$(cat /config/.ha_token) && curl -X POST -H "Authorization: Bearer $HA_TOKEN" -H "Content-Type: application/json" https://home.lega.wtf/api/services/homeassistant/restart` (only if user confirms)
+1. **Sync to HA server:**
+   - Copy files from development workspace to HA server
+   - Source: `custom_components/smart_appliance_monitor/`
+   - Destination on HA: `/config/custom_components/smart_appliance_monitor/`
+   - Method: Use your preferred sync method (Syncthing, rsync via SSH, scp, etc.)
+   - **Note**: You may exclude `www/` directory if frontend unchanged (large files)
+   
+2. **Restart Home Assistant:** 
+   - `source .ha_config && curl -X POST -H "Authorization: Bearer $HA_TOKEN" -H "Content-Type: application/json" "$HA_URL/api/services/homeassistant/restart"` (only if user confirms)
+   
 3. User tests manually on their HA instance
-4. Wait for user confirmation before proceeding with release
 
-**Note**: All paths are relative to Home Assistant config directory (/config/)
+4. Wait for user confirmation before proceeding with release
 
 **Automated Testing:**
 - Run tests before committing: `pytest tests/`
@@ -301,7 +313,7 @@ from .const import DOMAIN
 When user requests a release, follow this conversational flow:
 
 1. **Ask**: "Veux-tu tester les modifications avant la release ?"
-   - If YES: Copy to production, ask about restart, WAIT for user testing
+   - If YES: Sync to HA server, ask about restart, WAIT for user testing
    - If NO: Skip to version update
 
 2. **Ask**: "Tests terminés ? Veux-tu continuer avec la release ou faire des modifications ?"
@@ -331,4 +343,3 @@ For more details:
 - Architecture: See `ARCHITECTURE.md` (if exists)
 - Contributing: See `CONTRIBUTING.md` (if exists)
 - Wiki: https://github.com/legaetan/ha-smart_appliance_monitor/wiki
-
