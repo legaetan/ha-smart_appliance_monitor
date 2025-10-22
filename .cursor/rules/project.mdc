@@ -40,6 +40,35 @@ This is a **Home Assistant custom integration** for monitoring appliances using 
 - Configuration flows support both English and French via translation system
 - Never hardcode French text in Python code - always use translation keys
 
+## Home Assistant Server Connection
+
+The project uses a `.ha_config` file (gitignored) to store connection settings for interacting with the Home Assistant server. The user creates this file from `.ha_config.example` template with their actual credentials.
+
+### Connection Methods
+
+**API Connection (HA_URL + HA_TOKEN):**
+- Used for restarting Home Assistant via REST API
+- Command: `source .ha_config && curl -X POST -H "Authorization: Bearer $HA_TOKEN" -H "Content-Type: application/json" "$HA_URL/api/services/homeassistant/restart"`
+- Required for automated testing workflow
+
+**SSH Connection (HA_SSH_USER + HA_SSH_HOST + HA_SSH_ID_RSA):**
+- Used for file synchronization with rsync/scp
+- Example rsync command:
+  ```bash
+  source .ha_config && rsync -avz --exclude='www/' \
+    -e "ssh -i $HA_SSH_ID_RSA" \
+    custom_components/smart_appliance_monitor/ \
+    $HA_SSH_USER@$HA_SSH_HOST:/config/custom_components/smart_appliance_monitor/
+  ```
+- Alternative: Use Syncthing or other sync methods (no SSH config needed)
+
+### Usage in Workflows
+
+The `.ha_config` file is sourced in testing and release workflows:
+- Pre-release testing: Restart HA after manual sync
+- Automated commands: Load variables with `source .ha_config`
+- Scripts can access `$HA_URL`, `$HA_TOKEN`, `$HA_SSH_*` environment variables
+
 ## Release Workflow
 
 ### Pre-Release Testing Procedure

@@ -209,8 +209,6 @@ analyze_cycles:
               value: all
             - label: Pattern Analysis
               value: pattern
-            - label: Comparative Analysis
-              value: comparative
             - label: Recommendations
               value: recommendations
     cycle_count:
@@ -274,13 +272,13 @@ analyze_energy_dashboard:
       selector:
         boolean:
 
-configure_ai:
-  name: Configure AI Analysis
-  description: Configure global AI analysis settings for all appliances. Sets the AI Task entity, default price entity, and analysis trigger behavior.
+set_global_config:
+  name: Set Global Configuration
+  description: Configure global AI analysis and pricing settings for all appliances. Replaces configure_ai service.
   fields:
     ai_task_entity:
       name: AI Task Entity
-      description: Entity ID of the AI Task to use for analysis (e.g., ai_task.openai_ai_task, ai_task.claude_ai_task)
+      description: Entity ID of the AI Task to use for analysis (e.g., ai_task.openai_ai_task)
       required: false
       example: "ai_task.openai_ai_task"
       selector:
@@ -288,7 +286,67 @@ configure_ai:
           domain: ai_task
     global_price_entity:
       name: Global Price Entity
-      description: Default electricity price entity for all appliances (can be overridden per appliance)
+      description: Entity providing electricity price for all appliances
+      required: false
+      example: "sensor.electricity_price"
+      selector:
+        entity:
+          domain:
+            - sensor
+            - input_number
+    global_price_fixed:
+      name: Fixed Price per kWh
+      description: Fixed price per kWh (fallback if no entity configured)
+      required: false
+      example: 0.2516
+      selector:
+        number:
+          min: 0
+          max: 10
+          step: 0.0001
+          unit_of_measurement: "/kWh"
+    enable_ai_analysis:
+      name: Enable AI Analysis
+      description: Enable or disable AI analysis globally
+      required: false
+      selector:
+        boolean:
+    ai_analysis_trigger:
+      name: Analysis Trigger
+      description: When to automatically trigger AI analysis
+      required: false
+      selector:
+        select:
+          options:
+            - label: Manual (Via Service Only)
+              value: manual
+            - label: Automatic (After Each Cycle)
+              value: auto_cycle_end
+            - label: Periodic (Daily)
+              value: periodic_daily
+            - label: Periodic (Weekly)
+              value: periodic_weekly
+
+detect_tariff_system:
+  name: Detect Tariff System
+  description: Analyze electricity price history to detect peak/off-peak tariff structure (e.g., heures creuses/pleines). Requires a price entity to be configured.
+  fields: {}
+
+configure_ai:
+  name: "[DEPRECATED] Configure AI Analysis"
+  description: "DEPRECATED: Use set_global_config instead. This service will be removed in a future version."
+  fields:
+    ai_task_entity:
+      name: AI Task Entity
+      description: Entity ID of the AI Task to use for analysis
+      required: false
+      example: "ai_task.openai_ai_task"
+      selector:
+        entity:
+          domain: ai_task
+    global_price_entity:
+      name: Global Price Entity
+      description: Default electricity price entity for all appliances
       required: false
       example: "input_number.electricity_price"
       selector:
@@ -298,7 +356,7 @@ configure_ai:
             - sensor
     enable_ai_analysis:
       name: Enable AI Analysis
-      description: Enable or disable AI analysis globally for all appliances
+      description: Enable or disable AI analysis globally
       required: false
       selector:
         boolean:

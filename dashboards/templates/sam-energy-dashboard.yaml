@@ -1,0 +1,3223 @@
+# Smart Appliance Monitor - Energy Dashboard
+title: Energy (SAM)
+icon: mdi:lightning-bolt
+path: sam-energy
+
+views:
+  - title: Vue d'ensemble
+    path: overview
+    icon: mdi:home-lightning-bolt
+    cards:
+      # En-tête
+      - type: markdown
+        content: |
+          # ⚡ Tableau de Bord Énergie
+          **Smart Appliance Monitor** - Analyse énergétique avancée
+
+      # Résumé du jour
+      - type: horizontal-stack
+        cards:
+          - type: custom:mushroom-template-card
+            primary: Énergie Totale
+            secondary: "{{ states('sensor.index_edf_galinky') | float | round(1) }} kWh"
+            icon: mdi:lightning-bolt
+            icon_color: amber
+            tap_action:
+              action: navigate
+              navigation_path: /energy
+            card_mod:
+              style: |
+                ha-card {
+                  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+                  color: white;
+                }
+
+          - type: custom:mushroom-template-card
+            primary: Coût Estimé
+            secondary: "{{ (states('sensor.index_edf_galinky') | float * 0.1952) | round(2) }} €"
+            icon: mdi:currency-eur
+            icon_color: pink
+            tap_action:
+              action: more-info
+
+          - type: button
+            name: Sync Energy Dashboard
+            icon: mdi:sync
+            tap_action:
+              action: call-service
+              service: smart_appliance_monitor.sync_with_energy_dashboard
+
+      # Consommation par appareil SAM
+      - type: vertical-stack
+        cards:
+          - type: markdown
+            content: |
+              ## 📊 Consommation des Appareils Surveillés
+          
+          - type: custom:auto-entities
+            card:
+              type: entities
+              title: Énergie du Jour (kWh)
+              state_color: true
+            filter:
+              include:
+                - entity_id: sensor.chauffe_eau_daily_energy
+                  name: "💧 Chauffe-eau"
+                - entity_id: sensor.lave_linge_daily_energy
+                  name: "🧺 Lave-linge"
+                - entity_id: sensor.four_daily_energy
+                  name: "🍕 Four"
+                - entity_id: sensor.lave_vaisselle_daily_energy
+                  name: "🍽️ Lave-vaisselle"
+                - entity_id: sensor.ecran_pc_daily_energy
+                  name: "🖥️ Écran PC"
+                - entity_id: sensor.bambulab_x1c_daily_energy
+                  name: "🖨️ Imprimante 3D"
+                - entity_id: sensor.vmc_daily_energy
+                  name: "💨 VMC"
+                - entity_id: sensor.seche_linge_daily_energy
+                  name: "👕 Sèche-linge"
+                - entity_id: sensor.bureau_pc_daily_energy
+                  name: "💻 PC Bureau"
+            sort:
+              method: state
+              numeric: true
+              reverse: true
+
+      # Graphique des consommations
+      - type: custom:apexcharts-card
+        header:
+          show: true
+          title: 📈 Consommation des 7 derniers jours
+          show_states: true
+          colorize_states: true
+        graph_span: 7d
+        span:
+          end: day
+        all_series_config:
+          type: column
+          group_by:
+            func: last
+            duration: 1d
+        series:
+          - entity: sensor.chauffe_eau_daily_energy
+            name: Chauffe-eau
+          - entity: sensor.lave_linge_daily_energy
+            name: Lave-linge
+          - entity: sensor.four_daily_energy
+            name: Four
+          - entity: sensor.lave_vaisselle_daily_energy
+            name: Lave-vaisselle
+          - entity: sensor.seche_linge_daily_energy
+            name: Sèche-linge
+
+      # Top consommateurs
+      - type: vertical-stack
+        cards:
+          - type: markdown
+            content: |
+              ## 🏆 Top Consommateurs
+          
+          - type: custom:bar-card
+            entities:
+              - entity: sensor.chauffe_eau_daily_energy
+                name: Chauffe-eau
+                icon: mdi:water-boiler
+              - entity: sensor.lave_linge_daily_energy
+                name: Lave-linge
+                icon: mdi:washing-machine
+              - entity: sensor.four_daily_energy
+                name: Four
+                icon: mdi:stove
+              - entity: sensor.lave_vaisselle_daily_energy
+                name: Lave-vaisselle
+                icon: mdi:dishwasher
+              - entity: sensor.seche_linge_daily_energy
+                name: Sèche-linge
+                icon: mdi:tumble-dryer
+            unit_of_measurement: kWh
+            severity:
+              - value: 0
+                color: '#2ecc71'
+              - value: 2
+                color: '#f39c12'
+              - value: 5
+                color: '#e74c3c'
+            max: 10
+            positions:
+              icon: outside
+              name: inside
+              value: inside
+
+      # Actions rapides
+      - type: vertical-stack
+        cards:
+          - type: markdown
+            content: |
+              ## ⚙️ Actions Rapides
+          
+          - type: horizontal-stack
+            cards:
+              - type: button
+                name: Synchroniser
+                icon: mdi:sync
+                tap_action:
+                  action: call-service
+                  service: smart_appliance_monitor.sync_with_energy_dashboard
+              
+              - type: button
+                name: Exporter Données
+                icon: mdi:download
+                tap_action:
+                  action: call-service
+                  service: smart_appliance_monitor.get_energy_data
+              
+              - type: button
+                name: Energy Dashboard HA
+                icon: mdi:chart-line
+                tap_action:
+                  action: navigate
+                  navigation_path: /energy
+
+  # Vue détaillée par appareil
+  - title: Détails Appareils
+    path: details
+    icon: mdi:devices
+    cards:
+      - type: vertical-stack
+        cards:
+          - type: custom:mushroom-template-card
+            primary: Lave-Linge
+            secondary: |
+              {% set state = states('sensor.lave_linge_state') %}
+              {% if state == 'running' %}
+                🔵 Lavage en cours - {{ states('sensor.lave_linge_cycle_duration') }} min
+              {% elif state == 'finished' %}
+                ✅ Lavage terminé - {{ states('sensor.lave_linge_last_cycle_duration') }} min
+              {% else %}
+                ⚪ Prêt
+              {% endif %}
+            icon: mdi:washing-machine
+            icon_color: |
+              {% set state = states('sensor.lave_linge_state') %}
+              {% if state == 'running' %}
+                blue
+              {% elif state == 'finished' %}
+                green
+              {% else %}
+                grey
+              {% endif %}
+            badge_icon: |
+              {% if is_state('binary_sensor.lave_linge_unplugged', 'on') %}
+                mdi:power-plug-off
+              {% endif %}
+            badge_color: |
+              {% if is_state('binary_sensor.lave_linge_unplugged', 'on') %}
+                red
+              {% endif %}
+            tap_action:
+              action: more-info
+              entity: sensor.lave_linge_state
+            fill_container: true
+          - type: horizontal-stack
+            cards:
+              - type: gauge
+                entity: sensor.lave_linge_cycle_duration
+                name: Durée cycle
+                needle: true
+                severity:
+                  green: 0
+                  yellow: 90
+                  red: 150
+                min: 0
+                max: 180
+                unit: min
+              - type: entity
+                entity: sensor.lave_linge_cycle_energy
+                name: Énergie cycle
+                icon: mdi:lightning-bolt
+              - type: entity
+                entity: sensor.lave_linge_cycle_cost
+                name: Coût cycle
+                icon: mdi:currency-eur
+          - type: custom:mini-graph-card
+            entities:
+              - entity: sensor.lave_linge_puissance
+                name: Puissance
+                color: '#3498db'
+            name: Consommation (24h)
+            hours_to_show: 24
+            points_per_hour: 4
+            line_width: 2
+            animate: true
+            show:
+              labels: true
+              points: false
+              legend: true
+              fill: fade
+            icon: mdi:chart-line
+          - type: horizontal-stack
+            cards:
+              - type: entities
+                title: Dernier cycle
+                entities:
+                  - sensor.lave_linge_last_cycle_duration
+                  - sensor.lave_linge_last_cycle_energy
+                  - sensor.lave_linge_last_cycle_cost
+              - type: entities
+                title: Aujourd'hui
+                entities:
+                  - sensor.lave_linge_daily_cycles
+                  - sensor.lave_linge_daily_cost
+              - type: entities
+                title: Ce mois
+                entities:
+                  - sensor.lave_linge_monthly_cost
+          - type: entities
+            title: Contrôles
+            entities:
+              - entity: switch.lave_linge_monitoring
+                name: Surveillance
+                icon: mdi:eye
+              - entity: switch.lave_linge_notifications
+                name: Notifications
+                icon: mdi:bell
+              - type: divider
+              - entity: switch.lave_linge_notification_cycle_started
+                name: Notif. Démarrage
+              - entity: switch.lave_linge_notification_cycle_finished
+                name: Notif. Fin de cycle
+              - entity: switch.lave_linge_notification_alert_duration
+                name: Notif. Durée anormale
+              - entity: switch.lave_linge_notification_unplugged
+                name: Notif. Débranché
+              - type: divider
+              - entity: button.lave_linge_reset_stats
+      - type: vertical-stack
+        cards:
+          - type: custom:mushroom-template-card
+            primary: Lave-Vaisselle
+            secondary: |
+              {% set state = states('sensor.lave_vaisselle_state') %}
+              {% if state == 'running' %}
+                🔵 Lavage en cours - {{ states('sensor.lave_vaisselle_cycle_duration') }} min
+              {% elif state == 'finished' %}
+                ✅ Lavage terminé - Vaisselle propre !
+              {% else %}
+                ⚪ Prêt
+              {% endif %}
+            icon: mdi:dishwasher
+            icon_color: |
+              {% set state = states('sensor.lave_vaisselle_state') %}
+              {% if state == 'running' %}
+                blue
+              {% elif state == 'finished' %}
+                green
+              {% else %}
+                grey
+              {% endif %}
+            badge_icon: |
+              {% if is_state('binary_sensor.lave_vaisselle_unplugged', 'on') %}
+                mdi:power-plug-off
+              {% endif %}
+            badge_color: |
+              {% if is_state('binary_sensor.lave_vaisselle_unplugged', 'on') %}
+                red
+              {% endif %}
+            tap_action:
+              action: more-info
+              entity: sensor.lave_vaisselle_state
+            fill_container: true
+          - type: horizontal-stack
+            cards:
+              - type: gauge
+                entity: sensor.lave_vaisselle_cycle_duration
+                name: Durée cycle
+                needle: true
+                severity:
+                  green: 0
+                  yellow: 120
+                  red: 180
+                min: 0
+                max: 240
+                unit: min
+              - type: entity
+                entity: sensor.lave_vaisselle_cycle_energy
+                name: Énergie cycle
+                icon: mdi:lightning-bolt
+              - type: entity
+                entity: sensor.lave_vaisselle_cycle_cost
+                name: Coût cycle
+                icon: mdi:currency-eur
+          - type: custom:mini-graph-card
+            entities:
+              - entity: sensor.lave_vaisselle_puissance
+                name: Puissance
+                color: '#16a085'
+            name: Consommation (24h)
+            hours_to_show: 24
+            points_per_hour: 4
+            line_width: 2
+            animate: true
+            show:
+              labels: true
+              points: false
+              legend: true
+              fill: fade
+            icon: mdi:chart-line
+          - type: horizontal-stack
+            cards:
+              - type: entities
+                title: Dernier cycle
+                entities:
+                  - sensor.lave_vaisselle_last_cycle_duration
+                  - sensor.lave_vaisselle_last_cycle_energy
+                  - sensor.lave_vaisselle_last_cycle_cost
+              - type: entities
+                title: Aujourd'hui
+                entities:
+                  - sensor.lave_vaisselle_daily_cycles
+                  - sensor.lave_vaisselle_daily_cost
+              - type: entities
+                title: Ce mois
+                entities:
+                  - sensor.lave_vaisselle_monthly_cost
+          - type: entities
+            title: Contrôles
+            entities:
+              - entity: switch.lave_vaisselle_monitoring
+                name: Surveillance
+                icon: mdi:eye
+              - entity: switch.lave_vaisselle_notifications
+                name: Notifications
+                icon: mdi:bell
+              - type: divider
+              - entity: switch.lave_vaisselle_notification_cycle_started
+                name: Notif. Démarrage
+              - entity: switch.lave_vaisselle_notification_cycle_finished
+                name: Notif. Fin de cycle
+              - entity: switch.lave_vaisselle_notification_alert_duration
+                name: Notif. Durée anormale
+              - entity: switch.lave_vaisselle_notification_unplugged
+                name: Notif. Débranché
+              - type: divider
+              - entity: button.lave_vaisselle_reset_stats
+      - type: vertical-stack
+        cards:
+          - type: custom:mushroom-template-card
+            primary: Bambulab X1C
+            secondary: |
+              {% set state = states('sensor.bambulab_x1c_state') %}
+              {% if state == 'running' %}
+                🔵 Impression en cours - {{ states('sensor.bambulab_x1c_cycle_duration') }} min
+              {% elif state == 'finished' %}
+                ✅ Impression terminée - {{ states('sensor.bambulab_x1c_last_cycle_duration') }} min
+              {% else %}
+                ⚪ Prêt
+              {% endif %}
+            icon: mdi:printer-3d
+            icon_color: |
+              {% set state = states('sensor.bambulab_x1c_state') %}
+              {% if state == 'running' %}
+                blue
+              {% elif state == 'finished' %}
+                green
+              {% else %}
+                grey
+              {% endif %}
+            badge_icon: |
+              {% if is_state('binary_sensor.bambulab_x1c_alert_duration', 'on') %}
+                mdi:alert
+              {% elif is_state('binary_sensor.bambulab_x1c_unplugged', 'on') %}
+                mdi:power-plug-off
+              {% endif %}
+            badge_color: >
+              {% if is_state('binary_sensor.bambulab_x1c_alert_duration', 'on') or
+              is_state('binary_sensor.bambulab_x1c_unplugged', 'on') %}
+                red
+              {% endif %}
+            tap_action:
+              action: more-info
+              entity: sensor.bambulab_x1c_state
+            fill_container: true
+          - type: horizontal-stack
+            cards:
+              - type: gauge
+                entity: sensor.bambulab_x1c_cycle_duration
+                name: Durée impression
+                needle: true
+                severity:
+                  green: 0
+                  yellow: 240
+                  red: 480
+                min: 0
+                max: 600
+                unit: min
+              - type: entity
+                entity: sensor.bambulab_x1c_cycle_energy
+                name: Énergie cycle
+                icon: mdi:lightning-bolt
+              - type: entity
+                entity: sensor.bambulab_x1c_cycle_cost
+                name: Coût cycle
+                icon: mdi:currency-eur
+          - type: custom:mini-graph-card
+            entities:
+              - entity: sensor.bambulab_x1c_puissance
+                name: Puissance
+                color: '#e74c3c'
+            name: Consommation (24h)
+            hours_to_show: 24
+            points_per_hour: 4
+            line_width: 2
+            animate: true
+            show:
+              labels: true
+              points: false
+              legend: true
+              fill: fade
+            icon: mdi:chart-line
+          - type: horizontal-stack
+            cards:
+              - type: entities
+                title: Dernière impression
+                entities:
+                  - sensor.bambulab_x1c_last_cycle_duration
+                  - sensor.bambulab_x1c_last_cycle_energy
+                  - sensor.bambulab_x1c_last_cycle_cost
+              - type: entities
+                title: Aujourd'hui
+                entities:
+                  - sensor.bambulab_x1c_daily_cycles
+                  - sensor.bambulab_x1c_daily_cost
+              - type: entities
+                title: Ce mois
+                entities:
+                  - sensor.bambulab_x1c_monthly_cost
+          - type: entities
+            title: Contrôles
+            entities:
+              - entity: switch.bambulab_x1c_monitoring
+                name: Surveillance
+                icon: mdi:eye
+              - entity: switch.bambulab_x1c_notifications
+                name: Notifications
+                icon: mdi:bell
+              - type: divider
+              - entity: switch.bambulab_x1c_notification_cycle_started
+                name: Notif. Démarrage
+              - entity: switch.bambulab_x1c_notification_cycle_finished
+                name: Notif. Fin impression
+              - entity: switch.bambulab_x1c_notification_alert_duration
+                name: Notif. Durée anormale
+              - entity: switch.bambulab_x1c_notification_unplugged
+                name: Notif. Débranché
+              - type: divider
+              - entity: button.bambulab_x1c_reset_stats
+      - type: vertical-stack
+        cards:
+          - type: custom:mushroom-template-card
+            primary: Chauffe-Eau
+            secondary: |
+              {% set state = states('sensor.chauffe_eau_state') %}
+              {% if state == 'running' %}
+                🔵 Chauffe en cours - {{ states('sensor.chauffe_eau_cycle_duration') }} min
+              {% elif state == 'finished' %}
+                ✅ Chauffe terminée
+              {% else %}
+                ⚪ Inactif
+              {% endif %}
+            icon: mdi:water-boiler
+            icon_color: |
+              {% set state = states('sensor.chauffe_eau_state') %}
+              {% if state == 'running' %}
+                blue
+              {% elif state == 'finished' %}
+                green
+              {% else %}
+                grey
+              {% endif %}
+            badge_icon: |
+              {% if is_state('binary_sensor.chauffe_eau_unplugged', 'on') %}
+                mdi:power-plug-off
+              {% endif %}
+            badge_color: |
+              {% if is_state('binary_sensor.chauffe_eau_unplugged', 'on') %}
+                red
+              {% endif %}
+            tap_action:
+              action: more-info
+              entity: sensor.chauffe_eau_state
+            fill_container: true
+          - type: horizontal-stack
+            cards:
+              - type: gauge
+                entity: sensor.chauffe_eau_cycle_duration
+                name: Durée cycle
+                needle: true
+                severity:
+                  green: 0
+                  yellow: 120
+                  red: 240
+                min: 0
+                max: 360
+                unit: min
+              - type: entity
+                entity: sensor.chauffe_eau_cycle_energy
+                name: Énergie cycle
+                icon: mdi:lightning-bolt
+              - type: entity
+                entity: sensor.chauffe_eau_cycle_cost
+                name: Coût cycle
+                icon: mdi:currency-eur
+          - type: custom:mini-graph-card
+            entities:
+              - entity: sensor.chauffe_eau_energy_power
+                name: Puissance
+                color: '#f39c12'
+            name: Consommation (24h)
+            hours_to_show: 24
+            points_per_hour: 4
+            line_width: 2
+            animate: true
+            show:
+              labels: true
+              points: false
+              legend: true
+              fill: fade
+            icon: mdi:chart-line
+          - type: horizontal-stack
+            cards:
+              - type: entities
+                title: Dernier cycle
+                entities:
+                  - sensor.chauffe_eau_last_cycle_duration
+                  - sensor.chauffe_eau_last_cycle_energy
+                  - sensor.chauffe_eau_last_cycle_cost
+              - type: entities
+                title: Aujourd'hui
+                entities:
+                  - sensor.chauffe_eau_daily_cycles
+                  - sensor.chauffe_eau_daily_cost
+              - type: entities
+                title: Ce mois
+                entities:
+                  - sensor.chauffe_eau_monthly_cost
+          - type: entities
+            title: Contrôles
+            entities:
+              - entity: switch.chauffe_eau_monitoring
+                name: Surveillance
+                icon: mdi:eye
+              - entity: switch.chauffe_eau_notifications
+                name: Notifications
+                icon: mdi:bell
+              - type: divider
+              - entity: switch.chauffe_eau_notification_cycle_started
+                name: Notif. Démarrage
+              - entity: switch.chauffe_eau_notification_cycle_finished
+                name: Notif. Fin de cycle
+              - entity: switch.chauffe_eau_notification_alert_duration
+                name: Notif. Durée anormale
+              - entity: switch.chauffe_eau_notification_unplugged
+                name: Notif. Débranché
+              - type: divider
+              - entity: button.chauffe_eau_reset_stats
+      - type: vertical-stack
+        cards:
+          - type: custom:mushroom-template-card
+            primary: Écran PC
+            secondary: |
+              {% set state = states('sensor.ecran_pc_state') %}
+              {% if state == 'running' %}
+                🔵 Allumé - {{ states('sensor.ecran_pc_cycle_duration') }} min
+              {% elif state == 'finished' %}
+                ✅ Session terminée - {{ states('sensor.ecran_pc_last_cycle_duration') }} min
+              {% else %}
+                ⚪ Éteint
+              {% endif %}
+            icon: mdi:monitor
+            icon_color: |
+              {% set state = states('sensor.ecran_pc_state') %}
+              {% if state == 'running' %}
+                blue
+              {% elif state == 'finished' %}
+                green
+              {% else %}
+                grey
+              {% endif %}
+            badge_icon: |
+              {% if is_state('binary_sensor.ecran_pc_alert_duration', 'on') %}
+                mdi:alert
+              {% elif is_state('binary_sensor.ecran_pc_unplugged', 'on') %}
+                mdi:power-plug-off
+              {% endif %}
+            badge_color: >
+              {% if is_state('binary_sensor.ecran_pc_alert_duration', 'on') or
+              is_state('binary_sensor.ecran_pc_unplugged', 'on') %}
+                red
+              {% endif %}
+            tap_action:
+              action: more-info
+              entity: sensor.ecran_pc_state
+            fill_container: true
+          - type: horizontal-stack
+            cards:
+              - type: gauge
+                entity: sensor.ecran_pc_cycle_duration
+                name: Durée session
+                needle: true
+                severity:
+                  green: 0
+                  yellow: 240
+                  red: 480
+                min: 0
+                max: 600
+                unit: min
+              - type: entity
+                entity: sensor.ecran_pc_cycle_energy
+                name: Énergie session
+                icon: mdi:lightning-bolt
+              - type: entity
+                entity: sensor.ecran_pc_cycle_cost
+                name: Coût session
+                icon: mdi:currency-eur
+          - type: custom:mini-graph-card
+            entities:
+              - entity: sensor.ecran_pc_puissance
+                name: Puissance
+                color: '#95a5a6'
+            name: Consommation (24h)
+            hours_to_show: 24
+            points_per_hour: 4
+            line_width: 2
+            animate: true
+            show:
+              labels: true
+              points: false
+              legend: true
+              fill: fade
+            icon: mdi:chart-line
+          - type: horizontal-stack
+            cards:
+              - type: entities
+                title: Dernière session
+                entities:
+                  - sensor.ecran_pc_last_cycle_duration
+                  - sensor.ecran_pc_last_cycle_energy
+                  - sensor.ecran_pc_last_cycle_cost
+              - type: entities
+                title: Aujourd'hui
+                entities:
+                  - sensor.ecran_pc_daily_cycles
+                  - sensor.ecran_pc_daily_cost
+              - type: entities
+                title: Ce mois
+                entities:
+                  - sensor.ecran_pc_monthly_cost
+          - type: entities
+            title: Contrôles
+            entities:
+              - entity: switch.ecran_pc_monitoring
+                name: Surveillance
+                icon: mdi:eye
+              - entity: switch.ecran_pc_notifications
+                name: Notifications
+                icon: mdi:bell
+              - type: divider
+              - entity: switch.ecran_pc_notification_cycle_started
+                name: Notif. Allumage
+              - entity: switch.ecran_pc_notification_cycle_finished
+                name: Notif. Extinction
+              - entity: switch.ecran_pc_notification_alert_duration
+                name: Notif. Durée anormale
+              - entity: switch.ecran_pc_notification_unplugged
+                name: Notif. Débranché
+              - type: divider
+              - entity: button.ecran_pc_reset_stats
+      - type: vertical-stack
+        cards:
+          - type: custom:mushroom-template-card
+            primary: Four
+            secondary: |
+              {% set state = states('sensor.four_state') %}
+              {% if state == 'running' %}
+                🔵 Cuisson en cours - {{ states('sensor.four_cycle_duration') }} min
+              {% elif state == 'finished' %}
+                ✅ Cuisson terminée - {{ states('sensor.four_last_cycle_duration') }} min
+              {% else %}
+                ⚪ Éteint
+              {% endif %}
+            icon: mdi:stove
+            icon_color: |
+              {% set state = states('sensor.four_state') %}
+              {% if state == 'running' %}
+                blue
+              {% elif state == 'finished' %}
+                green
+              {% else %}
+                grey
+              {% endif %}
+            badge_icon: |
+              {% if is_state('binary_sensor.four_unplugged', 'on') %}
+                mdi:power-plug-off
+              {% endif %}
+            badge_color: |
+              {% if is_state('binary_sensor.four_unplugged', 'on') %}
+                red
+              {% endif %}
+            tap_action:
+              action: more-info
+              entity: sensor.four_state
+            fill_container: true
+          - type: horizontal-stack
+            cards:
+              - type: gauge
+                entity: sensor.four_cycle_duration
+                name: Durée cuisson
+                needle: true
+                severity:
+                  green: 0
+                  yellow: 60
+                  red: 120
+                min: 0
+                max: 180
+                unit: min
+              - type: entity
+                entity: sensor.four_cycle_energy
+                name: Énergie cycle
+                icon: mdi:lightning-bolt
+              - type: entity
+                entity: sensor.four_cycle_cost
+                name: Coût cycle
+                icon: mdi:currency-eur
+          - type: custom:mini-graph-card
+            entities:
+              - entity: sensor.four_puissance
+                name: Puissance
+                color: '#9b59b6'
+            name: Consommation (24h)
+            hours_to_show: 24
+            points_per_hour: 4
+            line_width: 2
+            animate: true
+            show:
+              labels: true
+              points: false
+              legend: true
+              fill: fade
+            icon: mdi:chart-line
+          - type: horizontal-stack
+            cards:
+              - type: entities
+                title: Dernière cuisson
+                entities:
+                  - sensor.four_last_cycle_duration
+                  - sensor.four_last_cycle_energy
+                  - sensor.four_last_cycle_cost
+              - type: entities
+                title: Aujourd'hui
+                entities:
+                  - sensor.four_daily_cycles
+                  - sensor.four_daily_cost
+              - type: entities
+                title: Ce mois
+                entities:
+                  - sensor.four_monthly_cost
+          - type: entities
+            title: Contrôles
+            entities:
+              - entity: switch.four_monitoring
+                name: Surveillance
+                icon: mdi:eye
+              - entity: switch.four_notifications
+                name: Notifications
+                icon: mdi:bell
+              - type: divider
+              - entity: switch.four_notification_cycle_started
+                name: Notif. Démarrage
+              - entity: switch.four_notification_cycle_finished
+                name: Notif. Fin de cuisson
+              - entity: switch.four_notification_alert_duration
+                name: Notif. Durée anormale
+              - entity: switch.four_notification_unplugged
+                name: Notif. Débranché
+              - type: divider
+              - entity: button.four_reset_stats
+      - type: vertical-stack
+        cards:
+          - type: custom:mushroom-template-card
+            primary: Sèche-Linge
+            secondary: |
+              {% set state = states('sensor.seche_linge_state') %}
+              {% if state == 'running' %}
+                🔵 Séchage en cours - {{ states('sensor.seche_linge_cycle_duration') }} min
+              {% elif state == 'finished' %}
+                ✅ Séchage terminé - {{ states('sensor.seche_linge_last_cycle_duration') }} min
+              {% else %}
+                ⚪ Prêt
+              {% endif %}
+            icon: mdi:tumble-dryer
+            icon_color: |
+              {% set state = states('sensor.seche_linge_state') %}
+              {% if state == 'running' %}
+                blue
+              {% elif state == 'finished' %}
+                green
+              {% else %}
+                grey
+              {% endif %}
+            badge_icon: |
+              {% if is_state('binary_sensor.seche_linge_unplugged', 'on') %}
+                mdi:power-plug-off
+              {% endif %}
+            badge_color: |
+              {% if is_state('binary_sensor.seche_linge_unplugged', 'on') %}
+                red
+              {% endif %}
+            tap_action:
+              action: more-info
+              entity: sensor.seche_linge_state
+            fill_container: true
+          - type: horizontal-stack
+            cards:
+              - type: gauge
+                entity: sensor.seche_linge_cycle_duration
+                name: Durée cycle
+                needle: true
+                severity:
+                  green: 0
+                  yellow: 90
+                  red: 150
+                min: 0
+                max: 180
+                unit: min
+              - type: entity
+                entity: sensor.seche_linge_cycle_energy
+                name: Énergie cycle
+                icon: mdi:lightning-bolt
+              - type: entity
+                entity: sensor.seche_linge_cycle_cost
+                name: Coût cycle
+                icon: mdi:currency-eur
+          - type: custom:mini-graph-card
+            entities:
+              - entity: sensor.seche_linge_puissance_2
+                name: Puissance
+                color: '#e67e22'
+            name: Consommation (24h)
+            hours_to_show: 24
+            points_per_hour: 4
+            line_width: 2
+            animate: true
+            show:
+              labels: true
+              points: false
+              legend: true
+              fill: fade
+            icon: mdi:chart-line
+          - type: horizontal-stack
+            cards:
+              - type: entities
+                title: Dernier cycle
+                entities:
+                  - sensor.seche_linge_last_cycle_duration
+                  - sensor.seche_linge_last_cycle_energy
+                  - sensor.seche_linge_last_cycle_cost
+              - type: entities
+                title: Aujourd'hui
+                entities:
+                  - sensor.seche_linge_daily_cycles
+                  - sensor.seche_linge_daily_cost
+              - type: entities
+                title: Ce mois
+                entities:
+                  - sensor.seche_linge_monthly_cost
+          - type: entities
+            title: Contrôles
+            entities:
+              - entity: switch.seche_linge_monitoring
+                name: Surveillance
+                icon: mdi:eye
+              - entity: switch.seche_linge_notifications
+                name: Notifications
+                icon: mdi:bell
+              - type: divider
+              - entity: switch.seche_linge_notification_cycle_started
+                name: Notif. Démarrage
+              - entity: switch.seche_linge_notification_cycle_finished
+                name: Notif. Fin de cycle
+              - entity: switch.seche_linge_notification_alert_duration
+                name: Notif. Durée anormale
+              - entity: switch.seche_linge_notification_unplugged
+                name: Notif. Débranché
+              - type: divider
+              - entity: button.seche_linge_reset_stats
+      - type: vertical-stack
+        cards:
+          - type: custom:mushroom-template-card
+            primary: VMC
+            secondary: |
+              {% set state = states('sensor.vmc_state') %}
+              {% if state == 'running' %}
+                🔵 En marche - {{ states('sensor.vmc_session_duration') }} min
+              {% elif state == 'finished' %}
+                ✅ Session terminée - {{ states('sensor.vmc_last_session_duration') }} min
+              {% else %}
+                ⚪ Arrêtée
+              {% endif %}
+            icon: mdi:air-filter
+            icon_color: |
+              {% set state = states('sensor.vmc_state') %}
+              {% if state == 'running' %}
+                blue
+              {% elif state == 'finished' %}
+                green
+              {% else %}
+                grey
+              {% endif %}
+            badge_icon: |
+              {% if is_state('switch.vmc_boost_vmc', 'on') %}
+                mdi:rocket-launch
+              {% elif is_state('binary_sensor.vmc_unplugged', 'on') %}
+                mdi:power-plug-off
+              {% endif %}
+            badge_color: |
+              {% if is_state('switch.vmc_boost_vmc', 'on') %}
+                orange
+              {% elif is_state('binary_sensor.vmc_unplugged', 'on') %}
+                red
+              {% endif %}
+            tap_action:
+              action: more-info
+              entity: sensor.vmc_state
+            fill_container: true
+          - type: horizontal-stack
+            cards:
+              - type: gauge
+                entity: sensor.vmc_session_duration
+                name: Durée session
+                needle: true
+                severity:
+                  green: 0
+                  yellow: 120
+                  red: 240
+                min: 0
+                max: 360
+                unit: min
+              - type: entity
+                entity: sensor.vmc_session_energy
+                name: Énergie session
+                icon: mdi:lightning-bolt
+              - type: entity
+                entity: sensor.vmc_session_cost
+                name: Coût session
+                icon: mdi:currency-eur
+          - type: custom:mini-graph-card
+            entities:
+              - entity: sensor.vmc_device_power
+                name: Puissance
+                color: '#1abc9c'
+            name: Consommation (24h)
+            hours_to_show: 24
+            points_per_hour: 4
+            line_width: 2
+            animate: true
+            show:
+              labels: true
+              points: false
+              legend: true
+              fill: fade
+            icon: mdi:chart-line
+          - type: horizontal-stack
+            cards:
+              - type: entities
+                title: Dernière session
+                entities:
+                  - sensor.vmc_last_session_duration
+                  - sensor.vmc_last_session_energy
+                  - sensor.vmc_last_session_cost
+              - type: entities
+                title: Aujourd'hui
+                entities:
+                  - sensor.vmc_daily_sessions
+                  - sensor.vmc_daily_cost
+              - type: entities
+                title: Ce mois
+                entities:
+                  - sensor.vmc_monthly_cost
+          - type: entities
+            title: Contrôles
+            entities:
+              - entity: switch.vmc
+                name: VMC
+                icon: mdi:fan
+              - entity: switch.vmc_boost_vmc
+                name: Mode Boost
+                icon: mdi:rocket-launch
+              - entity: timer.timer_vmc_boost
+                name: Timer Boost
+                icon: mdi:timer
+              - type: divider
+              - entity: switch.vmc_monitoring
+                name: Surveillance
+                icon: mdi:eye
+              - entity: switch.vmc_notifications
+                name: Notifications
+                icon: mdi:bell
+              - type: divider
+              - entity: switch.vmc_notification_cycle_started
+                name: Notif. Démarrage
+              - entity: switch.vmc_notification_cycle_finished
+                name: Notif. Fin de session
+              - entity: switch.vmc_notification_alert_duration
+                name: Notif. Durée anormale
+              - entity: switch.vmc_notification_unplugged
+                name: Notif. Débranché
+              - type: divider
+              - entity: button.vmc_reset_stats
+      - type: vertical-stack
+        cards:
+          - type: custom:mushroom-template-card
+            primary: PC Bureau
+            secondary: |
+              {% set state = states('sensor.bureau_pc_state') %}
+              {% if state == 'running' %}
+                🔵 Allumé - {{ states('sensor.bureau_pc_cycle_duration') }} min
+              {% elif state == 'finished' %}
+                ✅ Session terminée - {{ states('sensor.bureau_pc_last_cycle_duration') }} min
+              {% else %}
+                ⚪ Éteint
+              {% endif %}
+            icon: mdi:desktop-tower
+            icon_color: |
+              {% set state = states('sensor.bureau_pc_state') %}
+              {% if state == 'running' %}
+                blue
+              {% elif state == 'finished' %}
+                green
+              {% else %}
+                grey
+              {% endif %}
+            badge_icon: |
+              {% if is_state('binary_sensor.bureau_pc_unplugged', 'on') %}
+                mdi:power-plug-off
+              {% endif %}
+            badge_color: |
+              {% if is_state('binary_sensor.bureau_pc_unplugged', 'on') %}
+                red
+              {% endif %}
+            tap_action:
+              action: more-info
+              entity: sensor.bureau_pc_state
+            fill_container: true
+          - type: horizontal-stack
+            cards:
+              - type: gauge
+                entity: sensor.bureau_pc_cycle_duration
+                name: Durée utilisation
+                needle: true
+                severity:
+                  green: 0
+                  yellow: 240
+                  red: 480
+                min: 0
+                max: 600
+                unit: min
+              - type: entity
+                entity: sensor.bureau_pc_cycle_energy
+                name: Énergie cycle
+                icon: mdi:lightning-bolt
+              - type: entity
+                entity: sensor.bureau_pc_cycle_cost
+                name: Coût cycle
+                icon: mdi:currency-eur
+          - type: custom:mini-graph-card
+            entities:
+              - entity: sensor.bureau_pc_puissance
+                name: Puissance
+                color: '#34495e'
+            name: Consommation (24h)
+            hours_to_show: 24
+            points_per_hour: 4
+            line_width: 2
+            animate: true
+            show:
+              labels: true
+              points: false
+              legend: true
+              fill: fade
+            icon: mdi:chart-line
+          - type: horizontal-stack
+            cards:
+              - type: entities
+                title: Dernier cycle
+                entities:
+                  - sensor.bureau_pc_last_cycle_duration
+                  - sensor.bureau_pc_last_cycle_energy
+                  - sensor.bureau_pc_last_cycle_cost
+              - type: entities
+                title: Aujourd'hui
+                entities:
+                  - sensor.bureau_pc_daily_cycles
+                  - sensor.bureau_pc_daily_cost
+              - type: entities
+                title: Ce mois
+                entities:
+                  - sensor.bureau_pc_monthly_cost
+          - type: entities
+            title: Contrôles
+            entities:
+              - entity: switch.bureau_pc_monitoring
+                name: Surveillance
+                icon: mdi:eye
+              - entity: switch.bureau_pc_notifications
+                name: Notifications
+                icon: mdi:bell
+              - type: divider
+              - entity: switch.bureau_pc_notification_cycle_started
+                name: Notif. Démarrage
+              - entity: switch.bureau_pc_notification_cycle_finished
+                name: Notif. Fin de cycle
+              - entity: switch.bureau_pc_notification_alert_duration
+                name: Notif. Durée anormale
+              - entity: switch.bureau_pc_notification_unplugged
+                name: Notif. Débranché
+              - type: divider
+              - entity: button.bureau_pc_reset_stats
+  - title: Custom Cards Test
+    path: custom_cards
+    icon: mdi:cards-playing-outline
+    badges: []
+    cards:
+      - type: markdown
+        content: |
+          # 🎴 Smart Appliance Monitor - Toutes les Cartes Custom
+          
+          Vue d'ensemble de tous les appareils surveillés avec les nouvelles cartes
+      
+      - type: vertical-stack
+        cards:
+          - type: markdown
+            content: "## 🧺 Lave-Linge"
+          - type: custom:smart-appliance-cycle-card
+            entity: sensor.lave_linge_state
+            name: "Lave-Linge"
+            show_current_power: true
+          - type: custom:smart-appliance-stats-card
+            entity: sensor.lave_linge_state
+            name: "Statistiques Détaillées"
+            default_tab: week
+            show_trends: true
+            show_efficiency: true
+            theme: auto
+      
+      - type: vertical-stack
+        cards:
+          - type: markdown
+            content: "## 🍽️ Lave-Vaisselle"
+          - type: custom:smart-appliance-cycle-card
+            entity: sensor.lave_vaisselle_state
+            name: "Lave-Vaisselle"
+            show_current_power: true
+          - type: custom:smart-appliance-stats-card
+            entity: sensor.lave_vaisselle_state
+            name: "Statistiques Détaillées"
+            default_tab: week
+            show_trends: true
+            show_efficiency: true
+            theme: auto
+      
+      - type: vertical-stack
+        cards:
+          - type: markdown
+            content: "## 🖨️ Bambulab X1C"
+          - type: custom:smart-appliance-cycle-card
+            entity: sensor.bambulab_x1c_state
+            name: "Bambulab X1C"
+            show_current_power: true
+          - type: custom:smart-appliance-stats-card
+            entity: sensor.bambulab_x1c_state
+            name: "Statistiques Détaillées"
+            default_tab: week
+            show_trends: true
+            show_efficiency: true
+            theme: auto
+      
+      - type: vertical-stack
+        cards:
+          - type: markdown
+            content: "## 🚿 Chauffe-Eau"
+          - type: custom:smart-appliance-cycle-card
+            entity: sensor.chauffe_eau_state
+            name: "Chauffe-Eau"
+            show_current_power: true
+          - type: custom:smart-appliance-stats-card
+            entity: sensor.chauffe_eau_state
+            name: "Statistiques Détaillées"
+            default_tab: week
+            show_trends: true
+            show_efficiency: true
+            theme: auto
+      
+      - type: vertical-stack
+        cards:
+          - type: markdown
+            content: "## 🖥️ Écran PC"
+          - type: custom:smart-appliance-cycle-card
+            entity: sensor.ecran_pc_state
+            name: "Écran PC"
+            show_current_power: true
+          - type: custom:smart-appliance-stats-card
+            entity: sensor.ecran_pc_state
+            name: "Statistiques Détaillées"
+            default_tab: week
+            show_trends: true
+            show_efficiency: true
+            theme: auto
+      
+      - type: vertical-stack
+        cards:
+          - type: markdown
+            content: "## 🍕 Four"
+          - type: custom:smart-appliance-cycle-card
+            entity: sensor.four_state
+            name: "Four"
+            show_current_power: true
+          - type: custom:smart-appliance-stats-card
+            entity: sensor.four_state
+            name: "Statistiques Détaillées"
+            default_tab: week
+            show_trends: true
+            show_efficiency: true
+            theme: auto
+      
+      - type: vertical-stack
+        cards:
+          - type: markdown
+            content: "## 👕 Sèche-Linge"
+          - type: custom:smart-appliance-cycle-card
+            entity: sensor.seche_linge_state
+            name: "Sèche-Linge"
+            show_current_power: true
+          - type: custom:smart-appliance-stats-card
+            entity: sensor.seche_linge_state
+            name: "Statistiques Détaillées"
+            default_tab: week
+            show_trends: true
+            show_efficiency: true
+            theme: auto
+      
+      - type: vertical-stack
+        cards:
+          - type: markdown
+            content: "## 💨 VMC"
+          - type: custom:smart-appliance-cycle-card
+            entity: sensor.vmc_state
+            name: "VMC"
+            show_current_power: true
+          - type: custom:smart-appliance-stats-card
+            entity: sensor.vmc_state
+            name: "Statistiques Détaillées"
+            default_tab: week
+            show_trends: true
+            show_efficiency: true
+            theme: auto
+      
+      - type: vertical-stack
+        cards:
+          - type: markdown
+            content: "## 💻 PC Bureau"
+          - type: custom:smart-appliance-cycle-card
+            entity: sensor.bureau_pc_state
+            name: "PC Bureau"
+            show_current_power: true
+          - type: custom:smart-appliance-stats-card
+            entity: sensor.bureau_pc_state
+            name: "Statistiques Détaillées"
+            default_tab: week
+            show_trends: true
+            show_efficiency: true
+            theme: auto
+
+
+  # Vue coûts
+  - title: Coûts
+    path: costs
+    icon: mdi:currency-eur
+    cards:
+      - type: markdown
+        content: |
+          ## 💰 Analyse des Coûts
+
+      # Coût total estimé
+      - type: gauge
+        entity: sensor.index_edf_galinky
+        name: Coût Total Estimé (Aujourd'hui)
+        unit: "€"
+        min: 0
+        max: 20
+        severity:
+          green: 0
+          yellow: 10
+          red: 15
+        needle: true
+
+      # Coûts par appareil
+      - type: custom:auto-entities
+        card:
+          type: entities
+          title: Coûts par Appareil (Aujourd'hui)
+        filter:
+          include:
+            - entity_id: sensor.chauffe_eau_daily_cost
+              name: "💧 Chauffe-eau"
+            - entity_id: sensor.lave_linge_daily_cost
+              name: "🧺 Lave-linge"
+            - entity_id: sensor.four_daily_cost
+              name: "🍕 Four"
+            - entity_id: sensor.lave_vaisselle_daily_cost
+              name: "🍽️ Lave-vaisselle"
+            - entity_id: sensor.seche_linge_daily_cost
+              name: "👕 Sèche-linge"
+            - entity_id: sensor.ecran_pc_daily_cost
+              name: "🖥️ Écran PC"
+            - entity_id: sensor.bambulab_x1c_daily_cost
+              name: "🖨️ Imprimante 3D"
+            - entity_id: sensor.vmc_daily_cost
+              name: "💨 VMC"
+            - entity_id: sensor.bureau_pc_daily_cost
+              name: "💻 PC Bureau"
+        sort:
+          method: state
+          numeric: true
+          reverse: true
+
+      # Graphique coûts mensuels
+      - type: custom:apexcharts-card
+        header:
+          show: true
+          title: 📊 Coûts Mensuels
+        graph_span: 30d
+        span:
+          end: day
+        all_series_config:
+          type: column
+          group_by:
+            func: last
+            duration: 1d
+        series:
+          - entity: sensor.chauffe_eau_daily_cost
+            name: Chauffe-eau
+          - entity: sensor.lave_linge_daily_cost
+            name: Lave-linge
+          - entity: sensor.four_daily_cost
+            name: Four
+          - entity: sensor.lave_vaisselle_daily_cost
+            name: Lave-vaisselle
+          - entity: sensor.seche_linge_daily_cost
+            name: Sèche-linge
+
+      # Estimations mensuelles
+      - type: entities
+        title: 💳 Estimations Mensuelles
+        entities:
+          - entity: sensor.chauffe_eau_monthly_cost
+            name: Chauffe-eau
+          - entity: sensor.lave_linge_monthly_cost
+            name: Lave-linge
+          - entity: sensor.four_monthly_cost
+            name: Four
+          - entity: sensor.lave_vaisselle_monthly_cost
+            name: Lave-vaisselle
+          - entity: sensor.seche_linge_monthly_cost
+            name: Sèche-linge
+
+  # Vue Contrôles
+  - title: Contrôles
+    path: controls
+    icon: mdi:tune-variant
+    cards:
+      - type: markdown
+        content: |
+          ## 🎛️ Contrôles & Supervision
+
+      # États en temps réel
+      - type: vertical-stack
+        cards:
+          - type: markdown
+            content: |
+              ### 📊 États en Temps Réel
+          
+          - type: custom:auto-entities
+            card:
+              type: entities
+              title: État des Appareils
+              state_color: true
+            filter:
+              include:
+                - entity_id: sensor.chauffe_eau_state
+                  name: "💧 Chauffe-eau"
+                - entity_id: sensor.lave_linge_state
+                  name: "🧺 Lave-linge"
+                - entity_id: sensor.four_state
+                  name: "🍕 Four"
+                - entity_id: sensor.lave_vaisselle_state
+                  name: "🍽️ Lave-vaisselle"
+                - entity_id: sensor.seche_linge_state
+                  name: "👕 Sèche-linge"
+                - entity_id: sensor.ecran_pc_state
+                  name: "🖥️ Écran PC"
+                - entity_id: sensor.bambulab_x1c_state
+                  name: "🖨️ Imprimante 3D"
+                - entity_id: sensor.vmc_state
+                  name: "💨 VMC"
+                - entity_id: sensor.bureau_pc_state
+                  name: "💻 PC Bureau"
+
+      # Appareils en cours d'utilisation
+      - type: vertical-stack
+        cards:
+          - type: markdown
+            content: |
+              ### ⚡ Cycles en Cours
+          
+          - type: custom:auto-entities
+            card:
+              type: entities
+              title: Durée des Cycles Actifs
+            filter:
+              include:
+                - entity_id: sensor.chauffe_eau_duree_cycle
+                  name: "💧 Chauffe-eau"
+                - entity_id: sensor.lave_linge_duree_cycle
+                  name: "🧺 Lave-linge"
+                - entity_id: sensor.four_duree_cycle
+                  name: "🍕 Four"
+                - entity_id: sensor.lave_vaisselle_duree_cycle
+                  name: "🍽️ Lave-vaisselle"
+                - entity_id: sensor.seche_linge_duree_cycle
+                  name: "👕 Sèche-linge"
+                - entity_id: sensor.ecran_pc_duree_cycle
+                  name: "🖥️ Écran PC"
+                - entity_id: sensor.bambulab_x1c_duree_cycle
+                  name: "🖨️ Imprimante 3D"
+                - entity_id: sensor.vmc_duree_cycle
+                  name: "💨 VMC"
+                - entity_id: sensor.bureau_pc_duree_cycle
+                  name: "💻 PC Bureau"
+              exclude:
+                - state: "0"
+                - state: "unavailable"
+
+      # Switches de monitoring
+      - type: vertical-stack
+        cards:
+          - type: markdown
+            content: |
+              ### 🔍 Switches de Monitoring
+          
+          - type: entities
+            title: Monitoring Actif
+            entities:
+              - entity: switch.chauffe_eau_monitoring
+                name: "💧 Chauffe-eau"
+              - entity: switch.lave_linge_monitoring
+                name: "🧺 Lave-linge"
+              - entity: switch.four_monitoring
+                name: "🍕 Four"
+              - entity: switch.lave_vaisselle_monitoring
+                name: "🍽️ Lave-vaisselle"
+              - entity: switch.seche_linge_monitoring
+                name: "👕 Sèche-linge"
+              - entity: switch.ecran_pc_monitoring
+                name: "🖥️ Écran PC"
+              - entity: switch.bambulab_x1c_monitoring
+                name: "🖨️ Imprimante 3D"
+              - entity: switch.vmc_monitoring
+                name: "💨 VMC"
+              - entity: switch.bureau_pc_monitoring
+                name: "💻 PC Bureau"
+
+      # Switches de notifications master
+      - type: vertical-stack
+        cards:
+          - type: markdown
+            content: |
+              ### 🔔 Notifications Master
+          
+          - type: entities
+            title: Notifications Générales
+            entities:
+              - entity: switch.chauffe_eau_notifications
+                name: "💧 Chauffe-eau"
+              - entity: switch.lave_linge_notifications
+                name: "🧺 Lave-linge"
+              - entity: switch.four_notifications
+                name: "🍕 Four"
+              - entity: switch.lave_vaisselle_notifications
+                name: "🍽️ Lave-vaisselle"
+              - entity: switch.seche_linge_notifications
+                name: "👕 Sèche-linge"
+              - entity: switch.ecran_pc_notifications
+                name: "🖥️ Écran PC"
+              - entity: switch.bambulab_x1c_notifications
+                name: "🖨️ Imprimante 3D"
+              - entity: switch.vmc_notifications
+                name: "💨 VMC"
+              - entity: switch.bureau_pc_notifications
+                name: "💻 PC Bureau"
+
+      # Notifications par type
+      - type: vertical-stack
+        cards:
+          - type: markdown
+            content: |
+              ### 🔔 Notifications par Type
+          
+          - type: custom:mushroom-title-card
+            title: Cycle Démarré
+          
+          - type: entities
+            entities:
+              - entity: switch.chauffe_eau_notification_cycle_started
+                name: "💧 Chauffe-eau"
+              - entity: switch.lave_linge_notification_cycle_started
+                name: "🧺 Lave-linge"
+              - entity: switch.four_notification_cycle_started
+                name: "🍕 Four"
+              - entity: switch.lave_vaisselle_notification_cycle_started
+                name: "🍽️ Lave-vaisselle"
+              - entity: switch.seche_linge_notification_cycle_started
+                name: "👕 Sèche-linge"
+          
+          - type: custom:mushroom-title-card
+            title: Cycle Terminé
+          
+          - type: entities
+            entities:
+              - entity: switch.chauffe_eau_notification_cycle_finished
+                name: "💧 Chauffe-eau"
+              - entity: switch.lave_linge_notification_cycle_finished
+                name: "🧺 Lave-linge"
+              - entity: switch.four_notification_cycle_finished
+                name: "🍕 Four"
+              - entity: switch.lave_vaisselle_notification_cycle_finished
+                name: "🍽️ Lave-vaisselle"
+              - entity: switch.seche_linge_notification_cycle_finished
+                name: "👕 Sèche-linge"
+          
+          - type: custom:mushroom-title-card
+            title: Alerte Durée
+          
+          - type: entities
+            entities:
+              - entity: switch.chauffe_eau_notification_alert_duration
+                name: "💧 Chauffe-eau"
+              - entity: switch.lave_linge_notification_alert_duration
+                name: "🧺 Lave-linge"
+              - entity: switch.four_notification_alert_duration
+                name: "🍕 Four"
+              - entity: switch.lave_vaisselle_notification_alert_duration
+                name: "🍽️ Lave-vaisselle"
+              - entity: switch.seche_linge_notification_alert_duration
+                name: "👕 Sèche-linge"
+          
+          - type: custom:mushroom-title-card
+            title: Alerte Débranché
+          
+          - type: entities
+            entities:
+              - entity: switch.chauffe_eau_notification_unplugged
+                name: "💧 Chauffe-eau"
+              - entity: switch.lave_linge_notification_unplugged
+                name: "🧺 Lave-linge"
+              - entity: switch.four_notification_unplugged
+                name: "🍕 Four"
+              - entity: switch.lave_vaisselle_notification_unplugged
+                name: "🍽️ Lave-vaisselle"
+              - entity: switch.seche_linge_notification_unplugged
+                name: "👕 Sèche-linge"
+
+  # Vue Alertes & Anomalies
+  - title: Alertes & Anomalies
+    path: alerts
+    icon: mdi:alert-circle
+    cards:
+      - type: markdown
+        content: |
+          ## ⚠️ Alertes & Détection d'Anomalies
+
+      # Alertes actives
+      - type: vertical-stack
+        cards:
+          - type: markdown
+            content: |
+              ### 🚨 Alertes Actives
+          
+          - type: custom:auto-entities
+            card:
+              type: entities
+              title: Alertes de Durée
+              state_color: true
+            filter:
+              include:
+                - entity_id: binary_sensor.chauffe_eau_alert_duration
+                - entity_id: binary_sensor.lave_linge_alert_duration
+                - entity_id: binary_sensor.four_alert_duration
+                - entity_id: binary_sensor.lave_vaisselle_alert_duration
+                - entity_id: binary_sensor.seche_linge_alert_duration
+                - entity_id: binary_sensor.ecran_pc_alert_duration
+                - entity_id: binary_sensor.bambulab_x1c_alert_duration
+                - entity_id: binary_sensor.vmc_alert_duration
+                - entity_id: binary_sensor.bureau_pc_alert_duration
+              exclude:
+                - state: "off"
+                - state: "unavailable"
+          
+          - type: custom:auto-entities
+            card:
+              type: entities
+              title: Alertes Débranché
+              state_color: true
+            filter:
+              include:
+                - entity_id: binary_sensor.chauffe_eau_unplugged
+                - entity_id: binary_sensor.lave_linge_unplugged
+                - entity_id: binary_sensor.four_unplugged
+                - entity_id: binary_sensor.lave_vaisselle_unplugged
+                - entity_id: binary_sensor.seche_linge_unplugged
+                - entity_id: binary_sensor.ecran_pc_unplugged
+                - entity_id: binary_sensor.bambulab_x1c_unplugged
+                - entity_id: binary_sensor.vmc_unplugged
+                - entity_id: binary_sensor.bureau_pc_unplugged
+              exclude:
+                - state: "off"
+                - state: "unavailable"
+
+      # Détection d'anomalies
+      - type: vertical-stack
+        cards:
+          - type: markdown
+            content: |
+              ### 🔍 Détection d'Anomalies
+          
+          - type: horizontal-stack
+            cards:
+              - type: gauge
+                entity: sensor.chauffe_eau_anomaly_score
+                name: Chauffe-eau
+                min: 0
+                max: 100
+                needle: true
+                severity:
+                  green: 0
+                  yellow: 30
+                  red: 60
+              
+              - type: gauge
+                entity: sensor.lave_linge_anomaly_score
+                name: Lave-linge
+                min: 0
+                max: 100
+                needle: true
+                severity:
+                  green: 0
+                  yellow: 30
+                  red: 60
+              
+              - type: gauge
+                entity: sensor.four_anomaly_score
+                name: Four
+                min: 0
+                max: 100
+                needle: true
+                severity:
+                  green: 0
+                  yellow: 30
+                  red: 60
+          
+          - type: horizontal-stack
+            cards:
+              - type: gauge
+                entity: sensor.lave_vaisselle_anomaly_score
+                name: Lave-vaisselle
+                min: 0
+                max: 100
+                needle: true
+                severity:
+                  green: 0
+                  yellow: 30
+                  red: 60
+              
+              - type: gauge
+                entity: sensor.seche_linge_anomaly_score
+                name: Sèche-linge
+                min: 0
+                max: 100
+                needle: true
+                severity:
+                  green: 0
+                  yellow: 30
+                  red: 60
+          
+          - type: entities
+            title: Anomalies Détectées
+            entities:
+              - entity: binary_sensor.chauffe_eau_anomaly_detected
+                name: "💧 Chauffe-eau"
+              - entity: binary_sensor.lave_linge_anomaly_detected
+                name: "🧺 Lave-linge"
+              - entity: binary_sensor.four_anomaly_detected
+                name: "🍕 Four"
+              - entity: binary_sensor.lave_vaisselle_anomaly_detected
+                name: "🍽️ Lave-vaisselle"
+              - entity: binary_sensor.seche_linge_anomaly_detected
+                name: "👕 Sèche-linge"
+
+      # Graphique des anomaly scores
+      - type: custom:apexcharts-card
+        header:
+          show: true
+          title: 📊 Historique des Scores d'Anomalie
+          show_states: true
+        graph_span: 7d
+        all_series_config:
+          type: line
+          stroke_width: 2
+        series:
+          - entity: sensor.chauffe_eau_anomaly_score
+            name: Chauffe-eau
+          - entity: sensor.lave_linge_anomaly_score
+            name: Lave-linge
+          - entity: sensor.four_anomaly_score
+            name: Four
+          - entity: sensor.lave_vaisselle_anomaly_score
+            name: Lave-vaisselle
+          - entity: sensor.seche_linge_anomaly_score
+            name: Sèche-linge
+
+      # Limites énergétiques
+      - type: vertical-stack
+        cards:
+          - type: markdown
+            content: |
+              ### 📊 Limites Énergétiques
+          
+          - type: entities
+            title: Dépassement de Limites
+            entities:
+              - entity: binary_sensor.chauffe_eau_energy_limit_exceeded
+                name: "💧 Chauffe-eau - Limite énergie"
+              - entity: binary_sensor.lave_linge_energy_limit_exceeded
+                name: "🧺 Lave-linge - Limite énergie"
+              - entity: binary_sensor.four_energy_limit_exceeded
+                name: "🍕 Four - Limite énergie"
+              - entity: binary_sensor.lave_vaisselle_energy_limit_exceeded
+                name: "🍽️ Lave-vaisselle - Limite énergie"
+              - entity: binary_sensor.seche_linge_energy_limit_exceeded
+                name: "👕 Sèche-linge - Limite énergie"
+          
+          - type: entities
+            title: Dépassement de Budget
+            entities:
+              - entity: binary_sensor.chauffe_eau_budget_exceeded
+                name: "💧 Chauffe-eau"
+              - entity: binary_sensor.lave_linge_budget_exceeded
+                name: "🧺 Lave-linge"
+              - entity: binary_sensor.four_budget_exceeded
+                name: "🍕 Four"
+              - entity: binary_sensor.lave_vaisselle_budget_exceeded
+                name: "🍽️ Lave-vaisselle"
+              - entity: binary_sensor.seche_linge_budget_exceeded
+                name: "👕 Sèche-linge"
+
+      # Scheduling
+      - type: vertical-stack
+        cards:
+          - type: markdown
+            content: |
+              ### ⏰ Autorisation d'Usage (Scheduling)
+          
+          - type: entities
+            title: Usage Autorisé Maintenant
+            state_color: true
+            entities:
+              - entity: binary_sensor.chauffe_eau_usage_allowed
+                name: "💧 Chauffe-eau"
+                secondary_info: last-changed
+              - entity: binary_sensor.lave_linge_usage_allowed
+                name: "🧺 Lave-linge"
+                secondary_info: last-changed
+              - entity: binary_sensor.four_usage_allowed
+                name: "🍕 Four"
+                secondary_info: last-changed
+              - entity: binary_sensor.lave_vaisselle_usage_allowed
+                name: "🍽️ Lave-vaisselle"
+                secondary_info: last-changed
+              - entity: binary_sensor.seche_linge_usage_allowed
+                name: "👕 Sèche-linge"
+                secondary_info: last-changed
+
+  # Vue Analyse IA
+  - title: Analyse IA
+    path: ai-analysis
+    icon: mdi:robot
+    cards:
+      - type: markdown
+        content: |
+          ## 🤖 Analyse IA - Smart Appliance Monitor
+          
+          Configuration actuelle:
+          - **AI Task**: `ai_task.google_ai_task`
+          - **Trigger**: Manuel
+          - **Global Price**: `input_number.edf_price_kwh`
+
+      # Configuration globale
+      - type: entities
+        title: État des Analyses IA
+        state_color: true
+        entities:
+          - entity: sensor.chauffe_eau_ai_analysis
+            name: "💧 Chauffe-eau"
+            secondary_info: last-changed
+          - entity: sensor.lave_linge_ai_analysis
+            name: "🧺 Lave-linge"
+            secondary_info: last-changed
+          - entity: sensor.four_ai_analysis
+            name: "🍕 Four"
+            secondary_info: last-changed
+          - entity: sensor.lave_vaisselle_ai_analysis
+            name: "🍽️ Lave-vaisselle"
+            secondary_info: last-changed
+          - entity: sensor.seche_linge_ai_analysis
+            name: "👕 Sèche-linge"
+            secondary_info: last-changed
+          - entity: sensor.ecran_pc_ai_analysis
+            name: "🖥️ Écran PC"
+            secondary_info: last-changed
+          - entity: sensor.bambulab_x1c_ai_analysis
+            name: "🖨️ Imprimante 3D"
+            secondary_info: last-changed
+          - entity: sensor.vmc_ai_analysis
+            name: "💨 VMC"
+            secondary_info: last-changed
+          - entity: sensor.bureau_pc_ai_analysis
+            name: "💻 PC Bureau"
+            secondary_info: last-changed
+
+      - type: entities
+        title: Activer/Désactiver l'Analyse IA
+        entities:
+          - entity: switch.chauffe_eau_ai_analysis
+            name: "💧 Chauffe-eau"
+          - entity: switch.lave_linge_ai_analysis
+            name: "🧺 Lave-linge"
+          - entity: switch.four_ai_analysis
+            name: "🍕 Four"
+          - entity: switch.lave_vaisselle_ai_analysis
+            name: "🍽️ Lave-vaisselle"
+          - entity: switch.seche_linge_ai_analysis
+            name: "👕 Sèche-linge"
+          - entity: switch.ecran_pc_ai_analysis
+            name: "🖥️ Écran PC"
+          - entity: switch.bambulab_x1c_ai_analysis
+            name: "🖨️ Imprimante 3D"
+          - entity: switch.vmc_ai_analysis
+            name: "💨 VMC"
+          - entity: switch.bureau_pc_ai_analysis
+            name: "💻 PC Bureau"
+
+      # 💧 Chauffe-eau
+      - type: horizontal-stack
+        cards:
+          - type: button
+            name: "💧 Pattern"
+            icon: mdi:chart-timeline-variant
+            tap_action:
+              action: call-service
+              service: smart_appliance_monitor.analyze_cycles
+              service_data:
+                entity_id: sensor.chauffe_eau_state
+                analysis_type: pattern
+                cycle_count: 10
+          
+          - type: button
+            name: "💧 Comparative"
+            icon: mdi:compare
+            tap_action:
+              action: call-service
+              service: smart_appliance_monitor.analyze_cycles
+              service_data:
+                entity_id: sensor.chauffe_eau_state
+                analysis_type: comparative
+                cycle_count: 10
+          
+          - type: button
+            name: "💧 Recommendations"
+            icon: mdi:lightbulb-on
+            tap_action:
+              action: call-service
+              service: smart_appliance_monitor.analyze_cycles
+              service_data:
+                entity_id: sensor.chauffe_eau_state
+                analysis_type: recommendations
+                cycle_count: 10
+          
+          - type: button
+            name: "💧 Complète"
+            icon: mdi:chart-box
+            tap_action:
+              action: call-service
+              service: smart_appliance_monitor.analyze_cycles
+              service_data:
+                entity_id: sensor.chauffe_eau_state
+                analysis_type: all
+                cycle_count: 10
+
+      # 🧺 Lave-linge
+      - type: horizontal-stack
+        cards:
+          - type: button
+            name: "🧺 Pattern"
+            icon: mdi:chart-timeline-variant
+            tap_action:
+              action: call-service
+              service: smart_appliance_monitor.analyze_cycles
+              service_data:
+                entity_id: sensor.lave_linge_state
+                analysis_type: pattern
+                cycle_count: 10
+          
+          - type: button
+            name: "🧺 Comparative"
+            icon: mdi:compare
+            tap_action:
+              action: call-service
+              service: smart_appliance_monitor.analyze_cycles
+              service_data:
+                entity_id: sensor.lave_linge_state
+                analysis_type: comparative
+                cycle_count: 10
+          
+          - type: button
+            name: "🧺 Recommendations"
+            icon: mdi:lightbulb-on
+            tap_action:
+              action: call-service
+              service: smart_appliance_monitor.analyze_cycles
+              service_data:
+                entity_id: sensor.lave_linge_state
+                analysis_type: recommendations
+                cycle_count: 10
+          
+          - type: button
+            name: "🧺 Complète"
+            icon: mdi:chart-box
+            tap_action:
+              action: call-service
+              service: smart_appliance_monitor.analyze_cycles
+              service_data:
+                entity_id: sensor.lave_linge_state
+                analysis_type: all
+                cycle_count: 10
+
+      # 🍕 Four
+      - type: horizontal-stack
+        cards:
+          - type: button
+            name: "🍕 Pattern"
+            icon: mdi:chart-timeline-variant
+            tap_action:
+              action: call-service
+              service: smart_appliance_monitor.analyze_cycles
+              service_data:
+                entity_id: sensor.four_state
+                analysis_type: pattern
+                cycle_count: 10
+          
+          - type: button
+            name: "🍕 Comparative"
+            icon: mdi:compare
+            tap_action:
+              action: call-service
+              service: smart_appliance_monitor.analyze_cycles
+              service_data:
+                entity_id: sensor.four_state
+                analysis_type: comparative
+                cycle_count: 10
+          
+          - type: button
+            name: "🍕 Recommendations"
+            icon: mdi:lightbulb-on
+            tap_action:
+              action: call-service
+              service: smart_appliance_monitor.analyze_cycles
+              service_data:
+                entity_id: sensor.four_state
+                analysis_type: recommendations
+                cycle_count: 10
+          
+          - type: button
+            name: "🍕 Complète"
+            icon: mdi:chart-box
+            tap_action:
+              action: call-service
+              service: smart_appliance_monitor.analyze_cycles
+              service_data:
+                entity_id: sensor.four_state
+                analysis_type: all
+                cycle_count: 10
+
+      # 🍽️ Lave-vaisselle
+      - type: horizontal-stack
+        cards:
+          - type: button
+            name: "🍽️ Pattern"
+            icon: mdi:chart-timeline-variant
+            tap_action:
+              action: call-service
+              service: smart_appliance_monitor.analyze_cycles
+              service_data:
+                entity_id: sensor.lave_vaisselle_state
+                analysis_type: pattern
+                cycle_count: 10
+          
+          - type: button
+            name: "🍽️ Comparative"
+            icon: mdi:compare
+            tap_action:
+              action: call-service
+              service: smart_appliance_monitor.analyze_cycles
+              service_data:
+                entity_id: sensor.lave_vaisselle_state
+                analysis_type: comparative
+                cycle_count: 10
+          
+          - type: button
+            name: "🍽️ Recommendations"
+            icon: mdi:lightbulb-on
+            tap_action:
+              action: call-service
+              service: smart_appliance_monitor.analyze_cycles
+              service_data:
+                entity_id: sensor.lave_vaisselle_state
+                analysis_type: recommendations
+                cycle_count: 10
+          
+          - type: button
+            name: "🍽️ Complète"
+            icon: mdi:chart-box
+            tap_action:
+              action: call-service
+              service: smart_appliance_monitor.analyze_cycles
+              service_data:
+                entity_id: sensor.lave_vaisselle_state
+                analysis_type: all
+                cycle_count: 10
+
+      # 👕 Sèche-linge
+      - type: horizontal-stack
+        cards:
+          - type: button
+            name: "👕 Pattern"
+            icon: mdi:chart-timeline-variant
+            tap_action:
+              action: call-service
+              service: smart_appliance_monitor.analyze_cycles
+              service_data:
+                entity_id: sensor.seche_linge_state
+                analysis_type: pattern
+                cycle_count: 10
+          
+          - type: button
+            name: "👕 Comparative"
+            icon: mdi:compare
+            tap_action:
+              action: call-service
+              service: smart_appliance_monitor.analyze_cycles
+              service_data:
+                entity_id: sensor.seche_linge_state
+                analysis_type: comparative
+                cycle_count: 10
+          
+          - type: button
+            name: "👕 Recommendations"
+            icon: mdi:lightbulb-on
+            tap_action:
+              action: call-service
+              service: smart_appliance_monitor.analyze_cycles
+              service_data:
+                entity_id: sensor.seche_linge_state
+                analysis_type: recommendations
+                cycle_count: 10
+          
+          - type: button
+            name: "👕 Complète"
+            icon: mdi:chart-box
+            tap_action:
+              action: call-service
+              service: smart_appliance_monitor.analyze_cycles
+              service_data:
+                entity_id: sensor.seche_linge_state
+                analysis_type: all
+                cycle_count: 10
+
+      # 🖥️ Écran PC
+      - type: horizontal-stack
+        cards:
+          - type: button
+            name: "🖥️ Pattern"
+            icon: mdi:chart-timeline-variant
+            tap_action:
+              action: call-service
+              service: smart_appliance_monitor.analyze_cycles
+              service_data:
+                entity_id: sensor.ecran_pc_state
+                analysis_type: pattern
+                cycle_count: 10
+          
+          - type: button
+            name: "🖥️ Comparative"
+            icon: mdi:compare
+            tap_action:
+              action: call-service
+              service: smart_appliance_monitor.analyze_cycles
+              service_data:
+                entity_id: sensor.ecran_pc_state
+                analysis_type: comparative
+                cycle_count: 10
+          
+          - type: button
+            name: "🖥️ Recommendations"
+            icon: mdi:lightbulb-on
+            tap_action:
+              action: call-service
+              service: smart_appliance_monitor.analyze_cycles
+              service_data:
+                entity_id: sensor.ecran_pc_state
+                analysis_type: recommendations
+                cycle_count: 10
+          
+          - type: button
+            name: "🖥️ Complète"
+            icon: mdi:chart-box
+            tap_action:
+              action: call-service
+              service: smart_appliance_monitor.analyze_cycles
+              service_data:
+                entity_id: sensor.ecran_pc_state
+                analysis_type: all
+                cycle_count: 10
+
+      # 🖨️ Imprimante 3D
+      - type: horizontal-stack
+        cards:
+          - type: button
+            name: "🖨️ Pattern"
+            icon: mdi:chart-timeline-variant
+            tap_action:
+              action: call-service
+              service: smart_appliance_monitor.analyze_cycles
+              service_data:
+                entity_id: sensor.bambulab_x1c_state
+                analysis_type: pattern
+                cycle_count: 10
+          
+          - type: button
+            name: "🖨️ Comparative"
+            icon: mdi:compare
+            tap_action:
+              action: call-service
+              service: smart_appliance_monitor.analyze_cycles
+              service_data:
+                entity_id: sensor.bambulab_x1c_state
+                analysis_type: comparative
+                cycle_count: 10
+          
+          - type: button
+            name: "🖨️ Recommendations"
+            icon: mdi:lightbulb-on
+            tap_action:
+              action: call-service
+              service: smart_appliance_monitor.analyze_cycles
+              service_data:
+                entity_id: sensor.bambulab_x1c_state
+                analysis_type: recommendations
+                cycle_count: 10
+          
+          - type: button
+            name: "🖨️ Complète"
+            icon: mdi:chart-box
+            tap_action:
+              action: call-service
+              service: smart_appliance_monitor.analyze_cycles
+              service_data:
+                entity_id: sensor.bambulab_x1c_state
+                analysis_type: all
+                cycle_count: 10
+
+      # 💨 VMC
+      - type: horizontal-stack
+        cards:
+          - type: button
+            name: "💨 Pattern"
+            icon: mdi:chart-timeline-variant
+            tap_action:
+              action: call-service
+              service: smart_appliance_monitor.analyze_cycles
+              service_data:
+                entity_id: sensor.vmc_state
+                analysis_type: pattern
+                cycle_count: 10
+          
+          - type: button
+            name: "💨 Comparative"
+            icon: mdi:compare
+            tap_action:
+              action: call-service
+              service: smart_appliance_monitor.analyze_cycles
+              service_data:
+                entity_id: sensor.vmc_state
+                analysis_type: comparative
+                cycle_count: 10
+          
+          - type: button
+            name: "💨 Recommendations"
+            icon: mdi:lightbulb-on
+            tap_action:
+              action: call-service
+              service: smart_appliance_monitor.analyze_cycles
+              service_data:
+                entity_id: sensor.vmc_state
+                analysis_type: recommendations
+                cycle_count: 10
+          
+          - type: button
+            name: "💨 Complète"
+            icon: mdi:chart-box
+            tap_action:
+              action: call-service
+              service: smart_appliance_monitor.analyze_cycles
+              service_data:
+                entity_id: sensor.vmc_state
+                analysis_type: all
+                cycle_count: 10
+
+      # 💻 PC Bureau
+      - type: horizontal-stack
+        cards:
+          - type: button
+            name: "💻 Pattern"
+            icon: mdi:chart-timeline-variant
+            tap_action:
+              action: call-service
+              service: smart_appliance_monitor.analyze_cycles
+              service_data:
+                entity_id: sensor.bureau_pc_state
+                analysis_type: pattern
+                cycle_count: 10
+          
+          - type: button
+            name: "💻 Comparative"
+            icon: mdi:compare
+            tap_action:
+              action: call-service
+              service: smart_appliance_monitor.analyze_cycles
+              service_data:
+                entity_id: sensor.bureau_pc_state
+                analysis_type: comparative
+                cycle_count: 10
+          
+          - type: button
+            name: "💻 Recommendations"
+            icon: mdi:lightbulb-on
+            tap_action:
+              action: call-service
+              service: smart_appliance_monitor.analyze_cycles
+              service_data:
+                entity_id: sensor.bureau_pc_state
+                analysis_type: recommendations
+                cycle_count: 10
+          
+          - type: button
+            name: "💻 Complète"
+            icon: mdi:chart-box
+            tap_action:
+              action: call-service
+              service: smart_appliance_monitor.analyze_cycles
+              service_data:
+                entity_id: sensor.bureau_pc_state
+                analysis_type: all
+                cycle_count: 10
+
+      # 💧 Chauffe-eau - Résultats
+      - type: vertical-stack
+        cards:
+          - type: entities
+            title: 💧 Chauffe-eau - Analyse IA
+            entities:
+              - entity: sensor.chauffe_eau_ai_analysis
+                name: État
+                secondary_info: last-changed
+              - type: attribute
+                entity: sensor.chauffe_eau_ai_analysis
+                attribute: last_analysis_date
+                name: Dernière analyse
+          
+          - type: markdown
+            content: >
+              **Résumé:** {{ state_attr('sensor.chauffe_eau_ai_analysis', 'summary') }}
+              
+              
+              **Recommandations:**
+              
+              - {{ state_attr('sensor.chauffe_eau_ai_analysis', 'recommendations') | join('\n\n- ') | default('Aucune recommandation disponible', true) }}
+
+          - type: horizontal-stack
+            cards:
+              - type: custom:mushroom-template-card
+                primary: Économies (kWh)
+                secondary: "{{ state_attr('sensor.chauffe_eau_ai_analysis', 'energy_savings_kwh') }}"
+                icon: mdi:lightning-bolt
+                icon_color: green
+              - type: custom:mushroom-template-card
+                primary: Économies (€)
+                secondary: "{{ state_attr('sensor.chauffe_eau_ai_analysis', 'energy_savings_eur') }} €"
+                icon: mdi:currency-eur
+                icon_color: green
+
+      # 🧺 Lave-linge
+      - type: vertical-stack
+        cards:
+          - type: entities
+            title: 🧺 Lave-linge - Analyse IA
+            entities:
+              - entity: sensor.lave_linge_ai_analysis
+                name: État
+                secondary_info: last-changed
+              - type: attribute
+                entity: sensor.lave_linge_ai_analysis
+                attribute: last_analysis_date
+                name: Dernière analyse
+          
+          - type: markdown
+            content: >
+              **Résumé:** {{ state_attr('sensor.lave_linge_ai_analysis', 'summary') }}
+              
+              
+              **Recommandations:**
+              
+              - {{ state_attr('sensor.lave_linge_ai_analysis', 'recommendations') | join('\n\n- ') | default('Aucune recommandation disponible', true) }}
+
+          - type: horizontal-stack
+            cards:
+              - type: custom:mushroom-template-card
+                primary: Économies (kWh)
+                secondary: "{{ state_attr('sensor.lave_linge_ai_analysis', 'energy_savings_kwh') }}"
+                icon: mdi:lightning-bolt
+                icon_color: green
+              - type: custom:mushroom-template-card
+                primary: Économies (€)
+                secondary: "{{ state_attr('sensor.lave_linge_ai_analysis', 'energy_savings_eur') }} €"
+                icon: mdi:currency-eur
+                icon_color: green
+
+      # 🍕 Four
+      - type: vertical-stack
+        cards:
+          - type: entities
+            title: 🍕 Four - Analyse IA
+            entities:
+              - entity: sensor.four_ai_analysis
+                name: État
+                secondary_info: last-changed
+              - type: attribute
+                entity: sensor.four_ai_analysis
+                attribute: last_analysis_date
+                name: Dernière analyse
+          
+          - type: markdown
+            content: >
+              **Résumé:** {{ state_attr('sensor.four_ai_analysis', 'summary') }}
+              
+              
+              **Recommandations:**
+              
+              - {{ state_attr('sensor.four_ai_analysis', 'recommendations') | join('\n\n- ') | default('Aucune recommandation disponible', true) }}
+
+          - type: horizontal-stack
+            cards:
+              - type: custom:mushroom-template-card
+                primary: Économies (kWh)
+                secondary: "{{ state_attr('sensor.four_ai_analysis', 'energy_savings_kwh') }}"
+                icon: mdi:lightning-bolt
+                icon_color: green
+              - type: custom:mushroom-template-card
+                primary: Économies (€)
+                secondary: "{{ state_attr('sensor.four_ai_analysis', 'energy_savings_eur') }} €"
+                icon: mdi:currency-eur
+                icon_color: green
+
+      # 🍽️ Lave-vaisselle
+      - type: vertical-stack
+        cards:
+          - type: entities
+            title: 🍽️ Lave-vaisselle - Analyse IA
+            entities:
+              - entity: sensor.lave_vaisselle_ai_analysis
+                name: État
+                secondary_info: last-changed
+              - type: attribute
+                entity: sensor.lave_vaisselle_ai_analysis
+                attribute: last_analysis_date
+                name: Dernière analyse
+          
+          - type: markdown
+            content: >
+              **Résumé:** {{ state_attr('sensor.lave_vaisselle_ai_analysis', 'summary') }}
+              
+              
+              **Recommandations:**
+              
+              - {{ state_attr('sensor.lave_vaisselle_ai_analysis', 'recommendations') | join('\n\n- ') | default('Aucune recommandation disponible', true) }}
+
+          - type: horizontal-stack
+            cards:
+              - type: custom:mushroom-template-card
+                primary: Économies (kWh)
+                secondary: "{{ state_attr('sensor.lave_vaisselle_ai_analysis', 'energy_savings_kwh') }}"
+                icon: mdi:lightning-bolt
+                icon_color: green
+              - type: custom:mushroom-template-card
+                primary: Économies (€)
+                secondary: "{{ state_attr('sensor.lave_vaisselle_ai_analysis', 'energy_savings_eur') }} €"
+                icon: mdi:currency-eur
+                icon_color: green
+
+      # 👕 Sèche-linge
+      - type: vertical-stack
+        cards:
+          - type: entities
+            title: 👕 Sèche-linge - Analyse IA
+            entities:
+              - entity: sensor.seche_linge_ai_analysis
+                name: État
+                secondary_info: last-changed
+              - type: attribute
+                entity: sensor.seche_linge_ai_analysis
+                attribute: last_analysis_date
+                name: Dernière analyse
+          
+          - type: markdown
+            content: >
+              **Résumé:** {{ state_attr('sensor.seche_linge_ai_analysis', 'summary') }}
+              
+              
+              **Recommandations:**
+              
+              - {{ state_attr('sensor.seche_linge_ai_analysis', 'recommendations') | join('\n\n- ') | default('Aucune recommandation disponible', true) }}
+
+          - type: horizontal-stack
+            cards:
+              - type: custom:mushroom-template-card
+                primary: Économies (kWh)
+                secondary: "{{ state_attr('sensor.seche_linge_ai_analysis', 'energy_savings_kwh') }}"
+                icon: mdi:lightning-bolt
+                icon_color: green
+              - type: custom:mushroom-template-card
+                primary: Économies (€)
+                secondary: "{{ state_attr('sensor.seche_linge_ai_analysis', 'energy_savings_eur') }} €"
+                icon: mdi:currency-eur
+                icon_color: green
+
+      # 🖥️ Écran PC
+      - type: vertical-stack
+        cards:
+          - type: entities
+            title: 🖥️ Écran PC - Analyse IA
+            entities:
+              - entity: sensor.ecran_pc_ai_analysis
+                name: État
+                secondary_info: last-changed
+              - type: attribute
+                entity: sensor.ecran_pc_ai_analysis
+                attribute: last_analysis_date
+                name: Dernière analyse
+          
+          - type: markdown
+            content: >
+              **Résumé:** {{ state_attr('sensor.ecran_pc_ai_analysis', 'summary') }}
+              
+              
+              **Recommandations:**
+              
+              - {{ state_attr('sensor.ecran_pc_ai_analysis', 'recommendations') | join('\n\n- ') | default('Aucune recommandation disponible', true) }}
+
+          - type: horizontal-stack
+            cards:
+              - type: custom:mushroom-template-card
+                primary: Économies (kWh)
+                secondary: "{{ state_attr('sensor.ecran_pc_ai_analysis', 'energy_savings_kwh') }}"
+                icon: mdi:lightning-bolt
+                icon_color: green
+              - type: custom:mushroom-template-card
+                primary: Économies (€)
+                secondary: "{{ state_attr('sensor.ecran_pc_ai_analysis', 'energy_savings_eur') }} €"
+                icon: mdi:currency-eur
+                icon_color: green
+
+      # 🖨️ Imprimante 3D
+      - type: vertical-stack
+        cards:
+          - type: entities
+            title: 🖨️ Imprimante 3D - Analyse IA
+            entities:
+              - entity: sensor.bambulab_x1c_ai_analysis
+                name: État
+                secondary_info: last-changed
+              - type: attribute
+                entity: sensor.bambulab_x1c_ai_analysis
+                attribute: last_analysis_date
+                name: Dernière analyse
+          
+          - type: markdown
+            content: >
+              **Résumé:** {{ state_attr('sensor.bambulab_x1c_ai_analysis', 'summary') }}
+              
+              
+              **Recommandations:**
+              
+              - {{ state_attr('sensor.bambulab_x1c_ai_analysis', 'recommendations') | join('\n\n- ') | default('Aucune recommandation disponible', true) }}
+
+          - type: horizontal-stack
+            cards:
+              - type: custom:mushroom-template-card
+                primary: Économies (kWh)
+                secondary: "{{ state_attr('sensor.bambulab_x1c_ai_analysis', 'energy_savings_kwh') }}"
+                icon: mdi:lightning-bolt
+                icon_color: green
+              - type: custom:mushroom-template-card
+                primary: Économies (€)
+                secondary: "{{ state_attr('sensor.bambulab_x1c_ai_analysis', 'energy_savings_eur') }} €"
+                icon: mdi:currency-eur
+                icon_color: green
+
+      # 💨 VMC
+      - type: vertical-stack
+        cards:
+          - type: entities
+            title: 💨 VMC - Analyse IA
+            entities:
+              - entity: sensor.vmc_ai_analysis
+                name: État
+                secondary_info: last-changed
+              - type: attribute
+                entity: sensor.vmc_ai_analysis
+                attribute: last_analysis_date
+                name: Dernière analyse
+          
+          - type: markdown
+            content: >
+              **Résumé:** {{ state_attr('sensor.vmc_ai_analysis', 'summary') }}
+              
+              
+              **Recommandations:**
+              
+              - {{ state_attr('sensor.vmc_ai_analysis', 'recommendations') | join('\n\n- ') | default('Aucune recommandation disponible', true) }}
+
+          - type: horizontal-stack
+            cards:
+              - type: custom:mushroom-template-card
+                primary: Économies (kWh)
+                secondary: "{{ state_attr('sensor.vmc_ai_analysis', 'energy_savings_kwh') }}"
+                icon: mdi:lightning-bolt
+                icon_color: green
+              - type: custom:mushroom-template-card
+                primary: Économies (€)
+                secondary: "{{ state_attr('sensor.vmc_ai_analysis', 'energy_savings_eur') }} €"
+                icon: mdi:currency-eur
+                icon_color: green
+
+      # 💻 PC Bureau
+      - type: vertical-stack
+        cards:
+          - type: entities
+            title: 💻 PC Bureau - Analyse IA
+            entities:
+              - entity: sensor.bureau_pc_ai_analysis
+                name: État
+                secondary_info: last-changed
+              - type: attribute
+                entity: sensor.bureau_pc_ai_analysis
+                attribute: last_analysis_date
+                name: Dernière analyse
+          
+          - type: markdown
+            content: >
+              **Résumé:** {{ state_attr('sensor.bureau_pc_ai_analysis', 'summary') }}
+              
+              
+              **Recommandations:**
+              
+              - {{ state_attr('sensor.bureau_pc_ai_analysis', 'recommendations') | join('\n\n- ') | default('Aucune recommandation disponible', true) }}
+
+          - type: horizontal-stack
+            cards:
+              - type: custom:mushroom-template-card
+                primary: Économies (kWh)
+                secondary: "{{ state_attr('sensor.bureau_pc_ai_analysis', 'energy_savings_kwh') }}"
+                icon: mdi:lightning-bolt
+                icon_color: green
+              - type: custom:mushroom-template-card
+                primary: Économies (€)
+                secondary: "{{ state_attr('sensor.bureau_pc_ai_analysis', 'energy_savings_eur') }} €"
+                icon: mdi:currency-eur
+                icon_color: green
+
+  # Vue Export & Services
+  - title: Export & Services
+    path: export-services
+    icon: mdi:download-box
+    cards:
+      - type: markdown
+        content: |
+          ## 📥 Export de Données & Services
+
+      # Export CSV/JSON
+      - type: vertical-stack
+        cards:
+          - type: markdown
+            content: |
+              ### 📊 Export de Données
+          
+          - type: custom:mushroom-title-card
+            title: Export CSV
+          
+          - type: horizontal-stack
+            cards:
+              - type: button
+                name: Chauffe-eau
+                icon: mdi:file-delimited
+                tap_action:
+                  action: call-service
+                  service: smart_appliance_monitor.export_to_csv
+                  service_data:
+                    entity_id: sensor.chauffe_eau_state
+                    file_path: /config/exports/chauffe_eau.csv
+              
+              - type: button
+                name: Lave-linge
+                icon: mdi:file-delimited
+                tap_action:
+                  action: call-service
+                  service: smart_appliance_monitor.export_to_csv
+                  service_data:
+                    entity_id: sensor.lave_linge_state
+                    file_path: /config/exports/lave_linge.csv
+              
+              - type: button
+                name: Four
+                icon: mdi:file-delimited
+                tap_action:
+                  action: call-service
+                  service: smart_appliance_monitor.export_to_csv
+                  service_data:
+                    entity_id: sensor.four_state
+                    file_path: /config/exports/four.csv
+          
+          - type: horizontal-stack
+            cards:
+              - type: button
+                name: Lave-vaisselle
+                icon: mdi:file-delimited
+                tap_action:
+                  action: call-service
+                  service: smart_appliance_monitor.export_to_csv
+                  service_data:
+                    entity_id: sensor.lave_vaisselle_state
+                    file_path: /config/exports/lave_vaisselle.csv
+              
+              - type: button
+                name: Sèche-linge
+                icon: mdi:file-delimited
+                tap_action:
+                  action: call-service
+                  service: smart_appliance_monitor.export_to_csv
+                  service_data:
+                    entity_id: sensor.seche_linge_state
+                    file_path: /config/exports/seche_linge.csv
+          
+          - type: custom:mushroom-title-card
+            title: Export JSON
+          
+          - type: horizontal-stack
+            cards:
+              - type: button
+                name: Chauffe-eau
+                icon: mdi:code-json
+                tap_action:
+                  action: call-service
+                  service: smart_appliance_monitor.export_to_json
+                  service_data:
+                    entity_id: sensor.chauffe_eau_state
+                    file_path: /config/exports/chauffe_eau.json
+              
+              - type: button
+                name: Lave-linge
+                icon: mdi:code-json
+                tap_action:
+                  action: call-service
+                  service: smart_appliance_monitor.export_to_json
+                  service_data:
+                    entity_id: sensor.lave_linge_state
+                    file_path: /config/exports/lave_linge.json
+              
+              - type: button
+                name: Four
+                icon: mdi:code-json
+                tap_action:
+                  action: call-service
+                  service: smart_appliance_monitor.export_to_json
+                  service_data:
+                    entity_id: sensor.four_state
+                    file_path: /config/exports/four.json
+          
+          - type: horizontal-stack
+            cards:
+              - type: button
+                name: Lave-vaisselle
+                icon: mdi:code-json
+                tap_action:
+                  action: call-service
+                  service: smart_appliance_monitor.export_to_json
+                  service_data:
+                    entity_id: sensor.lave_vaisselle_state
+                    file_path: /config/exports/lave_vaisselle.json
+              
+              - type: button
+                name: Sèche-linge
+                icon: mdi:code-json
+                tap_action:
+                  action: call-service
+                  service: smart_appliance_monitor.export_to_json
+                  service_data:
+                    entity_id: sensor.seche_linge_state
+                    file_path: /config/exports/seche_linge.json
+
+      # Reset statistiques
+      - type: vertical-stack
+        cards:
+          - type: markdown
+            content: |
+              ### 🔄 Reset Statistiques
+          
+          - type: entities
+            title: Boutons de Reset
+            entities:
+              - entity: button.chauffe_eau_reset_stats
+                name: "💧 Chauffe-eau"
+              - entity: button.lave_linge_reset_stats
+                name: "🧺 Lave-linge"
+              - entity: button.four_reset_stats
+                name: "🍕 Four"
+              - entity: button.lave_vaisselle_reset_stats
+                name: "🍽️ Lave-vaisselle"
+              - entity: button.seche_linge_reset_stats
+                name: "👕 Sèche-linge"
+              - entity: button.ecran_pc_reset_stats
+                name: "🖥️ Écran PC"
+              - entity: button.bambulab_x1c_reset_stats
+                name: "🖨️ Imprimante 3D"
+              - entity: button.vmc_reset_stats
+                name: "💨 VMC"
+              - entity: button.bureau_pc_reset_stats
+                name: "💻 PC Bureau"
+
+      # Services avancés
+      - type: vertical-stack
+        cards:
+          - type: markdown
+            content: |
+              ### ⚙️ Services Avancés
+          
+          - type: horizontal-stack
+            cards:
+              - type: button
+                name: Sync Energy Dashboard
+                icon: mdi:sync
+                tap_action:
+                  action: call-service
+                  service: smart_appliance_monitor.sync_with_energy_dashboard
+              
+              - type: button
+                name: Get Energy Data (Today)
+                icon: mdi:database-export
+                tap_action:
+                  action: call-service
+                  service: smart_appliance_monitor.get_energy_data
+                  service_data:
+                    period: today
+              
+              - type: button
+                name: Get Energy Data (Month)
+                icon: mdi:database-export
+                tap_action:
+                  action: call-service
+                  service: smart_appliance_monitor.get_energy_data
+                  service_data:
+                    period: month
+
+      # Historique des cycles
+      - type: vertical-stack
+        cards:
+          - type: markdown
+            content: |
+              ### 📜 Historique des Derniers Cycles
+          
+          - type: entities
+            title: Chauffe-eau - Dernier Cycle
+            entities:
+              - entity: sensor.chauffe_eau_last_cycle_duration
+                name: Durée
+              - entity: sensor.chauffe_eau_last_cycle_energy
+                name: Énergie
+              - entity: sensor.chauffe_eau_last_cycle_cost
+                name: Coût
+          
+          - type: entities
+            title: Lave-linge - Dernier Cycle
+            entities:
+              - entity: sensor.lave_linge_last_cycle_duration
+                name: Durée
+              - entity: sensor.lave_linge_last_cycle_energy
+                name: Énergie
+              - entity: sensor.lave_linge_last_cycle_cost
+                name: Coût
+          
+          - type: entities
+            title: Four - Dernier Cycle
+            entities:
+              - entity: sensor.four_last_cycle_duration
+                name: Durée
+              - entity: sensor.four_last_cycle_energy
+                name: Énergie
+              - entity: sensor.four_last_cycle_cost
+                name: Coût
+          
+          - type: entities
+            title: Lave-vaisselle - Dernier Cycle
+            entities:
+              - entity: sensor.lave_vaisselle_last_cycle_duration
+                name: Durée
+              - entity: sensor.lave_vaisselle_last_cycle_energy
+                name: Énergie
+              - entity: sensor.lave_vaisselle_last_cycle_cost
+                name: Coût
+          
+          - type: entities
+            title: Sèche-linge - Dernier Cycle
+            entities:
+              - entity: sensor.seche_linge_last_cycle_duration
+                name: Durée
+              - entity: sensor.seche_linge_last_cycle_energy
+                name: Énergie
+              - entity: sensor.seche_linge_last_cycle_cost
+                name: Coût
+
+  # Vue Gestion Énergie Avancée
+  - title: Gestion Énergie
+    path: advanced-energy
+    icon: mdi:lightning-bolt-circle
+    cards:
+      - type: markdown
+        content: |
+          ## ⚡ Gestion Énergétique Avancée
+
+      # Energy Management
+      - type: vertical-stack
+        cards:
+          - type: markdown
+            content: |
+              ### 📊 Energy Management
+          
+          - type: entities
+            title: Switches Energy Limits
+            entities:
+              - entity: switch.chauffe_eau_energy_limits
+                name: "💧 Chauffe-eau"
+              - entity: switch.lave_linge_energy_limits
+                name: "🧺 Lave-linge"
+              - entity: switch.four_energy_limits
+                name: "🍕 Four"
+              - entity: switch.lave_vaisselle_energy_limits
+                name: "🍽️ Lave-vaisselle"
+              - entity: switch.seche_linge_energy_limits
+                name: "👕 Sèche-linge"
+          
+          - type: horizontal-stack
+            cards:
+              - type: gauge
+                entity: sensor.chauffe_eau_monthly_energy
+                name: Chauffe-eau (Mois)
+                min: 0
+                max: 100
+                unit: kWh
+                needle: true
+                severity:
+                  green: 0
+                  yellow: 60
+                  red: 80
+              
+              - type: gauge
+                entity: sensor.lave_linge_monthly_energy
+                name: Lave-linge (Mois)
+                min: 0
+                max: 50
+                unit: kWh
+                needle: true
+                severity:
+                  green: 0
+                  yellow: 30
+                  red: 40
+              
+              - type: gauge
+                entity: sensor.four_monthly_energy
+                name: Four (Mois)
+                min: 0
+                max: 30
+                unit: kWh
+                needle: true
+                severity:
+                  green: 0
+                  yellow: 20
+                  red: 25
+          
+          - type: entities
+            title: Énergie Quotidienne
+            entities:
+              - entity: sensor.chauffe_eau_daily_energy
+                name: "💧 Chauffe-eau"
+              - entity: sensor.lave_linge_daily_energy
+                name: "🧺 Lave-linge"
+              - entity: sensor.four_daily_energy
+                name: "🍕 Four"
+              - entity: sensor.lave_vaisselle_daily_energy
+                name: "🍽️ Lave-vaisselle"
+              - entity: sensor.seche_linge_daily_energy
+                name: "👕 Sèche-linge"
+          
+          - type: entities
+            title: Énergie Mensuelle
+            entities:
+              - entity: sensor.chauffe_eau_monthly_energy
+                name: "💧 Chauffe-eau"
+              - entity: sensor.lave_linge_monthly_energy
+                name: "🧺 Lave-linge"
+              - entity: sensor.four_monthly_energy
+                name: "🍕 Four"
+              - entity: sensor.lave_vaisselle_monthly_energy
+                name: "🍽️ Lave-vaisselle"
+              - entity: sensor.seche_linge_monthly_energy
+                name: "👕 Sèche-linge"
+
+      # Nombre de cycles quotidiens
+      - type: vertical-stack
+        cards:
+          - type: markdown
+            content: |
+              ### 🔄 Cycles Quotidiens
+          
+          - type: custom:bar-card
+            entities:
+              - entity: sensor.chauffe_eau_daily_cycles
+                name: Chauffe-eau
+                icon: mdi:water-boiler
+              - entity: sensor.lave_linge_daily_cycles
+                name: Lave-linge
+                icon: mdi:washing-machine
+              - entity: sensor.four_daily_cycles
+                name: Four
+                icon: mdi:stove
+              - entity: sensor.lave_vaisselle_daily_cycles
+                name: Lave-vaisselle
+                icon: mdi:dishwasher
+              - entity: sensor.seche_linge_daily_cycles
+                name: Sèche-linge
+                icon: mdi:tumble-dryer
+            max: 10
+            positions:
+              icon: outside
+              name: inside
+              value: inside
+
+      # Scheduling
+      - type: vertical-stack
+        cards:
+          - type: markdown
+            content: |
+              ### ⏰ Scheduling & Horaires
+          
+          - type: entities
+            title: Switches Scheduling
+            entities:
+              - entity: switch.chauffe_eau_scheduling
+                name: "💧 Chauffe-eau"
+              - entity: switch.lave_linge_scheduling
+                name: "🧺 Lave-linge"
+              - entity: switch.four_scheduling
+                name: "🍕 Four"
+              - entity: switch.lave_vaisselle_scheduling
+                name: "🍽️ Lave-vaisselle"
+              - entity: switch.seche_linge_scheduling
+                name: "👕 Sèche-linge"
+          
+          - type: entities
+            title: Plages Horaires Autorisées
+            entities:
+              - entity: binary_sensor.chauffe_eau_usage_allowed
+                name: "💧 Chauffe-eau"
+                type: custom:multiple-entity-row
+                entities:
+                  - attribute: allowed_start
+                    name: Début
+                  - attribute: allowed_end
+                    name: Fin
+              
+              - entity: binary_sensor.lave_linge_usage_allowed
+                name: "🧺 Lave-linge"
+                type: custom:multiple-entity-row
+                entities:
+                  - attribute: allowed_start
+                    name: Début
+                  - attribute: allowed_end
+                    name: Fin
+              
+              - entity: binary_sensor.four_usage_allowed
+                name: "🍕 Four"
+                type: custom:multiple-entity-row
+                entities:
+                  - attribute: allowed_start
+                    name: Début
+                  - attribute: allowed_end
+                    name: Fin
+
+      # Auto-Shutdown
+      - type: vertical-stack
+        cards:
+          - type: markdown
+            content: |
+              ### 🔌 Auto-Shutdown
+          
+          - type: entities
+            title: Switches Auto-Shutdown
+            entities:
+              - entity: switch.chauffe_eau_auto_shutdown
+                name: "💧 Chauffe-eau"
+              - entity: switch.lave_linge_auto_shutdown
+                name: "🧺 Lave-linge"
+              - entity: switch.four_auto_shutdown
+                name: "🍕 Four"
+              - entity: switch.lave_vaisselle_auto_shutdown
+                name: "🍽️ Lave-vaisselle"
+              - entity: switch.seche_linge_auto_shutdown
+                name: "👕 Sèche-linge"
+
+      # Budget et dépassements
+      - type: vertical-stack
+        cards:
+          - type: markdown
+            content: |
+              ### 💰 Budgets & Dépassements
+          
+          - type: horizontal-stack
+            cards:
+              - type: gauge
+                entity: sensor.chauffe_eau_monthly_cost
+                name: Budget Chauffe-eau
+                min: 0
+                max: 50
+                unit: "€"
+                needle: true
+                severity:
+                  green: 0
+                  yellow: 35
+                  red: 45
+              
+              - type: gauge
+                entity: sensor.lave_linge_monthly_cost
+                name: Budget Lave-linge
+                min: 0
+                max: 20
+                unit: "€"
+                needle: true
+                severity:
+                  green: 0
+                  yellow: 15
+                  red: 18
+              
+              - type: gauge
+                entity: sensor.four_monthly_cost
+                name: Budget Four
+                min: 0
+                max: 15
+                unit: "€"
+                needle: true
+                severity:
+                  green: 0
+                  yellow: 10
+                  red: 13
+          
+          - type: entities
+            title: Alertes de Dépassement
+            state_color: true
+            entities:
+              - entity: binary_sensor.chauffe_eau_energy_limit_exceeded
+                name: "💧 Chauffe-eau - Limite énergie"
+              - entity: binary_sensor.lave_linge_energy_limit_exceeded
+                name: "🧺 Lave-linge - Limite énergie"
+              - entity: binary_sensor.four_energy_limit_exceeded
+                name: "🍕 Four - Limite énergie"
+              - entity: binary_sensor.lave_vaisselle_energy_limit_exceeded
+                name: "🍽️ Lave-vaisselle - Limite énergie"
+              - entity: binary_sensor.seche_linge_energy_limit_exceeded
+                name: "👕 Sèche-linge - Limite énergie"
+          
+          - type: entities
+            title: Dépassement de Budget
+            state_color: true
+            entities:
+              - entity: binary_sensor.chauffe_eau_budget_exceeded
+                name: "💧 Chauffe-eau"
+              - entity: binary_sensor.lave_linge_budget_exceeded
+                name: "🧺 Lave-linge"
+              - entity: binary_sensor.four_budget_exceeded
+                name: "🍕 Four"
+              - entity: binary_sensor.lave_vaisselle_budget_exceeded
+                name: "🍽️ Lave-vaisselle"
+              - entity: binary_sensor.seche_linge_budget_exceeded
+                name: "👕 Sèche-linge"
+
+      # Graphique consommation mensuelle
+      - type: custom:apexcharts-card
+        header:
+          show: true
+          title: 📊 Évolution Consommation Mensuelle
+          show_states: true
+        graph_span: 30d
+        all_series_config:
+          type: line
+          stroke_width: 2
+          curve: smooth
+        series:
+          - entity: sensor.chauffe_eau_monthly_energy
+            name: Chauffe-eau
+          - entity: sensor.lave_linge_monthly_energy
+            name: Lave-linge
+          - entity: sensor.four_monthly_energy
+            name: Four
+          - entity: sensor.lave_vaisselle_monthly_energy
+            name: Lave-vaisselle
+          - entity: sensor.seche_linge_monthly_energy
+            name: Sèche-linge
+

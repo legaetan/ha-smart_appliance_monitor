@@ -182,7 +182,6 @@ class SmartApplianceCycleCostSensor(SmartApplianceEntity, SensorEntity):
     """Sensor pour le coût du cycle en cours."""
 
     _attr_device_class = SensorDeviceClass.MONETARY
-    _attr_native_unit_of_measurement = "EUR"
     _attr_state_class = SensorStateClass.TOTAL
 
     def __init__(self, coordinator: SmartApplianceCoordinator) -> None:
@@ -195,10 +194,12 @@ class SmartApplianceCycleCostSensor(SmartApplianceEntity, SensorEntity):
         
         self._attr_translation_key = entity_id
         self._attr_name = "Coût de session" if is_session_based else "Coût du cycle"
+        # Utiliser la devise dynamique
+        self._attr_native_unit_of_measurement = coordinator.currency
     
     @property
     def native_value(self) -> float:
-        """Return the cost of the current cycle in EUR."""
+        """Return the cost of the current cycle."""
         if self.coordinator.data.get("state") != STATE_RUNNING:
             return 0
         
@@ -210,13 +211,23 @@ class SmartApplianceCycleCostSensor(SmartApplianceEntity, SensorEntity):
     @property
     def icon(self) -> str:
         """Return the icon to use in the frontend."""
-        return "mdi:currency-eur"
+        # Icône dynamique selon la devise
+        currency_icons = {
+            "EUR": "mdi:currency-eur",
+            "USD": "mdi:currency-usd",
+            "GBP": "mdi:currency-gbp",
+            "CHF": "mdi:currency-chf",
+            "JPY": "mdi:currency-jpy",
+            "CNY": "mdi:currency-cny",
+        }
+        return currency_icons.get(self.coordinator.currency, "mdi:cash")
     
     @property
     def extra_state_attributes(self) -> dict[str, Any]:
         """Return additional state attributes."""
         return {
             "price_kwh": self.coordinator.price_kwh,
+            "currency": self.coordinator.currency,
         }
 
 
@@ -304,7 +315,6 @@ class SmartApplianceLastCycleCostSensor(SmartApplianceEntity, SensorEntity):
     """Sensor pour le coût du dernier cycle."""
 
     _attr_device_class = SensorDeviceClass.MONETARY
-    _attr_native_unit_of_measurement = "EUR"
     _attr_state_class = SensorStateClass.TOTAL
 
     def __init__(self, coordinator: SmartApplianceCoordinator) -> None:
@@ -317,10 +327,12 @@ class SmartApplianceLastCycleCostSensor(SmartApplianceEntity, SensorEntity):
         
         self._attr_translation_key = entity_id
         self._attr_name = "Coût de la dernière session" if is_session_based else "Coût du dernier cycle"
+        # Utiliser la devise dynamique
+        self._attr_native_unit_of_measurement = coordinator.currency
     
     @property
     def native_value(self) -> float | None:
-        """Return the cost of the last cycle in EUR."""
+        """Return the cost of the last cycle."""
         last_cycle = self.coordinator.data.get("last_cycle")
         if not last_cycle:
             return None
@@ -332,7 +344,16 @@ class SmartApplianceLastCycleCostSensor(SmartApplianceEntity, SensorEntity):
     @property
     def icon(self) -> str:
         """Return the icon to use in the frontend."""
-        return "mdi:currency-eur"
+        # Icône dynamique selon la devise
+        currency_icons = {
+            "EUR": "mdi:currency-eur",
+            "USD": "mdi:currency-usd",
+            "GBP": "mdi:currency-gbp",
+            "CHF": "mdi:currency-chf",
+            "JPY": "mdi:currency-jpy",
+            "CNY": "mdi:currency-cny",
+        }
+        return currency_icons.get(self.coordinator.currency, "mdi:cash")
 
 
 class SmartApplianceDailyCyclesSensor(SmartApplianceEntity, SensorEntity):
@@ -376,7 +397,6 @@ class SmartApplianceDailyCostSensor(SmartApplianceEntity, SensorEntity):
     """Sensor pour le coût journalier."""
 
     _attr_device_class = SensorDeviceClass.MONETARY
-    _attr_native_unit_of_measurement = "EUR"
     _attr_state_class = SensorStateClass.TOTAL
     _attr_translation_key = "daily_cost"
 
@@ -384,17 +404,28 @@ class SmartApplianceDailyCostSensor(SmartApplianceEntity, SensorEntity):
         """Initialize the sensor."""
         super().__init__(coordinator, "daily_cost")
         self._attr_name = "Coût du jour"
+        # Utiliser la devise dynamique
+        self._attr_native_unit_of_measurement = coordinator.currency
     
     @property
     def native_value(self) -> float:
-        """Return the cost today in EUR."""
+        """Return the cost today."""
         daily_stats = self.coordinator.data.get("daily_stats", {})
         return round(daily_stats.get("total_cost", 0), 2)
     
     @property
     def icon(self) -> str:
         """Return the icon to use in the frontend."""
-        return "mdi:cash"
+        # Icône dynamique selon la devise
+        currency_icons = {
+            "EUR": "mdi:currency-eur",
+            "USD": "mdi:currency-usd",
+            "GBP": "mdi:currency-gbp",
+            "CHF": "mdi:currency-chf",
+            "JPY": "mdi:currency-jpy",
+            "CNY": "mdi:currency-cny",
+        }
+        return currency_icons.get(self.coordinator.currency, "mdi:cash")
     
     @property
     def extra_state_attributes(self) -> dict[str, Any]:
@@ -403,6 +434,7 @@ class SmartApplianceDailyCostSensor(SmartApplianceEntity, SensorEntity):
         return {
             "date": daily_stats.get("date"),
             "cycles": daily_stats.get("cycles", 0),
+            "currency": self.coordinator.currency,
         }
 
 
@@ -445,7 +477,6 @@ class SmartApplianceMonthlyCostSensor(SmartApplianceEntity, SensorEntity):
     """Sensor pour le coût mensuel."""
 
     _attr_device_class = SensorDeviceClass.MONETARY
-    _attr_native_unit_of_measurement = "EUR"
     _attr_state_class = SensorStateClass.TOTAL
     _attr_translation_key = "monthly_cost"
 
@@ -453,17 +484,30 @@ class SmartApplianceMonthlyCostSensor(SmartApplianceEntity, SensorEntity):
         """Initialize the sensor."""
         super().__init__(coordinator, "monthly_cost")
         self._attr_name = "Coût du mois"
+        # Utiliser la devise dynamique
+        self._attr_native_unit_of_measurement = coordinator.currency
     
     @property
     def native_value(self) -> float:
-        """Return the cost this month in EUR."""
+        """Return the cost this month."""
         monthly_stats = self.coordinator.data.get("monthly_stats", {})
         return round(monthly_stats.get("total_cost", 0), 2)
     
     @property
     def icon(self) -> str:
         """Return the icon to use in the frontend."""
-        return "mdi:cash-multiple"
+        # Icône dynamique selon la devise
+        currency_icons = {
+            "EUR": "mdi:currency-eur",
+            "USD": "mdi:currency-usd",
+            "GBP": "mdi:currency-gbp",
+            "CHF": "mdi:currency-chf",
+            "JPY": "mdi:currency-jpy",
+            "CNY": "mdi:currency-cny",
+        }
+        # cash-multiple pour montant mensuel
+        base_icon = currency_icons.get(self.coordinator.currency, "mdi:cash")
+        return base_icon.replace("currency-", "currency-") if "currency" in base_icon else "mdi:cash-multiple"
     
     @property
     def extra_state_attributes(self) -> dict[str, Any]:
@@ -473,6 +517,7 @@ class SmartApplianceMonthlyCostSensor(SmartApplianceEntity, SensorEntity):
             "year": monthly_stats.get("year"),
             "month": monthly_stats.get("month"),
             "total_energy": round(monthly_stats.get("total_energy", 0), 3),
+            "currency": self.coordinator.currency,
         }
 
 

@@ -16,7 +16,6 @@ from .const import (
     CYCLE_ANALYSIS_STRUCTURE,
     ENERGY_DASHBOARD_ANALYSIS_STRUCTURE,
     AI_ANALYSIS_TYPE_PATTERN,
-    AI_ANALYSIS_TYPE_COMPARATIVE,
     AI_ANALYSIS_TYPE_RECOMMENDATIONS,
     AI_ANALYSIS_TYPE_ALL,
 )
@@ -188,30 +187,184 @@ class SmartApplianceAIClient:
         data: dict[str, Any],
         analysis_type: str,
     ) -> str:
-        """Build the prompt for cycle analysis.
+        """Build the prompt for cycle analysis based on type.
         
         Args:
             appliance_name: Name of the appliance
             appliance_type: Type of the appliance
             data: Export data
-            analysis_type: Type of analysis
+            analysis_type: Type of analysis (pattern, recommendations, all)
             
         Returns:
             Formatted prompt string
         """
+        if analysis_type == AI_ANALYSIS_TYPE_PATTERN:
+            return self._build_pattern_prompt(appliance_name, appliance_type, data)
+        elif analysis_type == AI_ANALYSIS_TYPE_RECOMMENDATIONS:
+            return self._build_recommendations_prompt(appliance_name, appliance_type, data)
+        elif analysis_type == AI_ANALYSIS_TYPE_ALL:
+            # Combine both prompts
+            return self._build_combined_prompt(appliance_name, appliance_type, data)
+        else:
+            # Default to all
+            return self._build_combined_prompt(appliance_name, appliance_type, data)
+    
+    def _build_pattern_prompt(
+        self,
+        appliance_name: str,
+        appliance_type: str,
+        data: dict[str, Any],
+    ) -> str:
+        """Build prompt for pattern analysis only.
+        
+        Args:
+            appliance_name: Name of the appliance
+            appliance_type: Type of the appliance
+            data: Export data
+            
+        Returns:
+            Formatted prompt string
+        """
+        currency = data.get("pricing_info", {}).get("currency", "EUR")
+        
         prompt_parts = [
-            f"Analyze the energy data for the appliance '{appliance_name}' ({appliance_type}).",
-            "Provide a concise, structured report.",
+            f"Analyze USAGE PATTERNS for the appliance '{appliance_name}' ({appliance_type}).",
             f"The response MUST be in {self.language}.",
+            "",
+            "## Your Task - PATTERN ANALYSIS ONLY",
+            "Focus exclusively on usage patterns:",
+            "- Identify most frequent usage hours and days of the week",
+            "- Detect usage patterns and trends over time",
+            "- Evaluate potential for shifting usage to different time periods",
+            "- Suggest optimal scheduling opportunities",
+            "",
+            f"Currency: {currency}",
             "",
             "## Data to Analyze",
             json.dumps(data, indent=2),
-            "",
-            "## Your Task",
-            "Based on the data, provide a summary, status, recommendations, potential savings, optimal hours, and key insights.",
         ]
         
+        # Add tariff context if peak/off-peak detected
+        if data.get("pricing_info", {}).get("has_tariff_system"):
+            prompt_parts.append("")
+            prompt_parts.append(self._add_tariff_context(data))
+        
         return "\n".join(prompt_parts)
+    
+    def _build_recommendations_prompt(
+        self,
+        appliance_name: str,
+        appliance_type: str,
+        data: dict[str, Any],
+    ) -> str:
+        """Build prompt for recommendations only.
+        
+        Args:
+            appliance_name: Name of the appliance
+            appliance_type: Type of the appliance
+            data: Export data
+            
+        Returns:
+            Formatted prompt string
+        """
+        currency = data.get("pricing_info", {}).get("currency", "EUR")
+        
+        prompt_parts = [
+            f"Provide CONCRETE RECOMMENDATIONS to optimize the appliance '{appliance_name}' ({appliance_type}).",
+            f"The response MUST be in {self.language}.",
+            "",
+            "## Your Task - RECOMMENDATIONS ONLY",
+            "Provide actionable recommendations:",
+            "1. When to use the appliance (optimal timing based on patterns)",
+            "2. How to reduce energy consumption (settings, eco modes, maintenance)",
+            "3. Optimal usage frequency and best practices",
+            "",
+            f"Appliance type: {appliance_type}",
+            f"Currency: {currency}",
+            "",
+            "## Data to Analyze",
+            json.dumps(data, indent=2),
+        ]
+        
+        # Add tariff-specific recommendations if applicable
+        if data.get("pricing_info", {}).get("has_tariff_system"):
+            prompt_parts.append("")
+            prompt_parts.append("IMPORTANT: Prioritize timing recommendations based on peak/off-peak tariff structure.")
+            prompt_parts.append(self._add_tariff_context(data))
+        
+        return "\n".join(prompt_parts)
+    
+    def _build_combined_prompt(
+        self,
+        appliance_name: str,
+        appliance_type: str,
+        data: dict[str, Any],
+    ) -> str:
+        """Build combined prompt for complete analysis.
+        
+        Args:
+            appliance_name: Name of the appliance
+            appliance_type: Type of the appliance
+            data: Export data
+            
+        Returns:
+            Formatted prompt string
+        """
+        currency = data.get("pricing_info", {}).get("currency", "EUR")
+        
+        prompt_parts = [
+            f"Analyze the energy data for the appliance '{appliance_name}' ({appliance_type}).",
+            "Provide a concise, structured report with BOTH pattern analysis AND recommendations.",
+            f"The response MUST be in {self.language}.",
+            "",
+            "## Your Task",
+            "1. PATTERN ANALYSIS:",
+            "   - Identify most frequent usage hours and days",
+            "   - Detect usage patterns and trends",
+            "   - Evaluate potential for shifting usage",
+            "",
+            "2. RECOMMENDATIONS:",
+            "   - When to use the appliance (optimal timing)",
+            "   - How to reduce consumption (settings, eco modes)",
+            "   - Optimal usage frequency and best practices",
+            "",
+            f"Appliance type: {appliance_type}",
+            f"Currency: {currency}",
+            "",
+            "## Data to Analyze",
+            json.dumps(data, indent=2),
+        ]
+        
+        # Add tariff context if applicable
+        if data.get("pricing_info", {}).get("has_tariff_system"):
+            prompt_parts.append("")
+            prompt_parts.append(self._add_tariff_context(data))
+        
+        return "\n".join(prompt_parts)
+    
+    def _add_tariff_context(self, data: dict[str, Any]) -> str:
+        """Add tariff system context to the prompt.
+        
+        Args:
+            data: Export data with pricing_info
+            
+        Returns:
+            Formatted tariff context string
+        """
+        pricing = data.get("pricing_info", {})
+        currency = pricing.get("currency", "EUR")
+        peak_price = pricing.get("peak_price", 0)
+        offpeak_price = pricing.get("offpeak_price", 0)
+        peak_hours = pricing.get("peak_hours", "Unknown")
+        savings_potential = pricing.get("estimated_savings_potential", 0)
+        
+        return f"""## Tariff System Information
+Peak/Off-peak electricity tariff detected:
+- Peak rate: {peak_price:.4f} {currency}/kWh (hours: {peak_hours})
+- Off-peak rate: {offpeak_price:.4f} {currency}/kWh
+- Estimated savings potential: {savings_potential:.1f}% by shifting to off-peak
+
+CALCULATE potential cost savings by shifting usage to off-peak hours in your analysis."""
 
     def _build_energy_dashboard_prompt(
         self,

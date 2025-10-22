@@ -125,9 +125,51 @@ class GlobalConfigManager:
         return {
             "ai_task_entity": None,
             "global_price_entity": None,
+            "global_price_fixed": 0.2516,
             "enable_ai_analysis": False,
             "ai_analysis_trigger": "manual",
+            "tariff_detection": {
+                "detected_type": None,
+                "peak_price": None,
+                "offpeak_price": None,
+                "transition_hours": [],
+                "last_analysis": None,
+            },
         }
+
+    def get_currency(self) -> str:
+        """Get configured currency from Home Assistant.
+        
+        Returns:
+            Currency code (e.g., EUR, USD, GBP). Fallback to EUR if not configured.
+        """
+        return self.hass.config.currency or "EUR"
+    
+    def get_global_price_config(self) -> dict[str, Any]:
+        """Get global price configuration.
+        
+        Returns:
+            Dictionary with global_price_entity and global_price_fixed
+        """
+        return {
+            "global_price_entity": self._config.get("global_price_entity"),
+            "global_price_fixed": self._config.get("global_price_fixed", 0.2516),
+        }
+    
+    async def async_update_tariff_detection(
+        self, tariff_data: dict[str, Any]
+    ) -> None:
+        """Update tariff detection results.
+        
+        Args:
+            tariff_data: Tariff detection results
+        """
+        if not self._config:
+            await self.async_load()
+        
+        self._config["tariff_detection"] = tariff_data
+        await self.async_save(self._config)
+        _LOGGER.debug("Tariff detection updated: %s", tariff_data)
 
     @property
     def config(self) -> dict[str, Any]:

@@ -113,12 +113,7 @@ class SmartApplianceMonitorConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
                         domain="sensor",
                     )
                 ),
-                vol.Optional(CONF_PRICE_ENTITY): selector.EntitySelector(
-                    selector.EntitySelectorConfig(
-                        domain=["sensor", "input_number"],
-                    )
-                ),
-                vol.Optional(CONF_PRICE_KWH, default=DEFAULT_PRICE_KWH): cv.positive_float,
+                # Prix configuré globalement - voir service set_global_config
             }
         )
 
@@ -126,6 +121,9 @@ class SmartApplianceMonitorConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
             step_id="user",
             data_schema=data_schema,
             errors=errors,
+            description_placeholders={
+                "price_info": "Energy price is now configured globally. Use the service 'smart_appliance_monitor.set_global_config' to configure pricing for all appliances."
+            },
         )
 
     async def async_step_reconfigure(
@@ -185,18 +183,7 @@ class SmartApplianceMonitorConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
                         domain="sensor",
                     )
                 ),
-                vol.Optional(
-                    CONF_PRICE_ENTITY,
-                    default=entry.data.get(CONF_PRICE_ENTITY)
-                ): selector.EntitySelector(
-                    selector.EntitySelectorConfig(
-                        domain=["sensor", "input_number"],
-                    )
-                ),
-                vol.Optional(
-                    CONF_PRICE_KWH,
-                    default=entry.data.get(CONF_PRICE_KWH, DEFAULT_PRICE_KWH)
-                ): cv.positive_float,
+                # Prix configuré globalement - voir service set_global_config
             }
         )
         
@@ -205,7 +192,8 @@ class SmartApplianceMonitorConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
             data_schema=data_schema,
             errors=errors,
             description_placeholders={
-                "appliance_name": entry.data.get(CONF_APPLIANCE_NAME, "")
+                "appliance_name": entry.data.get(CONF_APPLIANCE_NAME, ""),
+                "price_info": "Energy price is now configured globally via set_global_config service."
             },
         )
 

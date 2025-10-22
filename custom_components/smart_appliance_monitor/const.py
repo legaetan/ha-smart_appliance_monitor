@@ -258,8 +258,16 @@ APPLIANCE_PROFILES = {
 # AI Analysis Configuration
 CONF_AI_TASK_ENTITY = "ai_task_entity"
 CONF_GLOBAL_PRICE_ENTITY = "global_price_entity"
+CONF_GLOBAL_PRICE_FIXED = "global_price_fixed"
 CONF_ENABLE_AI_ANALYSIS = "enable_ai_analysis"
 CONF_AI_ANALYSIS_TRIGGER = "ai_analysis_trigger"
+
+# Global Configuration Domain
+GLOBAL_CONFIG_DOMAIN = "smart_appliance_monitor_global"
+
+# Tariff Detection
+TARIFF_DETECTION_DAYS = 7
+TARIFF_MIN_SAMPLES = 20
 
 # AI Analysis Triggers
 AI_TRIGGER_AUTO_CYCLE_END = "auto_cycle_end"
@@ -276,13 +284,11 @@ AI_ANALYSIS_TRIGGERS = [
 
 # AI Analysis Types
 AI_ANALYSIS_TYPE_PATTERN = "pattern"
-AI_ANALYSIS_TYPE_COMPARATIVE = "comparative"
 AI_ANALYSIS_TYPE_RECOMMENDATIONS = "recommendations"
 AI_ANALYSIS_TYPE_ALL = "all"
 
 AI_ANALYSIS_TYPES = [
     AI_ANALYSIS_TYPE_PATTERN,
-    AI_ANALYSIS_TYPE_COMPARATIVE,
     AI_ANALYSIS_TYPE_RECOMMENDATIONS,
     AI_ANALYSIS_TYPE_ALL,
 ]

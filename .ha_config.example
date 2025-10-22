@@ -12,4 +12,5 @@ HA_TOKEN="your-long-lived-access-token-here"
 # SSH connection (if using rsync/scp for sync)
 # HA_SSH_USER="your-ssh-user"
 # HA_SSH_HOST="your-ha-server-ip-or-hostname"
+# HA_SSH_ID_RSA="/home/user/.ssh/id_rsa"
 

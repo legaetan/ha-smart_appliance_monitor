@@ -341,6 +341,7 @@ class SmartApplianceDataExporter:
                 "total_energy_kwh": round(self.coordinator.monthly_stats.get("total_energy", 0), 3),
                 "total_cost_eur": round(self.coordinator.monthly_stats.get("total_cost", 0), 2),
             },
+            "pricing_info": self._build_pricing_info(),
             "export_metadata": {
                 "timestamp": datetime.now().isoformat(),
                 "cycle_count": len(cycle_history),
@@ -416,4 +417,82 @@ class SmartApplianceDataExporter:
         output.close()
         
         return csv_content
+    
+    def _build_pricing_info(self) -> dict[str, Any]:
+        """Build pricing information for AI analysis.
+        
+        Returns:
+            Dictionary with pricing and tariff information
+        """
+        from .const import DOMAIN
+        
+        # Get current price
+        current_price = self.coordinator.price_kwh
+        currency = self.coordinator.currency
+        
+        # Get tariff detection from global config
+        global_config = self.hass.data.get(DOMAIN, {}).get("global_config")
+        tariff_detection = {}
+        has_tariff_system = False
+        tariff_type = "base"
+        
+        if global_config:
+            tariff_detection = global_config.get_sync("tariff_detection", {}) or {}
+            detected_type = tariff_detection.get("detected_type")
+            if detected_type == "peak_offpeak":
+                has_tariff_system = True
+                tariff_type = "peak_offpeak"
+        
+        # Build pricing info
+        pricing_info = {
+            "current_price": round(current_price, 4),
+            "currency": currency,
+            "has_tariff_system": has_tariff_system,
+            "tariff_type": tariff_type,
+        }
+        
+        # Add tariff details if detected
+        if has_tariff_system and tariff_detection:
+            peak_price = tariff_detection.get("peak_price", current_price)
+            offpeak_price = tariff_detection.get("offpeak_price", current_price)
+            
+            pricing_info.update({
+                "peak_price": round(peak_price, 4) if peak_price else current_price,
+                "offpeak_price": round(offpeak_price, 4) if offpeak_price else current_price,
+                "peak_hours": self._format_peak_hours(tariff_detection.get("transition_hours", [])),
+                "estimated_savings_potential": round(
+                    ((peak_price - offpeak_price) / peak_price * 100) if peak_price > 0 else 0,
+                    1
+                ),
+            })
+        else:
+            pricing_info.update({
+                "peak_price": None,
+                "offpeak_price": None,
+                "peak_hours": None,
+                "estimated_savings_potential": 0,
+            })
+        
+        return pricing_info
+    
+    def _format_peak_hours(self, transition_hours: list[int]) -> str:
+        """Format transition hours as a readable string.
+        
+        Args:
+            transition_hours: List of hours where price transitions occur
+            
+        Returns:
+            Formatted string (e.g., "06:00-22:00")
+        """
+        if not transition_hours or len(transition_hours) < 2:
+            return "Unknown"
+        
+        # Sort hours
+        sorted_hours = sorted(transition_hours)
+        
+        # Assume peak starts at first transition and ends at second
+        start_hour = sorted_hours[0]
+        end_hour = sorted_hours[1] if len(sorted_hours) > 1 else (start_hour + 16) % 24
+        
+        return f"{start_hour:02d}:00-{end_hour:02d}:00"
 
