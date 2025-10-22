@@ -2,11 +2,22 @@
 
 ## Project Overview
 
-This is a **Home Assistant custom integration** for monitoring appliances using smart plugs with power monitoring capabilities. The integration automatically detects and tracks appliance cycles (washing machines, dishwashers, dryers, etc.) and provides comprehensive statistics, notifications, and energy management features.
+This is a **Home Assistant custom integration** for monitoring appliances using smart plugs with power monitoring capabilities. The integration automatically detects and tracks appliance cycles (washing machines, dishwashers, dryers, etc.) and provides comprehensive statistics, notifications, energy management features, and AI-powered analysis.
 
+**Current Version**: v0.7.4
 **Type**: Python integration using Home Assistant framework
 **License**: MIT
 **Target**: Home Assistant 2023.x+
+
+**Key Features**:
+- Automatic cycle detection with configurable thresholds
+- AI-powered analysis via Home Assistant AI Tasks (OpenAI, Claude, Ollama)
+- Energy Dashboard integration
+- Comprehensive statistics with persistence
+- Multi-service notifications (Telegram, Mobile App, etc.)
+- Data export (CSV/JSON)
+- Anomaly detection
+- Auto-shutdown and scheduling capabilities
 
 ## Language Rules
 
@@ -101,27 +112,29 @@ Follow this exact workflow for creating releases (based on v0.5.1 experience):
    - Update "Latest version" at the bottom
    - Commit this update with the release
 
-3. Create ZIP archive:
+3. Create GitHub release using GitHub CLI:
    ```bash
-   zip -r smart_appliance_monitor-vX.Y.Z.zip custom_components/smart_appliance_monitor/ -x "*.pyc" "*__pycache__*" "*.git*"
-   ```
-
-4. Create GitHub release:
-   ```bash
-   gh release create vX.Y.Z smart_appliance_monitor-vX.Y.Z.zip \
+   gh release create vX.Y.Z \
      --title "vX.Y.Z - [Feature Name]" \
-     --notes-file docs/release_notes/RELEASE_NOTES_vX.Y.Z.md
+     --notes-file docs/release_notes/RELEASE_NOTES_vX.Y.Z.md \
+     --latest
    ```
+   
+   Note: No need to create ZIP manually - GitHub automatically creates source archives
 
-### Step 4: Cleanup
+### Step 4: Final Documentation Commit
 
-1. Delete temporary ZIP archive:
+1. Add and commit release notes:
    ```bash
-   rm smart_appliance_monitor-vX.Y.Z.zip
+   git add -f docs/release_notes/RELEASE_NOTES_vX.Y.Z.md docs/release_notes/README.md
+   git commit -m "docs: Add release notes for vX.Y.Z"
+   git push origin main
    ```
 
 2. Keep release notes in `docs/release_notes/` - they are permanent documentation
 3. Repository contains complete release history in the release_notes folder
+
+Note: Release notes files may be gitignored, use `-f` flag to force add them
 
 ## Project Structure
 
@@ -142,6 +155,10 @@ ha-smart_appliance_monitor/
 │       ├── notify.py                # Notification system
 │       ├── export.py                # Data export (CSV/JSON)
 │       ├── energy.py                # Energy dashboard helper
+│       ├── energy_dashboard.py      # Advanced energy analytics
+│       ├── energy_storage.py        # .storage/energy file reader
+│       ├── ai_client.py             # AI analysis via HA AI Tasks
+│       ├── storage_config.py        # Global AI configuration
 │       ├── dashboards/              # Dashboard templates
 │       ├── translations/
 │       │   └── fr.json              # French translations
@@ -224,12 +241,18 @@ from .const import DOMAIN
 - Test persistence features after coordinator modifications
 - Update both English strings and French translations for UI changes
 - Version number must match in: `version`, `manifest.json`, and git tag
+- **Validate energy calculations**: Negative values indicate sensor resets - add validation
+- **Test AI analysis**: Ensure prompts return structured Markdown responses
+- **Check coordinator matching**: Appliance names with underscores need proper slug handling
 
 ### Testing
 - Run tests before committing: `pytest tests/`
 - Test on a real Home Assistant instance when possible
 - Verify persistence after restart for cycle-related changes
 - Check that notifications work for all configured services
+- **Test AI analysis with actual appliances**: Verify recommendations and insights are not empty
+- **Test with sensor resets**: Ensure negative energy values are detected and handled
+- **Test state restoration**: Verify corrupted data is auto-corrected on load
 
 ## Release Checklist
 
