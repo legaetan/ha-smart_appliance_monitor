@@ -97,7 +97,7 @@ SERVICE_GET_ENERGY_DATA_SCHEMA = vol.Schema(
 SERVICE_ANALYZE_CYCLES_SCHEMA = vol.Schema(
     {
         vol.Required("entity_id"): cv.entity_id,
-        vol.Optional("analysis_type", default="all"): vol.In(["pattern", "comparative", "recommendations", "all"]),
+        vol.Optional("analysis_type", default="all"): vol.In(["pattern", "recommendations", "all"]),
         vol.Optional("cycle_count", default=10): cv.positive_int,
         vol.Optional("export_format", default="json"): vol.In(["json", "csv", "both"]),
         vol.Optional("save_export", default=False): cv.boolean,
@@ -120,6 +120,20 @@ SERVICE_CONFIGURE_AI_SCHEMA = vol.Schema(
         vol.Optional("ai_analysis_trigger"): vol.In(["auto_cycle_end", "manual", "periodic_daily", "periodic_weekly"]),
     }
 )
+
+# Nouveau service set_global_config (remplace configure_ai)
+SERVICE_SET_GLOBAL_CONFIG_SCHEMA = vol.Schema(
+    {
+        vol.Optional("ai_task_entity"): cv.entity_id,
+        vol.Optional("global_price_entity"): cv.entity_id,
+        vol.Optional("global_price_fixed"): cv.positive_float,
+        vol.Optional("enable_ai_analysis"): cv.boolean,
+        vol.Optional("ai_analysis_trigger"): vol.In(["auto_cycle_end", "manual", "periodic_daily", "periodic_weekly"]),
+    }
+)
+
+# Service detect_tariff_system (nouveau)
+SERVICE_DETECT_TARIFF_SYSTEM_SCHEMA = vol.Schema({})
 
 SERVICE_GET_CYCLE_HISTORY_SCHEMA = vol.Schema(
     {
@@ -158,6 +172,64 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
         await global_config.async_load()
         hass.data[DOMAIN]["global_config"] = global_config
         _LOGGER.info("Global AI configuration manager initialized")
+    
+    # Check for legacy price configuration (v0.9.0 migration)
+    if "price_entity" in entry.data or "price_kwh" in entry.data:
+        appliance_name = entry.data.get("appliance_name", "Unknown")
+        
+        # Check if global config is already set up
+        global_config = hass.data[DOMAIN]["global_config"]
+        price_config = global_config.get_global_price_config()
+        has_global_price = bool(
+            price_config.get("global_price_entity") or 
+            price_config.get("global_price_fixed")
+        )
+        
+        if not has_global_price:
+            # Only show notification if global price not configured yet
+            _LOGGER.warning(
+                "⚠️ Legacy price configuration detected for '%s'. "
+                "Price configuration is now global in v0.9.0. User action required.",
+                appliance_name
+            )
+            
+            # Create persistent notification
+            await hass.services.async_call(
+                "persistent_notification",
+                "create",
+                {
+                    "title": "⚠️ Smart Appliance Monitor - Migration Required",
+                    "message": (
+                        f"**Price configuration has changed in v0.9.0**\n\n"
+                        f"Appliance: **{appliance_name}**\n\n"
+                        f"Price is now configured globally for all appliances.\n\n"
+                        f"**Please configure global pricing:**\n"
+                        f"1. Go to Developer Tools → Services\n"
+                        f"2. Call service: `smart_appliance_monitor.set_global_config`\n"
+                        f"3. Set `global_price_entity` OR `global_price_fixed`\n\n"
+                        f"Example:\n"
+                        f"```yaml\n"
+                        f"service: smart_appliance_monitor.set_global_config\n"
+                        f"data:\n"
+                        f"  global_price_fixed: 0.2516\n"
+                        f"```\n\n"
+                        f"For more information, see the [documentation](https://github.com/legaetan/ha-smart_appliance_monitor/wiki)."
+                    ),
+                    "notification_id": f"sam_migration_{entry.entry_id}",
+                },
+            )
+        else:
+            # Global price already configured, dismiss notification
+            _LOGGER.info(
+                "✅ Legacy price config detected for '%s' but global price already configured. "
+                "Dismissing migration notification.",
+                appliance_name
+            )
+            await hass.services.async_call(
+                "persistent_notification",
+                "dismiss",
+                {"notification_id": f"sam_migration_{entry.entry_id}"},
+            )
     
     # Créer le coordinator
     coordinator = SmartApplianceCoordinator(hass, entry)
@@ -952,10 +1024,11 @@ async def async_setup_services(hass: HomeAssistant) -> None:
         except Exception as err:
             _LOGGER.error("Energy Dashboard AI analysis failed: %s", err)
     
-    async def handle_configure_ai(call: ServiceCall) -> None:
-        """Handle configure_ai service call to set global AI configuration."""
+    async def handle_set_global_config(call: ServiceCall) -> None:
+        """Handle set_global_config service call (replaces configure_ai)."""
         ai_task_entity = call.data.get("ai_task_entity")
         global_price_entity = call.data.get("global_price_entity")
+        global_price_fixed = call.data.get("global_price_fixed")
         enable_ai_analysis = call.data.get("enable_ai_analysis")
         ai_analysis_trigger = call.data.get("ai_analysis_trigger")
         
@@ -971,6 +1044,8 @@ async def async_setup_services(hass: HomeAssistant) -> None:
             updates["ai_task_entity"] = ai_task_entity
         if global_price_entity is not None:
             updates["global_price_entity"] = global_price_entity
+        if global_price_fixed is not None:
+            updates["global_price_fixed"] = global_price_fixed
         if enable_ai_analysis is not None:
             updates["enable_ai_analysis"] = enable_ai_analysis
         if ai_analysis_trigger is not None:
@@ -978,26 +1053,111 @@ async def async_setup_services(hass: HomeAssistant) -> None:
         
         if updates:
             await global_config.async_update(updates)
-            _LOGGER.info("Global AI configuration updated: %s", updates)
+            _LOGGER.info("Global configuration updated: %s", updates)
             
             # Reload config for all coordinators
             for entry_id, coordinator in hass.data.get(DOMAIN, {}).items():
                 if isinstance(coordinator, SmartApplianceCoordinator):
                     await coordinator.load_global_ai_config()
-                    _LOGGER.debug("Reloaded AI config for '%s'", coordinator.appliance_name)
+                    _LOGGER.debug("Reloaded config for '%s'", coordinator.appliance_name)
             
             # Send confirmation notification
             await hass.services.async_call(
                 "persistent_notification",
                 "create",
                 {
-                    "title": "✅ AI Configuration Updated",
-                    "message": f"Global AI analysis configuration has been updated.\n\n{updates}",
-                    "notification_id": "sam_ai_config_updated",
+                    "title": "✅ Global Configuration Updated",
+                    "message": f"Smart Appliance Monitor global configuration has been updated.\n\n{updates}",
+                    "notification_id": "sam_global_config_updated",
                 },
             )
         else:
             _LOGGER.warning("No configuration changes provided")
+    
+    async def handle_detect_tariff_system(call: ServiceCall) -> None:
+        """Handle detect_tariff_system service call."""
+        from datetime import datetime, timedelta
+        from homeassistant.components import history
+        from .const import TARIFF_DETECTION_DAYS, TARIFF_MIN_SAMPLES
+        
+        # Get global config
+        global_config = hass.data.get(DOMAIN, {}).get("global_config")
+        if not global_config:
+            _LOGGER.error("Global configuration manager not found")
+            return
+        
+        price_entity = global_config.get_sync("global_price_entity")
+        if not price_entity:
+            await hass.services.async_call(
+                "persistent_notification",
+                "create",
+                {
+                    "title": "❌ Tariff Detection Failed",
+                    "message": "No price entity configured. Please configure a price entity via set_global_config service first.",
+                    "notification_id": "sam_tariff_detection_failed",
+                },
+            )
+            return
+        
+        # Get any coordinator to use its detect_tariff_system method
+        coordinators = [
+            c for c in hass.data.get(DOMAIN, {}).values()
+            if isinstance(c, SmartApplianceCoordinator)
+        ]
+        
+        if not coordinators:
+            _LOGGER.error("No appliances configured, cannot detect tariff system")
+            return
+        
+        try:
+            _LOGGER.info("Starting tariff system detection for price entity: %s", price_entity)
+            result = await coordinators[0].detect_tariff_system()
+            
+            # Format message
+            detected_type = result.get("detected_type", "unknown")
+            if detected_type == "peak_offpeak":
+                message = (
+                    f"✅ Peak/Off-peak tariff detected!\n\n"
+                    f"🔴 Peak rate: {result['peak_price']:.4f} {hass.config.currency}/kWh\n"
+                    f"🟢 Off-peak rate: {result['offpeak_price']:.4f} {hass.config.currency}/kWh\n"
+                    f"⏰ Transition hours: {result['transition_hours']}\n\n"
+                    f"Potential savings: {((result['peak_price'] - result['offpeak_price']) / result['peak_price'] * 100):.1f}%"
+                )
+            elif detected_type == "base":
+                message = f"ℹ️ Base tariff detected (single rate)\n\nAverage rate: {result.get('peak_price', 0):.4f} {hass.config.currency}/kWh"
+            else:
+                message = f"❓ Could not detect tariff type.\n\nInsufficient data or price entity not varying."
+            
+            await hass.services.async_call(
+                "persistent_notification",
+                "create",
+                {
+                    "title": "Tariff System Detection Complete",
+                    "message": message,
+                    "notification_id": "sam_tariff_detection",
+                },
+            )
+            
+        except Exception as err:
+            _LOGGER.error("Tariff detection failed: %s", err)
+            await hass.services.async_call(
+                "persistent_notification",
+                "create",
+                {
+                    "title": "❌ Tariff Detection Error",
+                    "message": f"An error occurred during tariff detection:\n\n{str(err)}",
+                    "notification_id": "sam_tariff_detection_error",
+                },
+            )
+    
+    async def handle_configure_ai(call: ServiceCall) -> None:
+        """Handle configure_ai service call (DEPRECATED - use set_global_config instead)."""
+        _LOGGER.warning(
+            "Service 'configure_ai' is deprecated and will be removed in a future version. "
+            "Please use 'set_global_config' instead."
+        )
+        # Call the new handler
+        await handle_set_global_config(call)
     
     async def handle_get_cycle_history(call: ServiceCall) -> None:
         """Handle get_cycle_history service call."""
@@ -1365,6 +1525,23 @@ async def async_setup_services(hass: HomeAssistant) -> None:
         schema=SERVICE_ANALYZE_ENERGY_DASHBOARD_SCHEMA,
     )
     
+    # Nouveau service (v0.9.0)
+    hass.services.async_register(
+        DOMAIN,
+        "set_global_config",
+        handle_set_global_config,
+        schema=SERVICE_SET_GLOBAL_CONFIG_SCHEMA,
+    )
+    
+    # Nouveau service (v0.9.0)
+    hass.services.async_register(
+        DOMAIN,
+        "detect_tariff_system",
+        handle_detect_tariff_system,
+        schema=SERVICE_DETECT_TARIFF_SYSTEM_SCHEMA,
+    )
+    
+    # Service déprécié - gardé pour compatibilité
     hass.services.async_register(
         DOMAIN,
         "configure_ai",
@@ -1386,7 +1563,7 @@ async def async_setup_services(hass: HomeAssistant) -> None:
         schema=SERVICE_IMPORT_HISTORICAL_CYCLES_SCHEMA,
     )
     
-    _LOGGER.info("Services Smart Appliance Monitor enregistrés (15 services)")
+    _LOGGER.info("Services Smart Appliance Monitor enregistrés (17 services)")
 
 
 def _get_coordinator_from_entity_id(hass: HomeAssistant, entity_id: str) -> SmartApplianceCoordinator | None:

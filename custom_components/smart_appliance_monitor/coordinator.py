@@ -97,9 +97,9 @@ class SmartApplianceCoordinator(DataUpdateCoordinator):
         self.power_sensor = entry.data[CONF_POWER_SENSOR]
         self.energy_sensor = entry.data[CONF_ENERGY_SENSOR]
         
-        # Prix : entité ou valeur fixe
-        self.price_entity = entry.data.get(CONF_PRICE_ENTITY)
-        self.price_kwh_fixed = entry.data.get(CONF_PRICE_KWH, DEFAULT_PRICE_KWH)
+        # Prix : seront chargés depuis la config globale
+        # Les anciennes configs (price_entity, price_kwh) sont ignorées
+        self._global_price_config: dict[str, Any] = {}
         
         # Récupérer le profil de l'appareil
         profile = APPLIANCE_PROFILES.get(
@@ -137,6 +137,9 @@ class SmartApplianceCoordinator(DataUpdateCoordinator):
             alert_duration=alert_duration if enable_alert else None,
             unplugged_timeout=unplugged_timeout,
         )
+        
+        # Currency from Home Assistant configuration
+        self.currency = hass.config.currency or "EUR"
         
         # Statistiques journalières et mensuelles
         self.daily_stats: dict[str, Any] = self._init_daily_stats()
@@ -451,6 +454,8 @@ class SmartApplianceCoordinator(DataUpdateCoordinator):
                 "duration": duration,
                 "energy": energy,
                 "cost": round(cost, 2),
+                "cost_per_kwh": round(price_kwh, 4),  # Prix final du kWh
+                "currency": self.currency,  # Devise utilisée
                 "peak_power": cycle.get("peak_power", 0),
                 "start_time": cycle.get("start_time").isoformat() if cycle.get("start_time") else None,
                 "end_time": cycle.get("end_time").isoformat() if cycle.get("end_time") else None,
@@ -606,10 +611,15 @@ class SmartApplianceCoordinator(DataUpdateCoordinator):
         await self._save_state()
     
     async def load_global_ai_config(self) -> None:
-        """Load AI configuration from global config."""
+        """Load AI configuration and price configuration from global config."""
         global_config = self.hass.data.get(DOMAIN, {}).get("global_config")
         if not global_config:
-            _LOGGER.debug("No global config found for AI analysis")
+            _LOGGER.debug("No global config found for '%s'", self.appliance_name)
+            # Utiliser valeur par défaut pour les prix
+            self._global_price_config = {
+                "global_price_entity": None,
+                "global_price_fixed": DEFAULT_PRICE_KWH,
+            }
             return
         
         # Load AI Task entity
@@ -618,12 +628,187 @@ class SmartApplianceCoordinator(DataUpdateCoordinator):
         # Load AI analysis trigger
         self.ai_analysis_trigger = global_config.get_sync("ai_analysis_trigger", "manual")
         
+        # Load global price configuration
+        self._global_price_config = global_config.get_global_price_config()
+        
         _LOGGER.debug(
-            "Global AI config loaded for '%s': entity=%s, trigger=%s",
+            "Global config loaded for '%s': ai_entity=%s, trigger=%s, price_entity=%s, price_fixed=%s",
             self.appliance_name,
             self.ai_task_entity,
             self.ai_analysis_trigger,
+            self._global_price_config.get("global_price_entity"),
+            self._global_price_config.get("global_price_fixed"),
         )
+    
+    async def detect_tariff_system(self) -> dict[str, Any]:
+        """Detect tariff system (peak/off-peak) by analyzing price history.
+        
+        Returns:
+            Dictionary with detection results:
+            - detected_type: "base", "peak_offpeak", or None
+            - peak_price: float or None
+            - offpeak_price: float or None
+            - transition_hours: list of hours where price changes
+            - last_analysis: timestamp
+        """
+        from datetime import datetime, timedelta
+        from homeassistant.components.recorder.history import get_significant_states
+        from .const import TARIFF_DETECTION_DAYS, TARIFF_MIN_SAMPLES
+        
+        price_entity = self._global_price_config.get("global_price_entity")
+        if not price_entity:
+            _LOGGER.warning("No price entity configured for tariff detection")
+            return {
+                "detected_type": None,
+                "peak_price": None,
+                "offpeak_price": None,
+                "transition_hours": [],
+                "last_analysis": datetime.now().isoformat(),
+            }
+        
+        # Get price history for the last 7 days
+        end_time = datetime.now()
+        start_time = end_time - timedelta(days=TARIFF_DETECTION_DAYS)
+        
+        _LOGGER.debug(
+            "Analyzing price history from %s to %s for entity %s",
+            start_time,
+            end_time,
+            price_entity,
+        )
+        
+        # Get historical states
+        history_list = await self.hass.async_add_executor_job(
+            get_significant_states,
+            self.hass,
+            start_time,
+            end_time,
+            [price_entity],
+        )
+        
+        if not history_list or price_entity not in history_list:
+            _LOGGER.warning("No price history found for %s", price_entity)
+            return {
+                "detected_type": None,
+                "peak_price": None,
+                "offpeak_price": None,
+                "transition_hours": [],
+                "last_analysis": datetime.now().isoformat(),
+            }
+        
+        states = history_list[price_entity]
+        if len(states) < TARIFF_MIN_SAMPLES:
+            _LOGGER.warning(
+                "Insufficient price samples: %d (min: %d)",
+                len(states),
+                TARIFF_MIN_SAMPLES,
+            )
+            return {
+                "detected_type": "base",
+                "peak_price": None,
+                "offpeak_price": None,
+                "transition_hours": [],
+                "last_analysis": datetime.now().isoformat(),
+            }
+        
+        # Extract prices and timestamps
+        prices = []
+        price_changes = []  # (hour, price)
+        
+        for state in states:
+            try:
+                price = float(state.state)
+                if price > 0:  # Ignore invalid prices
+                    prices.append(price)
+                    hour = state.last_changed.hour
+                    price_changes.append((hour, price))
+            except (ValueError, TypeError, AttributeError):
+                continue
+        
+        if len(prices) < TARIFF_MIN_SAMPLES:
+            _LOGGER.warning("Not enough valid prices: %d", len(prices))
+            return {
+                "detected_type": "base",
+                "peak_price": None,
+                "offpeak_price": None,
+                "transition_hours": [],
+                "last_analysis": datetime.now().isoformat(),
+            }
+        
+        # Analyze price variations
+        unique_prices = set(round(p, 4) for p in prices)
+        min_price = min(prices)
+        max_price = max(prices)
+        avg_price = sum(prices) / len(prices)
+        
+        _LOGGER.debug(
+            "Price analysis: unique=%d, min=%.4f, max=%.4f, avg=%.4f",
+            len(unique_prices),
+            min_price,
+            max_price,
+            avg_price,
+        )
+        
+        # Detect tariff type
+        if len(unique_prices) >= 2 and (max_price - min_price) / avg_price > 0.15:
+            # Significant variation detected (>15%) → Peak/Off-peak likely
+            detected_type = "peak_offpeak"
+            peak_price = max_price
+            offpeak_price = min_price
+            
+            # Detect transition hours
+            transition_hours = []
+            price_by_hour = {}
+            for hour, price in price_changes:
+                if hour not in price_by_hour:
+                    price_by_hour[hour] = []
+                price_by_hour[hour].append(price)
+            
+            # Find hours where price changes significantly
+            for hour in range(24):
+                if hour in price_by_hour:
+                    hour_avg = sum(price_by_hour[hour]) / len(price_by_hour[hour])
+                    # Check if this hour tends toward peak or offpeak
+                    if abs(hour_avg - peak_price) < abs(hour_avg - offpeak_price):
+                        # This is a peak hour
+                        prev_hour = (hour - 1) % 24
+                        if prev_hour in price_by_hour:
+                            prev_avg = sum(price_by_hour[prev_hour]) / len(price_by_hour[prev_hour])
+                            if abs(prev_avg - offpeak_price) < abs(prev_avg - peak_price):
+                                # Transition from off-peak to peak
+                                if hour not in transition_hours:
+                                    transition_hours.append(hour)
+            
+            _LOGGER.info(
+                "Peak/Off-peak tariff detected: peak=%.4f, offpeak=%.4f, transitions=%s",
+                peak_price,
+                offpeak_price,
+                transition_hours,
+            )
+        else:
+            # Single rate or insufficient variation
+            detected_type = "base"
+            peak_price = avg_price
+            offpeak_price = None
+            transition_hours = []
+            
+            _LOGGER.info("Base tariff detected (single rate): %.4f", avg_price)
+        
+        result = {
+            "detected_type": detected_type,
+            "peak_price": round(peak_price, 4) if peak_price else None,
+            "offpeak_price": round(offpeak_price, 4) if offpeak_price else None,
+            "transition_hours": sorted(transition_hours),
+            "last_analysis": datetime.now().isoformat(),
+        }
+        
+        # Save results to global config
+        global_config = self.hass.data.get(DOMAIN, {}).get("global_config")
+        if global_config:
+            await global_config.async_update_tariff_detection(result)
+            _LOGGER.debug("Tariff detection results saved to global config")
+        
+        return result
     
     async def async_trigger_ai_analysis(
         self,
@@ -983,28 +1168,30 @@ class SmartApplianceCoordinator(DataUpdateCoordinator):
         await self.notifier.notify_anomaly_detected(score=score)
     
     def _get_current_price(self) -> float:
-        """Récupère le prix actuel du kWh.
+        """Récupère le prix actuel du kWh depuis la config globale.
         
-        Si une entité est configurée, utilise sa valeur.
-        Sinon, utilise la valeur fixe configurée.
+        Utilise global_price_entity si configurée, sinon global_price_fixed.
         
         Returns:
-            Prix du kWh en €
+            Prix du kWh
         """
-        if self.price_entity:
+        price_entity = self._global_price_config.get("global_price_entity")
+        price_fixed = self._global_price_config.get("global_price_fixed", DEFAULT_PRICE_KWH)
+        
+        if price_entity:
             # Récupérer la valeur depuis l'entité
-            price_state = self.hass.states.get(self.price_entity)
+            price_state = self.hass.states.get(price_entity)
             if price_state and price_state.state not in ["unavailable", "unknown"]:
                 try:
                     return float(price_state.state)
                 except (ValueError, TypeError):
                     _LOGGER.warning(
                         "Impossible de lire le prix depuis %s, utilisation de la valeur fixe",
-                        self.price_entity,
+                        price_entity,
                     )
         
         # Valeur fixe par défaut
-        return self.price_kwh_fixed
+        return price_fixed
     
     @property
     def price_kwh(self) -> float:

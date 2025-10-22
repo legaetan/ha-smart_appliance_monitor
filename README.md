@@ -5,6 +5,43 @@
 
 > Transform any smart plug into an intelligent appliance monitoring system for Home Assistant.
 
+## ⚠️ Breaking Changes in v0.9.0
+
+**If you're upgrading from v0.8.x or earlier, please read carefully:**
+
+### Price Configuration Now Global
+
+**What changed:** Price configuration (electricity cost) is now **centralized and global** for all appliances. Per-appliance pricing has been removed.
+
+**Action required:** After upgrading to v0.9.0, you must configure global pricing once using the `set_global_config` service:
+
+```yaml
+service: smart_appliance_monitor.set_global_config
+data:
+  global_price_entity: sensor.electricity_price  # Option 1: Dynamic price from a sensor
+  global_price_fixed: 0.2516                      # Option 2: Fixed price per kWh
+  enable_ai_analysis: true
+  ai_analysis_trigger: manual
+  ai_task_entity: ai_task.openai
+```
+
+**A persistent notification** will appear automatically after upgrade with migration instructions.
+
+### AI Analysis Changes
+
+- **"Comparative" analysis type removed** - Use `pattern`, `recommendations`, or `all` instead
+- **Service renamed**: `configure_ai` → `set_global_config` (old service deprecated, will be removed in v1.0.0)
+
+### New Features
+
+- ✨ **Dynamic Currency** - All cost sensors now use your Home Assistant configured currency automatically
+- ✨ **Tariff Detection** - New `detect_tariff_system` service to analyze peak/off-peak electricity rates
+- ✨ **Enhanced AI Prompts** - Analysis prompts now include tariff context and currency information
+
+[See full CHANGELOG for details](CHANGELOG.md#090---2025-10-22)
+
+---
+
 ## Overview
 
 Smart Appliance Monitor is a Home Assistant custom integration that automatically detects and tracks appliance cycles (washing machines, dishwashers, dryers, water heaters, etc.) using power consumption data from smart plugs.
@@ -34,9 +71,11 @@ Smart Appliance Monitor is a Home Assistant custom integration that automaticall
 - **Energy Dashboard Integration** - Native support for Home Assistant Energy Dashboard
 - **State Persistence** (v0.5.1) - Cycles and statistics are preserved across Home Assistant restarts
 
-### AI Analysis Features (v0.7.0) ⚡ *NEW*
+### AI Analysis Features (v0.7.0+) ⚡
 - **Intelligent Cycle Analysis** - AI-powered analysis of appliance usage patterns and habits
-- **Three Analysis Types** - Pattern analysis, comparative analysis, and personalized recommendations
+- **Three Analysis Types** - Pattern analysis (usage patterns), recommendations (optimization tips), and all (combined)
+- **Tariff-Aware Analysis** (v0.9.0) - Automatically includes peak/off-peak electricity rates in AI recommendations
+- **Currency-Aware Analysis** (v0.9.0) - Uses your Home Assistant configured currency in cost calculations
 - **Energy Optimization** - Identify potential savings and optimal usage hours
 - **Automatic Trigger** - Optional automatic analysis after each cycle completion
 - **Global Dashboard Analysis** - AI analysis of entire home energy consumption
@@ -93,8 +132,15 @@ Will be available through HACS custom repositories.
    - Type: Select from dropdown (washing_machine, dishwasher, etc.)
    - Power Sensor: Select your smart plug's power sensor
    - Energy Sensor: Select your smart plug's energy sensor
-   - Price: Enter fixed price or select an entity for dynamic pricing
-3. **Adjust Settings** (Optional): Click "Configure" → "Advanced Configuration (Multi-step)" to fine-tune thresholds
+3. **Configure Global Pricing** (v0.9.0+): Use the `set_global_config` service to configure electricity pricing for all appliances
+   ```yaml
+   service: smart_appliance_monitor.set_global_config
+   data:
+     global_price_entity: sensor.electricity_price  # OR use global_price_fixed
+     enable_ai_analysis: true
+     ai_task_entity: ai_task.openai
+   ```
+4. **Adjust Settings** (Optional): Click "Configure" → "Advanced Configuration (Multi-step)" to fine-tune thresholds
    - **Step 1**: Detection thresholds (power levels)
    - **Step 2**: Detection delays & alerts (in minutes/hours)
    - **Step 3**: Notification settings
@@ -300,17 +346,41 @@ data:
 
 ### AI Analysis Services ⚡ *NEW v0.7.0*
 
-#### `smart_appliance_monitor.configure_ai`
-Configure global AI analysis settings for all appliances.
+#### `smart_appliance_monitor.set_global_config` ⚡ *NEW v0.9.0*
+Configure global AI analysis and pricing settings for all appliances. Replaces the deprecated `configure_ai` service.
 
 ```yaml
-service: smart_appliance_monitor.configure_ai
+service: smart_appliance_monitor.set_global_config
 data:
-  ai_task_entity: ai_task.openai_ai_task  # Or claude, ollama, etc.
+  ai_task_entity: ai_task.openai
+  global_price_entity: sensor.electricity_price  # Option 1: Dynamic pricing
+  global_price_fixed: 0.2516                      # Option 2: Fixed price per kWh
   enable_ai_analysis: true
-  ai_analysis_trigger: manual  # auto_cycle_end, manual, periodic_daily, periodic_weekly
-  global_price_entity: input_number.electricity_price  # Optional
+  ai_analysis_trigger: manual  # or: auto_cycle_end, periodic_daily, periodic_weekly
 ```
+
+**Features**:
+- Global electricity pricing (entity or fixed value)
+- Dynamic currency from Home Assistant configuration
+- AI task entity configuration
+- Analysis trigger configuration
+
+#### `smart_appliance_monitor.detect_tariff_system` ⚡ *NEW v0.9.0*
+Analyze electricity price history to detect peak/off-peak tariff structure (e.g., heures creuses/pleines in France).
+
+```yaml
+service: smart_appliance_monitor.detect_tariff_system
+```
+
+**Features**:
+- Analyzes 7 days of price history
+- Detects peak and off-peak rates
+- Identifies transition hours
+- Calculates estimated savings potential
+- Results used in AI analysis prompts
+
+#### `smart_appliance_monitor.configure_ai` [DEPRECATED]
+**This service is deprecated. Use `set_global_config` instead.** Will be removed in v1.0.0.
 
 #### `smart_appliance_monitor.analyze_cycles`
 Analyze appliance cycles using AI to get insights, patterns, and recommendations.
@@ -319,18 +389,24 @@ Analyze appliance cycles using AI to get insights, patterns, and recommendations
 service: smart_appliance_monitor.analyze_cycles
 data:
   entity_id: sensor.washing_machine_state
-  analysis_type: all  # pattern, comparative, recommendations, all
+  analysis_type: all  # pattern, recommendations, all
   cycle_count: 10  # Number of cycles to analyze
   save_export: false  # Optionally save data to files
 ```
+
+**Analysis Types** (v0.9.0):
+- `pattern`: Focus on usage patterns and trends
+- `recommendations`: Focus on concrete optimization actions
+- `all`: Combined analysis with both patterns and recommendations
 
 **Analysis Results**: Stored in `sensor.<appliance>_ai_analysis` with attributes:
 - `status`: optimized, normal, or needs_improvement
 - `recommendations`: List of actionable recommendations
 - `energy_savings_kwh`: Potential energy savings
-- `energy_savings_eur`: Potential cost savings
+- `energy_savings_cost`: Potential cost savings (in configured currency)
 - `optimal_hours`: Recommended usage hours
 - `insights`: Key insights from analysis
+- `tariff_aware`: Whether peak/off-peak tariff was included in analysis
 
 #### `smart_appliance_monitor.analyze_energy_dashboard`
 Perform AI analysis on overall home energy consumption.

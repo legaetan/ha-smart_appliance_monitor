@@ -3,42 +3,34 @@
     "step": {
       "user": {
         "title": "Add Smart Appliance Monitor",
-        "description": "Configure monitoring for your appliance",
+        "description": "Configure monitoring for your appliance. Note: Energy price is now configured globally via the set_global_config service.",
         "data": {
           "appliance_name": "Appliance Name",
           "appliance_type": "Appliance Type",
           "power_sensor": "Power Sensor",
-          "energy_sensor": "Energy Sensor",
-          "price_entity": "Price Entity (optional)",
-          "price_kwh": "Price per kWh (€)"
+          "energy_sensor": "Energy Sensor"
         },
         "data_description": {
           "appliance_name": "Descriptive name for your appliance (e.g. Oven, Dishwasher)",
           "appliance_type": "Type of appliance",
           "power_sensor": "Power sensor from the smart plug (W)",
-          "energy_sensor": "Energy sensor from the smart plug (kWh)",
-          "price_entity": "Input_number or sensor entity for dynamic pricing (leave empty to use fixed value)",
-          "price_kwh": "Cost of electricity per kWh (used if no entity is selected)"
+          "energy_sensor": "Energy sensor from the smart plug (kWh)"
         }
       },
       "reconfigure": {
         "title": "Reconfigure {appliance_name}",
-        "description": "Modify the base settings for the appliance. Statistics will be preserved.",
+        "description": "Modify the base settings for the appliance. Statistics will be preserved. Note: Energy price is now configured globally via the set_global_config service.",
         "data": {
           "appliance_name": "Appliance Name",
           "appliance_type": "Appliance Type",
           "power_sensor": "Power Sensor",
-          "energy_sensor": "Energy Sensor",
-          "price_entity": "Price Entity (optional)",
-          "price_kwh": "Price per kWh (€)"
+          "energy_sensor": "Energy Sensor"
         },
         "data_description": {
           "appliance_name": "Descriptive name for your appliance (e.g. Oven, Dishwasher)",
           "appliance_type": "Type of appliance - thresholds will adapt automatically",
           "power_sensor": "Power sensor from the smart plug (W)",
-          "energy_sensor": "Energy sensor from the smart plug (kWh)",
-          "price_entity": "Input_number or sensor entity for dynamic pricing (leave empty to use fixed value)",
-          "price_kwh": "Cost of electricity per kWh (used if no entity is selected)"
+          "energy_sensor": "Energy sensor from the smart plug (kWh)"
         }
       }
     },

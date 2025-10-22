@@ -5,6 +5,122 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.9.0] - 2025-10-22
+
+### ⚠️ BREAKING CHANGES
+
+**Price Configuration** - **ACTION REQUIRED**
+- Price configuration is now **global only** (per-appliance pricing removed)
+- Users **must** configure global pricing via `set_global_config` service
+- Migration notification will appear automatically for existing installations
+- Old `price_entity` and `price_kwh` parameters in appliance config are ignored
+
+**AI Analysis**
+- "Comparative" AI analysis type **removed**
+- Available types: `pattern`, `recommendations`, `all`
+- Service `configure_ai` **deprecated** (use `set_global_config` instead)
+
+### Added
+
+**Global Configuration System**
+- New service `set_global_config` for centralized pricing and AI configuration
+- Supports both `global_price_entity` (dynamic) and `global_price_fixed` (static)
+- Configuration applies to all appliances automatically
+- Automatic notification with migration instructions for legacy configs
+
+**Tariff Detection**
+- New service `detect_tariff_system` for automatic peak/off-peak detection
+- Analyzes 7 days of price history to detect tariff structure
+- Identifies peak rate, off-peak rate, and transition hours
+- Calculates estimated savings potential by shifting usage
+- Results stored in global configuration and used by AI analysis
+
+**Dynamic Currency Support**
+- All cost sensors now use Home Assistant configured currency (`hass.config.currency`)
+- Automatic currency detection with fallback to EUR
+- Currency-specific icons (EUR, USD, GBP, CHF, JPY, CNY)
+- Currency included in AI export data and prompts
+
+**Enhanced AI Analysis**
+- New `pattern` analysis type: Focus exclusively on usage patterns
+- New `recommendations` analysis type: Concrete optimization recommendations
+- Tariff context automatically added to AI prompts when peak/off-peak detected
+- AI prompts now include currency information
+- Export data includes comprehensive `pricing_info` section
+
+**Real-Time Cost Calculation**
+- Cost calculated in real-time during cycles using current price
+- `cost_per_kwh` and `currency` stored in cycle events
+- Simplified calculation: `cost = energy × current_price`
+
+### Changed
+
+**Price Management**
+- Price configuration moved from individual appliances to global config
+- `_get_current_price()` now uses global configuration exclusively
+- Price entity and fixed price managed centrally for all appliances
+
+**AI Prompts**
+- Prompts adapted per analysis type (pattern vs recommendations vs all)
+- Tariff information automatically injected when relevant
+- Currency mentioned explicitly in prompts
+- Removed comparative analysis prompts
+
+**Export Data**
+- Added `pricing_info` section with:
+  - Current price and currency
+  - Tariff type (base or peak_offpeak)
+  - Peak/off-peak rates and hours
+  - Estimated savings potential percentage
+
+**Configuration Flow**
+- Removed `price_entity` and `price_kwh` from appliance setup
+- Added informative message about global pricing configuration
+- Simplified appliance configuration (name, type, sensors only)
+
+**Services**
+- Added 17 services total (was 15)
+- New: `set_global_config`, `detect_tariff_system`
+- Deprecated: `configure_ai` (redirects to `set_global_config` with warning)
+
+### Deprecated
+
+- Service `configure_ai` - Use `set_global_config` instead
+- Will be removed in v1.0.0
+- Currently redirects to new service with deprecation warning in logs
+
+### Fixed
+
+- Currency hardcoded to EUR in cost sensors (now dynamic)
+- Per-appliance pricing causing inconsistencies (now centralized)
+- Cost calculations not accounting for price changes during cycles (now real-time)
+
+### Technical Changes
+
+**Modified Files**
+- `const.py` - Removed comparative type, added global config constants
+- `storage_config.py` - Added currency, tariff detection, global price methods
+- `coordinator.py` - Global price config, detect_tariff_system(), currency support
+- `sensor.py` - Dynamic currency in 4 cost sensors with adaptive icons
+- `config_flow.py` - Removed price fields from appliance configuration
+- `services.yaml` - New services definitions, deprecated configure_ai
+- `__init__.py` - New service handlers, migration detection
+- `export.py` - Added pricing_info builder with tariff details
+- `ai_client.py` - 4 new prompt methods (pattern, recommendations, combined, tariff_context)
+
+**Migration Support**
+- Automatic detection of legacy price configuration
+- Persistent notification with step-by-step instructions
+- Warning logs for affected appliances
+- No data loss - cycles preserved, only config needs update
+
+### Documentation
+
+- Updated README.md with breaking changes notice
+- Updated CHANGELOG.md with complete v0.9.0 details
+- Service examples updated to use `set_global_config`
+- Added migration guide in notifications
+
 ## [0.8.1] - 2025-10-22
 
 ### Fixed
