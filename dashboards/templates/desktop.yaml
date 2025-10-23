@@ -1,0 +1,125 @@
+# Smart Appliance Monitor - Desktop PC Dashboard Template
+# Version: 1.0.0
+# Optimized for desktop PCs with session-based tracking
+
+title: {APPLIANCE_NAME}
+path: {APPLIANCE_ID}
+icon: mdi:desktop-tower
+type: sections
+sections:
+  - type: grid
+    cards:
+      - type: custom:smart-appliance-cycle-card
+        entity: sensor.{APPLIANCE_ID}_state
+        name: "{APPLIANCE_NAME}"
+        icon: "mdi:desktop-tower"
+        show_power_graph: true
+        show_action_buttons: true
+        show_current_power: true
+        theme: auto
+
+  - title: Statistiques
+    type: grid
+    cards:
+      - type: custom:smart-appliance-stats-card
+        entity: sensor.{APPLIANCE_ID}_state
+        default_tab: today
+        show_trends: true
+        show_efficiency: true
+
+  - title: Session en Cours
+    type: grid
+    cards:
+      - type: gauge
+        entity: sensor.{APPLIANCE_ID}_session_duration
+        name: Durée Utilisation
+        needle: true
+        severity:
+          green: 0
+          yellow: 240
+          red: 480
+        min: 0
+        max: 600
+        unit: min
+      - type: statistic
+        entity: sensor.{APPLIANCE_ID}_session_energy
+        name: Énergie
+        icon: mdi:lightning-bolt
+      - type: statistic
+        entity: sensor.{APPLIANCE_ID}_session_cost
+        name: Coût
+        icon: mdi:currency-eur
+
+  - title: Consommation
+    type: grid
+    cards:
+      - type: custom:mini-graph-card
+        entities:
+          - entity: sensor.{APPLIANCE_ID}_power
+            color: '#34495e'
+        hours_to_show: 24
+        line_width: 2
+
+  - title: Contrôles
+    type: grid
+    cards:
+      - type: entities
+        entities:
+          - switch.{APPLIANCE_ID}_monitoring
+          - switch.{APPLIANCE_ID}_notifications
+          - type: divider
+          - switch.{APPLIANCE_ID}_notification_cycle_started
+          - switch.{APPLIANCE_ID}_notification_cycle_finished
+          - type: divider
+          - button.{APPLIANCE_ID}_reset_stats
+
+  - title: Gestion Énergétique
+    type: grid
+    cards:
+      - type: entities
+        entities:
+          - switch.{APPLIANCE_ID}_energy_limits
+          - switch.{APPLIANCE_ID}_scheduling
+      - type: horizontal-stack
+        cards:
+          - type: gauge
+            entity: sensor.{APPLIANCE_ID}_daily_energy
+            name: Jour
+            max: 3
+          - type: gauge
+            entity: sensor.{APPLIANCE_ID}_monthly_energy
+            name: Mois
+            max: 50
+
+  - title: Analyse IA
+    type: grid
+    cards:
+      - type: horizontal-stack
+        cards:
+          - type: button
+            name: Analyser
+            icon: mdi:lightbulb-on
+            tap_action:
+              action: call-service
+              service: smart_appliance_monitor.analyze_cycles
+              service_data:
+                entity_id: sensor.{APPLIANCE_ID}_state
+                analysis_type: pattern
+      - type: markdown
+        content: >
+          {{ state_attr('sensor.{APPLIANCE_ID}_ai_analysis', 'summary') | default('N/A', true) }}
+
+  - title: Alertes
+    type: grid
+    cards:
+      - type: conditional
+        conditions:
+          - entity: binary_sensor.{APPLIANCE_ID}_unplugged
+            state: 'on'
+        card:
+          type: custom:mushroom-template-card
+          primary: PC Éteint
+          icon: mdi:desktop-tower-off
+          icon_color: red
+
+

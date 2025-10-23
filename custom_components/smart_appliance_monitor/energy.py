@@ -232,23 +232,37 @@ class EnergyDashboardSync:
         Returns:
             Dict with sync status and details
         """
-        appliance_name_slug = self.coordinator.appliance_name.lower().replace(' ', '_')
-        daily_energy_sensor = f"sensor.{appliance_name_slug}_daily_energy"
+        # Use the ACTUAL energy sensor configured in SAM (from the smart plug)
+        configured_energy_sensor = self.coordinator.energy_sensor
         
         try:
-            # Check if sensor is in Energy Dashboard
+            # Check if the configured energy sensor is in Energy Dashboard
             device_config = await self.storage_reader.find_device_by_sensor(
-                daily_energy_sensor
+                configured_energy_sensor
             )
+            
+            # If not found, try fuzzy matching by appliance name
+            if not device_config:
+                device_config = await self._find_device_by_name_fuzzy()
             
             if device_config:
                 status = "synced"
+                dashboard_sensor = device_config.get("stat_consumption")
                 message = f"Appliance '{self.coordinator.appliance_name}' is configured in Energy Dashboard"
+                
+                # Check if using different sensor
+                if dashboard_sensor and dashboard_sensor != configured_energy_sensor:
+                    message += f" (using sensor: {dashboard_sensor} instead of {configured_energy_sensor})"
                 
                 # Check if it's included in another stat
                 parent_stat = device_config.get("included_in_stat")
                 if parent_stat:
                     message += f" (included in {parent_stat})"
+                
+                # Get price info if available
+                dashboard_name = device_config.get("name", "")
+                if dashboard_name:
+                    message += f" as '{dashboard_name}'"
                 
             else:
                 status = "not_configured"
@@ -258,7 +272,7 @@ class EnergyDashboardSync:
                 "status": status,
                 "message": message,
                 "appliance_name": self.coordinator.appliance_name,
-                "energy_sensor": daily_energy_sensor,
+                "energy_sensor": configured_energy_sensor,
                 "dashboard_config": device_config,
             }
             
@@ -268,9 +282,173 @@ class EnergyDashboardSync:
                 "status": "error",
                 "message": f"Cannot read Energy Dashboard configuration: {err}",
                 "appliance_name": self.coordinator.appliance_name,
-                "energy_sensor": daily_energy_sensor,
+                "energy_sensor": configured_energy_sensor,
                 "dashboard_config": None,
             }
+    
+    async def sync_price_from_energy_dashboard(self) -> dict[str, Any]:
+        """Synchronize price from Energy Dashboard to SAM coordinator.
+        
+        Returns:
+            Dict with sync result and price information
+        """
+        try:
+            sources = await self.storage_reader.get_energy_sources()
+            
+            for source in sources:
+                if source.get("type") == "grid":
+                    flow_from = source.get("flow_from", [])
+                    if flow_from:
+                        flow = flow_from[0]
+                        
+                        # Get price entity or static price
+                        price_entity = flow.get("entity_energy_price")
+                        static_price = flow.get("number_energy_price")
+                        
+                        if price_entity:
+                            # Dynamic price from entity
+                            price_state = self.hass.states.get(price_entity)
+                            if price_state and price_state.state not in ["unknown", "unavailable"]:
+                                try:
+                                    new_price = float(price_state.state)
+                                    old_price = self.coordinator.price_kwh
+                                    
+                                    # Update coordinator price
+                                    self.coordinator.price_kwh = new_price
+                                    
+                                    _LOGGER.info(
+                                        "Synced price for '%s': %.4f €/kWh (from %s)",
+                                        self.coordinator.appliance_name,
+                                        new_price,
+                                        price_entity
+                                    )
+                                    
+                                    return {
+                                        "success": True,
+                                        "price_source": "entity",
+                                        "price_entity": price_entity,
+                                        "old_price": old_price,
+                                        "new_price": new_price,
+                                        "message": f"Price updated from {old_price:.4f} to {new_price:.4f} €/kWh"
+                                    }
+                                except (ValueError, TypeError) as err:
+                                    _LOGGER.error("Invalid price value from %s: %s", price_entity, err)
+                        
+                        elif static_price is not None:
+                            # Static price configured
+                            old_price = self.coordinator.price_kwh
+                            new_price = float(static_price)
+                            
+                            self.coordinator.price_kwh = new_price
+                            
+                            _LOGGER.info(
+                                "Synced static price for '%s': %.4f €/kWh",
+                                self.coordinator.appliance_name,
+                                new_price
+                            )
+                            
+                            return {
+                                "success": True,
+                                "price_source": "static",
+                                "price_entity": None,
+                                "old_price": old_price,
+                                "new_price": new_price,
+                                "message": f"Price updated from {old_price:.4f} to {new_price:.4f} €/kWh"
+                            }
+            
+            # No price configured in Energy Dashboard
+            return {
+                "success": False,
+                "price_source": None,
+                "price_entity": None,
+                "old_price": self.coordinator.price_kwh,
+                "new_price": self.coordinator.price_kwh,
+                "message": "No price configured in Energy Dashboard"
+            }
+            
+        except EnergyStorageError as err:
+            _LOGGER.warning("Cannot sync price from Energy Dashboard: %s", err)
+            return {
+                "success": False,
+                "price_source": None,
+                "price_entity": None,
+                "old_price": self.coordinator.price_kwh,
+                "new_price": self.coordinator.price_kwh,
+                "message": f"Error: {err}"
+            }
+    
+    async def _find_device_by_name_fuzzy(self) -> dict[str, Any] | None:
+        """Find device in Energy Dashboard by fuzzy name matching.
+        
+        Tries multiple strategies to find the appliance in Energy Dashboard:
+        - Exact name match
+        - Name without accents
+        - Partial name match
+        - Sensor name match
+        
+        Returns:
+            Device configuration if found, None otherwise
+        """
+        devices = await self.storage_reader.get_device_consumption()
+        appliance_name = self.coordinator.appliance_name.lower()
+        
+        # Remove accents and special characters for better matching
+        def normalize(text: str) -> str:
+            """Normalize text for comparison."""
+            import unicodedata
+            text = text.lower()
+            # Remove accents
+            text = ''.join(c for c in unicodedata.normalize('NFD', text)
+                          if unicodedata.category(c) != 'Mn')
+            # Remove special characters
+            text = text.replace('-', ' ').replace('_', ' ')
+            return text.strip()
+        
+        appliance_normalized = normalize(appliance_name)
+        
+        # Try exact match first
+        for device in devices:
+            device_name = device.get("name", "")
+            if device_name and normalize(device_name) == appliance_normalized:
+                _LOGGER.info(
+                    "Found device '%s' in Energy Dashboard by exact name match",
+                    self.coordinator.appliance_name
+                )
+                return device
+        
+        # Try partial match (appliance name contains device name or vice versa)
+        for device in devices:
+            device_name = device.get("name", "")
+            if device_name:
+                device_normalized = normalize(device_name)
+                if (appliance_normalized in device_normalized or
+                    device_normalized in appliance_normalized):
+                    _LOGGER.info(
+                        "Found device '%s' in Energy Dashboard by partial name match: %s",
+                        self.coordinator.appliance_name,
+                        device_name
+                    )
+                    return device
+        
+        # Try sensor name match (extract base name from sensor)
+        appliance_slug = self.coordinator.appliance_name.lower().replace(' ', '_')
+        for device in devices:
+            sensor = device.get("stat_consumption", "")
+            if sensor:
+                # Extract base from sensor name
+                # sensor.lave_linge_consommation -> lave_linge
+                sensor_base = sensor.replace("sensor.", "").split("_")[0:2]
+                sensor_base = "_".join(sensor_base)
+                
+                if appliance_slug.startswith(sensor_base) or sensor_base in appliance_slug:
+                    _LOGGER.info(
+                        "Found device '%s' in Energy Dashboard by sensor pattern: %s",
+                        self.coordinator.appliance_name,
+                        sensor
+                    )
+                    return device
+        
+        return None
     
     async def suggest_energy_config(self) -> dict[str, Any]:
         """Generate suggested configuration for Energy Dashboard.

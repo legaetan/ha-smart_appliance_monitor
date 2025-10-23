@@ -692,6 +692,28 @@ async def async_setup_services(hass: HomeAssistant) -> None:
         
         _LOGGER.info("Syncing %d appliance(s) with Energy Dashboard", len(coordinators))
         
+        # Get global price from Energy Dashboard (once for all devices)
+        global_price_result = None
+        if coordinators:
+            # Use first coordinator to get the global price
+            sync_handler = EnergyDashboardSync(hass, coordinators[0])
+            global_price_result = await sync_handler.sync_price_from_energy_dashboard()
+        
+        # Apply global price to all coordinators if available
+        if global_price_result and global_price_result["success"]:
+            new_price = global_price_result["new_price"]
+            price_source = global_price_result["price_entity"] or "static"
+            
+            for coord in coordinators:
+                old_price = coord.price_kwh
+                coord.price_kwh = new_price
+                _LOGGER.info(
+                    "Applied global price to '%s': %.4f €/kWh (was %.4f)",
+                    coord.appliance_name,
+                    new_price,
+                    old_price
+                )
+        
         # Generate sync report
         synced = []
         not_configured = []
@@ -712,6 +734,21 @@ async def async_setup_services(hass: HomeAssistant) -> None:
             f"**Synced**: {len(synced)}",
             f"**Not configured**: {len(not_configured)}\n",
         ]
+        
+        # Global price sync result
+        if global_price_result and global_price_result["success"]:
+            price = global_price_result["new_price"]
+            source = global_price_result["price_entity"]
+            if source:
+                message_lines.append(f"**💰 Global price applied**: {price:.4f} €/kWh")
+                message_lines.append(f"**Source**: `{source}`")
+            else:
+                message_lines.append(f"**💰 Global price applied**: {price:.4f} €/kWh (static)")
+            message_lines.append(f"**Applied to**: All {len(coordinators)} appliances")
+            message_lines.append("")
+        elif global_price_result:
+            message_lines.append(f"**⚠️ Price sync**: {global_price_result['message']}")
+            message_lines.append("")
         
         if synced:
             message_lines.append("**✅ Synced devices:**")

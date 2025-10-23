@@ -1,5 +1,5 @@
 # Smart Appliance Monitor - Washing Machine Dashboard Template
-# Version: 0.3.0
+# Version: 1.0.0
 # Optimized for washing machines with typical 1-3h cycles
 
 title: {APPLIANCE_NAME}
@@ -12,51 +12,41 @@ sections:
   # ============================================
   - type: grid
     cards:
-      - type: custom:mushroom-template-card
-        primary: {APPLIANCE_NAME}
-        secondary: |
-          {% set state = states('sensor.{APPLIANCE_ID}_state') %}
-          {% if state == 'running' %}
-            🔵 Washing in progress - {{ states('sensor.{APPLIANCE_ID}_cycle_duration') }} min
-          {% elif state == 'finished' %}
-            ✅ Wash complete - {{ states('sensor.{APPLIANCE_ID}_last_cycle_duration') }} min
-          {% else %}
-            ⚪ Ready
-          {% endif %}
-        icon: mdi:washing-machine
-        icon_color: |
-          {% set state = states('sensor.{APPLIANCE_ID}_state') %}
-          {% if state == 'running' %}
-            blue
-          {% elif state == 'finished' %}
-            green
-          {% else %}
-            grey
-          {% endif %}
-        badge_icon: |
-          {% if is_state('binary_sensor.{APPLIANCE_ID}_alert_duration', 'on') %}
-            mdi:alert
-          {% elif is_state('binary_sensor.{APPLIANCE_ID}_unplugged', 'on') %}
-            mdi:power-plug-off
-          {% endif %}
-        badge_color: |
-          {% if is_state('binary_sensor.{APPLIANCE_ID}_alert_duration', 'on') or is_state('binary_sensor.{APPLIANCE_ID}_unplugged', 'on') %}
-            red
-          {% endif %}
-        tap_action:
-          action: more-info
-          entity: sensor.{APPLIANCE_ID}_state
-        fill_container: true
+      # Custom Cycle Card - Modern JS card with real-time updates
+      - type: custom:smart-appliance-cycle-card
+        entity: sensor.{APPLIANCE_ID}_state
+        name: "{APPLIANCE_NAME}"
+        icon: "mdi:washing-machine"
+        show_power_graph: true
+        show_action_buttons: true
+        show_current_power: true
+        graph_hours: 0.5
+        theme: auto
 
   # ============================================
-  # SECTION 2: CURRENT CYCLE
+  # SECTION 2: STATISTICS
   # ============================================
-  - title: Current Cycle
+  - title: Statistiques
+    type: grid
+    cards:
+      # Custom Stats Card - Tabbed statistics (Today/Week/Month)
+      - type: custom:smart-appliance-stats-card
+        entity: sensor.{APPLIANCE_ID}_state
+        name: "Statistiques Détaillées"
+        default_tab: today
+        show_trends: true
+        show_efficiency: true
+        theme: auto
+
+  # ============================================
+  # SECTION 3: CURRENT CYCLE
+  # ============================================
+  - title: Cycle en Cours
     type: grid
     cards:
       - type: gauge
         entity: sensor.{APPLIANCE_ID}_cycle_duration
-        name: Cycle Duration
+        name: Durée Cycle
         needle: true
         severity:
           green: 0
@@ -68,28 +58,28 @@ sections:
 
       - type: statistic
         entity: sensor.{APPLIANCE_ID}_cycle_energy
-        name: Energy Consumed
+        name: Énergie Consommée
         icon: mdi:lightning-bolt
         stat_type: mean
 
       - type: statistic
         entity: sensor.{APPLIANCE_ID}_cycle_cost
-        name: Cycle Cost
+        name: Coût Cycle
         icon: mdi:currency-eur
         stat_type: mean
 
   # ============================================
-  # SECTION 3: POWER & EFFICIENCY
+  # SECTION 4: POWER & EFFICIENCY
   # ============================================
-  - title: Power Consumption
+  - title: Consommation
     type: grid
     cards:
       - type: custom:mini-graph-card
         entities:
           - entity: sensor.{APPLIANCE_ID}_power
-            name: Power
+            name: Puissance
             color: '#3498db'
-        name: Power (last 24h)
+        name: Consommation (24h)
         hours_to_show: 24
         points_per_hour: 4
         line_width: 2
@@ -99,110 +89,261 @@ sections:
           points: false
           legend: true
           fill: fade
-          icon: true
-          state: true
-          name: true
         icon: mdi:chart-line
 
       # Average consumption per cycle
       - type: custom:mushroom-entity-card
         entity: sensor.{APPLIANCE_ID}_last_cycle_energy
-        name: Average Consumption
+        name: Consommation Moyenne
         icon: mdi:lightning-bolt-circle
         primary_info: name
         secondary_info: state
         icon_color: amber
 
   # ============================================
-  # SECTION 4: CONTROLS
+  # SECTION 5: CONTROLS
   # ============================================
-  - title: Controls
+  - title: Contrôles
     type: grid
     cards:
       - type: entities
         entities:
           - entity: switch.{APPLIANCE_ID}_monitoring
-            name: Automatic Monitoring
+            name: Surveillance Automatique
             icon: mdi:eye
           - entity: switch.{APPLIANCE_ID}_notifications
             name: Notifications
             icon: mdi:bell
+          - type: divider
           - type: section
-            label: Types de notifications
+            label: Types de Notifications
           - entity: switch.{APPLIANCE_ID}_notification_cycle_started
-            name: Cycle Started
+            name: Cycle Démarré
             icon: mdi:bell-ring
           - entity: switch.{APPLIANCE_ID}_notification_cycle_finished
-            name: Fin du cycle
+            name: Fin du Cycle
             icon: mdi:bell-check
           - entity: switch.{APPLIANCE_ID}_notification_alert_duration
-            name: Duration Alert
+            name: Alerte Durée
             icon: mdi:bell-alert
           - entity: switch.{APPLIANCE_ID}_notification_unplugged
-            name: Appliance Unplugged
+            name: Appareil Débranché
             icon: mdi:bell-off
+          - type: divider
           - type: section
             label: Actions
           - entity: button.{APPLIANCE_ID}_reset_stats
-            name: Reset Statistics
+            name: Réinitialiser Statistiques
             icon: mdi:restart
 
   # ============================================
-  # SECTION 5: STATISTICS
+  # SECTION 6: ENERGY MANAGEMENT
   # ============================================
-  - title: Statistics
+  - title: Gestion Énergétique
     type: grid
     cards:
-      # Last Cycle Details
       - type: entities
-        title: Last Cycle
-        icon: mdi:history
-        show_header_toggle: false
+        title: Configuration
         entities:
-          - type: custom:mushroom-chips-card
-            chips:
-              - type: template
-                content: '{{ states("sensor.{APPLIANCE_ID}_last_cycle_duration") }} min'
-                icon: mdi:timer
-                icon_color: blue
-              - type: template
-                content: '{{ states("sensor.{APPLIANCE_ID}_last_cycle_energy") }} kWh'
-                icon: mdi:lightning-bolt
-                icon_color: amber
-              - type: template
-                content: '{{ states("sensor.{APPLIANCE_ID}_last_cycle_cost") }} €'
-                icon: mdi:currency-eur
-                icon_color: green
+          - entity: switch.{APPLIANCE_ID}_energy_limits
+            name: Limites Énergie
+            icon: mdi:speedometer
+          - entity: switch.{APPLIANCE_ID}_auto_shutdown
+            name: Arrêt Automatique
+            icon: mdi:power-plug-off
 
-      # Daily Summary
-      - type: custom:mushroom-entity-card
-        entity: sensor.{APPLIANCE_ID}_daily_cycles
-        name: Cycles Today
-        icon: mdi:counter
-        icon_color: purple
-        primary_info: state
-        secondary_info: name
+      - type: horizontal-stack
+        cards:
+          - type: gauge
+            entity: sensor.{APPLIANCE_ID}_daily_energy
+            name: Énergie Jour
+            min: 0
+            max: 5
+            unit: kWh
+            needle: true
+            severity:
+              green: 0
+              yellow: 3
+              red: 4
 
-      - type: custom:mushroom-entity-card
-        entity: sensor.{APPLIANCE_ID}_daily_cost
-        name: Cost Today
-        icon: mdi:currency-eur
-        icon_color: green
-        primary_info: state
-        secondary_info: name
+          - type: gauge
+            entity: sensor.{APPLIANCE_ID}_monthly_energy
+            name: Énergie Mois
+            min: 0
+            max: 50
+            unit: kWh
+            needle: true
+            severity:
+              green: 0
+              yellow: 30
+              red: 40
 
-      - type: custom:mushroom-entity-card
-        entity: sensor.{APPLIANCE_ID}_monthly_cost
-        name: Cost This Month
-        icon: mdi:calendar-month
-        icon_color: green
-        primary_info: state
-        secondary_info: name
+      - type: entities
+        title: Alertes
+        entities:
+          - entity: binary_sensor.{APPLIANCE_ID}_energy_limit_exceeded
+            name: Limite Dépassée
+            icon: mdi:alert-circle
+          - entity: binary_sensor.{APPLIANCE_ID}_budget_exceeded
+            name: Budget Dépassé
+            icon: mdi:cash-remove
 
   # ============================================
-  # SECTION 6: ALERTS
+  # SECTION 7: SCHEDULING
   # ============================================
-  - title: Alerts
+  - title: Planification
+    type: grid
+    cards:
+      - type: entities
+        entities:
+          - entity: switch.{APPLIANCE_ID}_scheduling
+            name: Activer Planification
+            icon: mdi:calendar-clock
+
+      - type: custom:mushroom-template-card
+        primary: |
+          {% if is_state('binary_sensor.{APPLIANCE_ID}_usage_allowed', 'on') %}
+            ✅ Usage Autorisé
+          {% else %}
+            ⛔ Usage Non Autorisé
+          {% endif %}
+        secondary: |
+          {% if is_state('switch.{APPLIANCE_ID}_scheduling', 'on') %}
+            Plage: {{ state_attr('binary_sensor.{APPLIANCE_ID}_usage_allowed', 'allowed_start') | default('N/A', true) }} - {{ state_attr('binary_sensor.{APPLIANCE_ID}_usage_allowed', 'allowed_end') | default('N/A', true) }}
+          {% else %}
+            Planification désactivée
+          {% endif %}
+        icon: |
+          {% if is_state('binary_sensor.{APPLIANCE_ID}_usage_allowed', 'on') %}
+            mdi:check-circle
+          {% else %}
+            mdi:cancel
+          {% endif %}
+        icon_color: |
+          {% if is_state('binary_sensor.{APPLIANCE_ID}_usage_allowed', 'on') %}
+            green
+          {% else %}
+            red
+          {% endif %}
+        tap_action:
+          action: more-info
+          entity: binary_sensor.{APPLIANCE_ID}_usage_allowed
+
+  # ============================================
+  # SECTION 8: AI ANALYSIS
+  # ============================================
+  - title: Analyse IA
+    type: grid
+    cards:
+      - type: horizontal-stack
+        cards:
+          - type: button
+            name: Pattern
+            icon: mdi:chart-timeline-variant
+            tap_action:
+              action: call-service
+              service: smart_appliance_monitor.analyze_cycles
+              service_data:
+                entity_id: sensor.{APPLIANCE_ID}_state
+                analysis_type: pattern
+                cycle_count: 10
+
+          - type: button
+            name: Recommendations
+            icon: mdi:lightbulb-on
+            tap_action:
+              action: call-service
+              service: smart_appliance_monitor.analyze_cycles
+              service_data:
+                entity_id: sensor.{APPLIANCE_ID}_state
+                analysis_type: recommendations
+                cycle_count: 10
+
+          - type: button
+            name: Complète
+            icon: mdi:chart-box
+            tap_action:
+              action: call-service
+              service: smart_appliance_monitor.analyze_cycles
+              service_data:
+                entity_id: sensor.{APPLIANCE_ID}_state
+                analysis_type: all
+                cycle_count: 10
+
+      - type: entities
+        title: État Analyse
+        entities:
+          - entity: switch.{APPLIANCE_ID}_ai_analysis
+            name: Activer Analyse IA
+          - entity: sensor.{APPLIANCE_ID}_ai_analysis
+            name: Dernière Analyse
+            secondary_info: last-changed
+
+      - type: markdown
+        content: >
+          **Résumé:** {{ state_attr('sensor.{APPLIANCE_ID}_ai_analysis', 'summary') | default('Aucune analyse disponible', true) }}
+          
+          
+          **Recommandations:**
+          
+          {{ state_attr('sensor.{APPLIANCE_ID}_ai_analysis', 'recommendations') | default('Aucune recommandation', true) }}
+
+      - type: horizontal-stack
+        cards:
+          - type: custom:mushroom-template-card
+            primary: Économies kWh
+            secondary: "{{ state_attr('sensor.{APPLIANCE_ID}_ai_analysis', 'energy_savings_kwh') | default('N/A', true) }}"
+            icon: mdi:lightning-bolt
+            icon_color: green
+
+          - type: custom:mushroom-template-card
+            primary: Économies €
+            secondary: "{{ state_attr('sensor.{APPLIANCE_ID}_ai_analysis', 'energy_savings_eur') | default('N/A', true) }} €"
+            icon: mdi:currency-eur
+            icon_color: green
+
+  # ============================================
+  # SECTION 9: ANOMALY DETECTION
+  # ============================================
+  - title: Détection d'Anomalies
+    type: grid
+    cards:
+      - type: gauge
+        entity: sensor.{APPLIANCE_ID}_anomaly_score
+        name: Score d'Anomalie
+        min: 0
+        max: 100
+        needle: true
+        severity:
+          green: 0
+          yellow: 30
+          red: 60
+
+      - type: entities
+        entities:
+          - entity: binary_sensor.{APPLIANCE_ID}_anomaly_detected
+            name: Anomalie Détectée
+            icon: mdi:alert-circle
+
+      - type: custom:mini-graph-card
+        entities:
+          - entity: sensor.{APPLIANCE_ID}_anomaly_score
+            name: Score
+            color: '#e74c3c'
+        name: Historique Anomalies (7j)
+        hours_to_show: 168
+        points_per_hour: 1
+        line_width: 2
+        show:
+          labels: true
+          points: false
+          legend: true
+        icon: mdi:chart-line-variant
+
+  # ============================================
+  # SECTION 10: ALERTS
+  # ============================================
+  - title: Alertes
     type: grid
     cards:
       - type: conditional
@@ -211,8 +352,8 @@ sections:
             state: 'on'
         card:
           type: custom:mushroom-template-card
-          primary: ⚠️ Unusually Long Cycle
-          secondary: Cycle exceeds normal duration
+          primary: ⚠️ Cycle Anormalement Long
+          secondary: Le cycle dépasse la durée normale
           icon: mdi:alert-circle
           icon_color: red
           tap_action:
@@ -225,26 +366,26 @@ sections:
             state: 'on'
         card:
           type: custom:mushroom-template-card
-          primary: 🔌 Appliance Unplugged
-          secondary: No power consumption detected
+          primary: 🔌 Appareil Débranché
+          secondary: Aucune consommation détectée
           icon: mdi:power-plug-off
           icon_color: red
           tap_action:
             action: more-info
             entity: binary_sensor.{APPLIANCE_ID}_unplugged
 
-  # ============================================
-  # SECTION 7: QUICK ACTIONS (OPTIONAL)
-  # ============================================
-  - title: Actions rapides
-    type: grid
-    cards:
-      - type: custom:mushroom-chips-card
-        chips:
-          - type: entity
-            entity: binary_sensor.{APPLIANCE_ID}_running
-            icon: mdi:washing-machine
-            use_entity_picture: false
-            tap_action:
-              action: more-info
+      - type: conditional
+        conditions:
+          - entity: binary_sensor.{APPLIANCE_ID}_anomaly_detected
+            state: 'on'
+        card:
+          type: custom:mushroom-template-card
+          primary: 🔍 Anomalie Détectée
+          secondary: |
+            Score: {{ states('sensor.{APPLIANCE_ID}_anomaly_score') }}
+          icon: mdi:alert-circle
+          icon_color: orange
+          tap_action:
+            action: more-info
+            entity: binary_sensor.{APPLIANCE_ID}_anomaly_detected
 
