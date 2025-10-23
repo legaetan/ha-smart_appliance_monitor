@@ -5,6 +5,58 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.9.1] - 2025-10-23
+
+### Added
+
+**Dashboard Enhancements**
+- Complete dashboard redesign with 9 comprehensive views:
+  - Vue d'Ensemble: Global metrics, appliance status, top consumers
+  - Monitoring: Real-time states and power graphs
+  - Détails Appareils: Individual appliance details with custom cards
+  - Énergie & Coûts: Cost tracking and Energy Dashboard integration
+  - Analyse IA: AI analysis controls and results
+  - Alertes & Anomalies: Alerts and anomaly detection
+  - Gestion Énergie: Energy limits, budgets, and scheduling
+  - Contrôles Globaux: Master controls for all switches
+  - Export & Services: Data export and advanced services
+- New generic card templates system (`_card_templates.yaml`) for reusability
+- Updated all appliance templates with 10+ sections each
+- New templates: `water_heater.yaml`, `oven.yaml`, `dryer.yaml`, `desktop.yaml`
+- Enhanced templates: `dishwasher.yaml`, `washing_machine.yaml`, `monitor.yaml`, `nas.yaml`, `printer_3d.yaml`, `vmc.yaml`
+
+**Energy Dashboard Integration**
+- Improved `sync_with_energy_dashboard` service with smart sensor matching:
+  - Uses configured energy sensor from appliance (smart plug sensor)
+  - Fuzzy name matching with accent normalization
+  - Partial name matching for better device detection
+  - Sensor pattern matching (e.g., `lave_linge_consommation` ≈ SAM appliance)
+- **Global price synchronization** from Energy Dashboard to SAM:
+  - Automatically retrieves price from `entity_energy_price` or `number_energy_price`
+  - Applies global price to all appliances (one price for the house)
+  - Supports dynamic price entities (e.g., `input_number.edf_price_kwh`)
+  - Supports static price configuration
+  - Detailed sync report with price source and applied devices
+
+### Changed
+
+**Energy Dashboard Sync**
+- `sync_with_energy_dashboard` now syncs actual configured sensors instead of SAM-generated sensors
+- Sync report now includes global price information and source
+- Better error handling for missing or unavailable sensors
+- More detailed logging for debugging sync issues
+
+**Dashboard Structure**
+- Removed obsolete dashboard location (`custom_components/.../dashboards/`)
+- Consolidated all dashboards in `/dashboards/templates/`
+- Replaced `custom:bar-card` with native `entities` card for better compatibility
+- Updated `README.md` with comprehensive usage documentation
+
+### Fixed
+- Energy Dashboard sync now correctly identifies appliances already configured
+- Price synchronization applies to all appliances uniformly (global pricing)
+- Dashboard no longer requires external dependencies (`bar-card` removed from main view)
+
 ## [0.9.0] - 2025-10-22
 
 ### ⚠️ BREAKING CHANGES

@@ -6,6 +6,16 @@ This directory contains detailed release notes for each version of Smart Applian
 
 ### Version 0.9.x - Global Configuration & Dynamic Currency 🌍
 
+- **[v0.9.1](RELEASE_NOTES_v0.9.1.md)** - October 23, 2025 - Dashboard Enhancement & Energy Integration 🎨
+  - **NEW**: Complete dashboard redesign with 9 comprehensive views
+  - **NEW**: Generic card templates system (`_card_templates.yaml`)
+  - **NEW**: 4 new appliance templates (water heater, oven, dryer, desktop)
+  - **NEW**: Global price synchronization from Energy Dashboard
+  - **ENHANCED**: Smart sensor matching with fuzzy logic (4 strategies)
+  - **ENHANCED**: All appliance templates updated to v1.0.0 (10+ sections)
+  - **FIXED**: Energy Dashboard sync now uses configured sensors
+  - **FIXED**: Price applies uniformly to all appliances
+
 - **[v0.9.0](RELEASE_NOTES_v0.9.0.md)** - October 22, 2025 - Global Configuration System ⚠️ **BREAKING CHANGES**
   - **BREAKING**: Price configuration now global only
   - **BREAKING**: "Comparative" AI analysis type removed
