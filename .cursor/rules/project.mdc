@@ -219,6 +219,7 @@ ha-smart_appliance_monitor/
 │       └── strings.json             # English strings
 ├── tests/                           # Unit tests
 ├── docs/                            # Technical documentation
+│   ├── dev/                         # Development guides (gitignored, temporary)
 │   ├── wiki-github/                 # User wiki (submodule)
 │   ├── release_notes/               # Release notes (permanent)
 │   │   ├── README.md                # Index of all releases
@@ -245,6 +246,7 @@ ha-smart_appliance_monitor/
 **Temporary files (gitignored):**
 - Archives: `smart_appliance_monitor-vX.Y.Z.zip`
 - Development notes: `notes.md`, `todo.md`, etc.
+- Development guides: `docs/dev/` directory (see below)
 
 ## Git Commit Message Format
 
@@ -285,19 +287,60 @@ from .const import DOMAIN
 
 ## Important Rules
 
+### Development Guides
+When working on complex features or implementations, you can create temporary development guides to track progress, document decisions, and organize implementation steps:
+
+**Purpose:**
+- Track implementation progress during development
+- Document technical decisions and corrections applied
+- Create detailed summaries of complex changes
+- Serve as reference during development sessions
+
+**Location:**
+- **MUST be in `docs/dev/` directory** (gitignored)
+- Examples: 
+  - `docs/dev/DASHBOARD_IMPLEMENTATION.md`
+  - `docs/dev/FEATURE_XYZ_PROGRESS.md`
+  - `docs/dev/CORRECTIONS_APPLIED.md`
+
+**Guidelines:**
+- These guides are **TEMPORARY** working documents
+- They are **NOT committed to git**
+- After feature completion, extract relevant information and add it to:
+  - Official documentation (`docs/*.md`)
+  - Wiki (`docs/wiki-github/`)
+  - Release notes (`docs/release_notes/`)
+  - CHANGELOG.md
+- Then delete the temporary guide or leave it for historical reference
+
+**Never:**
+- ❌ Create development guides in project root (e.g., `DASHBOARD_*.md` in `/`)
+- ❌ Commit temporary development guides to git
+- ❌ Use these guides as permanent documentation
+
+**Cleanup:**
+- Before release, ensure all temporary guides are either:
+  - Moved to `docs/dev/` (if keeping for reference)
+  - Deleted (if no longer needed)
+  - Or their content integrated into permanent docs
+
 ### Never Commit
 - ZIP archives (`smart_appliance_monitor-*.zip`)
 - Python cache files (`__pycache__/`, `*.pyc`)
 - IDE files (`.vscode/`, `.idea/`)
 - Temporary development notes (`notes.md`, `todo.md`, etc.)
 - Development test files in project root (`TEST_*.md`, `*_updated.md`, `*_draft.md`, etc.)
+- Development guides in project root (e.g., `DASHBOARD_*.md`, `IMPLEMENTATION_*.md` in `/`)
+- **Exception**: Development guides in `docs/dev/` are gitignored but can be kept locally
 
 ### Cleanup Before Release
 Before creating a release, clean up temporary development files from the project root:
 - Remove duplicate/updated versions of documentation (e.g., `README_updated.md`)
 - Remove test guides in root if they exist in proper location (e.g., `TEST_CYCLE_HISTORY.md` should only be in `docs/`)
+- Move or delete development guides from project root (e.g., `DASHBOARD_*.md`, `IMPLEMENTATION_*.md`)
+- Ensure `docs/dev/` directory is gitignored and not staged
 - Keep only one version of each document in its proper location
-- Command to find temp files: `find . -maxdepth 1 -name "*_updated.md" -o -name "TEST_*.md" -o -name "*_draft.md"`
+- Command to find temp files: `find . -maxdepth 1 \( -name "*_updated.md" -o -name "TEST_*.md" -o -name "*_draft.md" -o -name "DASHBOARD_*.md" -o -name "IMPLEMENTATION_*.md" \)`
 
 ### Always Remember
 - Wiki is a submodule - commit and push wiki changes separately FIRST

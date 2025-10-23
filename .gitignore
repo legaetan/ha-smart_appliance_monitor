@@ -145,6 +145,9 @@ smart_appliance_monitor-*.zip
 
 RELEASE_SUMMARY_v*.md
 
+# Development guides (temporary working documents)
+docs/dev/
+
 # Frontend cards - npm dependencies and build artifacts
 custom_components/smart_appliance_monitor/www/smart-appliance-cards/node_modules/
 custom_components/smart_appliance_monitor/www/smart-appliance-cards/package-lock.json
