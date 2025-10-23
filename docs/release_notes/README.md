@@ -4,6 +4,18 @@ This directory contains detailed release notes for each version of Smart Applian
 
 ## 📋 Version Index
 
+### Version 1.2.x - Modern Design 🎨
+
+- **[v1.2.0](RELEASE_NOTES_v1.2.0.md)** - October 23, 2025 - **Modern Design & Enhanced Cost Overview** 🎨
+  - **NEW**: Comprehensive cost overview table with visual progress bars
+  - **NEW**: Color-coded costs (green/orange/red) based on thresholds
+  - **NEW**: Enhanced appliance cards in frontend panel with statistics
+  - **CHANGED**: Complete CSS refactoring with modern design system
+  - **CHANGED**: Dashboard configuration step in options flow
+  - **CHANGED**: State badges with pulse animation for running appliances
+  - **REMOVED**: Global configuration section (color picker, unused checkboxes)
+  - **IMPROVED**: User experience with better visual hierarchy and spacing
+
 ### Version 1.1.x - Optimized Detection 🎯
 
 - **[v1.1.0](RELEASE_NOTES_v1.1.0.md)** - October 23, 2025 - **Optimized Detection & Air Conditioner Profile** ⚡

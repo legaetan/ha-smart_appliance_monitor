@@ -41,16 +41,18 @@ DEFAULT_OVERVIEW_CONFIG = {
 }
 
 DEFAULT_APPLIANCE_SECTIONS = {
-    "status": True,
-    "statistics": True,
-    "current_cycle": True,
-    "power_graph": True,
-    "controls": True,
-    "energy_management": True,
-    "scheduling": True,
-    "ai_analysis": True,
-    "anomaly_detection": True,
-    "alerts": True,
+    "status": True,                    # Gauge puissance + état
+    "statistics_basic": True,          # Stats aujourd'hui/mois (existing)
+    "statistics_advanced": True,       # Stats enrichies (fréquence, moyennes, tendances)
+    "current_cycle": True,             # Cycle en cours
+    "power_graph": True,               # Graphique historique puissance
+    "controls": True,                  # Switches monitoring/notifications + reset
+    "ai_actions": True,                # Carte IA avec services et dernière analyse
+    "services": True,                  # Services complets (export, sync, etc.)
+    "energy_management": False,        # Gestion énergie (si activé)
+    "scheduling": False,               # Planification (si activé)
+    "anomaly_detection": False,        # Détection anomalies (si activé)
+    "alerts": False,                   # Alertes
 }
 
 

@@ -350,7 +350,11 @@ class SmartApplianceMonitorOptionsFlowHandler(config_entries.OptionsFlow):
                 CONF_NOTIFICATION_TYPES, DEFAULT_NOTIFICATION_TYPES
             )
             
-            # Nettoyer expert_mode de la configuration finale
+            # Si l'utilisateur veut configurer le dashboard
+            if user_input.get("configure_dashboard", False):
+                return await self.async_step_dashboard_config()
+            
+            # Sinon, nettoyer expert_mode de la configuration finale
             self._options.pop("expert_mode", None)
             
             # Créer l'entrée finale
@@ -384,6 +388,10 @@ class SmartApplianceMonitorOptionsFlowHandler(config_entries.OptionsFlow):
                         translation_key="notification_type",
                     )
                 ),
+                vol.Optional(
+                    "configure_dashboard",
+                    default=False,
+                ): cv.boolean,
             }
         )
 
@@ -559,6 +567,76 @@ class SmartApplianceMonitorOptionsFlowHandler(config_entries.OptionsFlow):
 
         return self.async_show_form(
             step_id="scheduling",
+            data_schema=options_schema,
+        )
+
+    async def async_step_dashboard_config(
+        self, user_input: dict[str, Any] | None = None
+    ) -> FlowResult:
+        """Step: Dashboard card visibility configuration."""
+        if user_input is not None:
+            # Sauvegarder la configuration du dashboard
+            dashboard_sections = {
+                "status": user_input.get("show_status", True),
+                "statistics_basic": user_input.get("show_statistics_basic", True),
+                "statistics_advanced": user_input.get("show_statistics_advanced", True),
+                "current_cycle": user_input.get("show_current_cycle", True),
+                "power_graph": user_input.get("show_power_graph", True),
+                "controls": user_input.get("show_controls", True),
+                "ai_actions": user_input.get("show_ai_actions", True),
+                "services": user_input.get("show_services", True),
+            }
+            
+            self._options["dashboard_sections_visible"] = dashboard_sections
+            
+            # Nettoyer expert_mode de la configuration finale
+            self._options.pop("expert_mode", None)
+            
+            # Créer l'entrée finale
+            return self.async_create_entry(title="", data=self._options)
+
+        # Get current config or defaults
+        current_sections = self.config_entry.options.get("dashboard_sections_visible", {})
+        
+        options_schema = vol.Schema(
+            {
+                vol.Optional(
+                    "show_status",
+                    default=current_sections.get("status", True),
+                ): cv.boolean,
+                vol.Optional(
+                    "show_statistics_basic",
+                    default=current_sections.get("statistics_basic", True),
+                ): cv.boolean,
+                vol.Optional(
+                    "show_statistics_advanced",
+                    default=current_sections.get("statistics_advanced", True),
+                ): cv.boolean,
+                vol.Optional(
+                    "show_current_cycle",
+                    default=current_sections.get("current_cycle", True),
+                ): cv.boolean,
+                vol.Optional(
+                    "show_power_graph",
+                    default=current_sections.get("power_graph", True),
+                ): cv.boolean,
+                vol.Optional(
+                    "show_controls",
+                    default=current_sections.get("controls", True),
+                ): cv.boolean,
+                vol.Optional(
+                    "show_ai_actions",
+                    default=current_sections.get("ai_actions", True),
+                ): cv.boolean,
+                vol.Optional(
+                    "show_services",
+                    default=current_sections.get("services", True),
+                ): cv.boolean,
+            }
+        )
+
+        return self.async_show_form(
+            step_id="dashboard_config",
             data_schema=options_schema,
         )
 

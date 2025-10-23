@@ -29,6 +29,11 @@ class SmartApplianceEntity(CoordinatorEntity[SmartApplianceCoordinator]):
         self.entity_type = entity_type
         self._attr_unique_id = f"{coordinator.entry.entry_id}_{entity_type}"
         
+        # Set English name BEFORE translation_key to force English entity_id
+        # The entity_id will be: sensor.{appliance_slug}_{entity_type}
+        # The UI will still show translated names via translation_key in child classes
+        self._attr_name = entity_type.replace("_", " ").capitalize()
+        
         # Device info pour regrouper toutes les entités
         self._attr_device_info = DeviceInfo(
             identifiers={(DOMAIN, coordinator.entry.entry_id)},

@@ -27,128 +27,362 @@ class SamConfigPanel extends HTMLElement {
     this.innerHTML = `
       <style>
         .sam-config-panel {
-          padding: 16px;
-          max-width: 1200px;
+          padding: 24px;
+          max-width: 1400px;
           margin: 0 auto;
+          background: var(--primary-background-color);
         }
         .sam-header {
           display: flex;
           align-items: center;
-          margin-bottom: 24px;
+          justify-content: space-between;
+          margin-bottom: 32px;
+          padding-bottom: 16px;
+          border-bottom: 2px solid var(--divider-color);
+        }
+        .sam-header-left {
+          display: flex;
+          align-items: center;
+          gap: 16px;
         }
         .sam-header h1 {
           margin: 0;
-          font-size: 2em;
+          font-size: 2.5em;
+          font-weight: 700;
+          color: var(--primary-text-color);
         }
-        .sam-section {
+        .sam-header-badge {
+          background: var(--primary-color);
+          color: white;
+          padding: 6px 14px;
+          border-radius: 20px;
+          font-size: 0.9em;
+          font-weight: 600;
+        }
+        .sam-card {
           background: var(--card-background-color);
-          border-radius: 8px;
-          padding: 16px;
-          margin-bottom: 16px;
+          border-radius: 12px;
+          padding: 20px;
+          margin-bottom: 20px;
+          box-shadow: 0 2px 8px rgba(0,0,0,0.1);
         }
         .sam-section-title {
-          font-size: 1.2em;
-          font-weight: bold;
-          margin-bottom: 12px;
-        }
-        .sam-appliance-item {
+          font-size: 1.4em;
+          font-weight: 600;
+          margin-bottom: 16px;
+          color: var(--primary-text-color);
           display: flex;
           align-items: center;
+          gap: 8px;
+        }
+        .sam-appliance-card {
+          background: var(--card-background-color);
+          border: 1px solid var(--divider-color);
+          border-radius: 12px;
+          padding: 20px;
+          margin-bottom: 16px;
+          transition: all 0.3s ease;
+          box-shadow: 0 1px 3px rgba(0,0,0,0.08);
+        }
+        .sam-appliance-card:hover {
+          transform: translateY(-3px);
+          box-shadow: 0 6px 16px rgba(0,0,0,0.12);
+          border-color: var(--primary-color);
+        }
+        .sam-appliance-header {
+          display: flex;
           justify-content: space-between;
-          padding: 12px;
-          border-bottom: 1px solid var(--divider-color);
+          align-items: center;
+          margin-bottom: 12px;
         }
         .sam-appliance-info {
-          flex: 1;
+          display: flex;
+          align-items: center;
+          gap: 12px;
+        }
+        .sam-appliance-icon {
+          font-size: 2em;
         }
         .sam-appliance-name {
-          font-weight: bold;
+          font-size: 1.2em;
+          font-weight: 600;
+          color: var(--primary-text-color);
         }
-        .sam-appliance-status {
-          font-size: 0.9em;
+        .sam-badge {
+          display: inline-block;
+          padding: 6px 14px;
+          border-radius: 16px;
+          font-size: 0.85em;
+          font-weight: 600;
+          text-transform: uppercase;
+        }
+        .sam-badge-idle {
+          background: #95a5a6;
+          color: white;
+        }
+        .sam-badge-running {
+          background: #3498db;
+          color: white;
+        }
+        .sam-badge-finished {
+          background: #2ecc71;
+          color: white;
+        }
+        .sam-badge-success {
+          background: #2ecc71;
+          color: white;
+        }
+        .sam-badge-warning {
+          background: #f39c12;
+          color: white;
+        }
+        .sam-stats-grid {
+          display: grid;
+          grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+          gap: 12px;
+          margin-top: 12px;
+        }
+        .sam-stat-item {
+          text-align: center;
+          padding: 12px;
+          background: var(--secondary-background-color);
+          border-radius: 8px;
+        }
+        .sam-stat-value {
+          font-size: 1.4em;
+          font-weight: 700;
+          color: var(--primary-color);
+          display: block;
+        }
+        .sam-stat-label {
+          font-size: 0.85em;
           color: var(--secondary-text-color);
-        }
-        .sam-appliance-actions {
-          display: flex;
-          gap: 8px;
+          margin-top: 4px;
+          display: block;
         }
         .sam-button {
           background: var(--primary-color);
-          color: var(--text-primary-color);
+          color: white;
           border: none;
-          padding: 8px 16px;
-          border-radius: 4px;
+          padding: 12px 24px;
+          border-radius: 8px;
           cursor: pointer;
+          font-weight: 600;
+          font-size: 0.95em;
+          transition: all 0.2s ease;
+          box-shadow: 0 2px 4px rgba(0,0,0,0.1);
         }
         .sam-button:hover {
-          opacity: 0.8;
+          transform: translateY(-2px);
+          box-shadow: 0 4px 8px rgba(0,0,0,0.15);
+        }
+        .sam-button:active {
+          transform: translateY(0);
         }
         .sam-button-secondary {
           background: var(--secondary-background-color);
           color: var(--primary-text-color);
         }
-        .sam-button-danger {
-          background: var(--error-color);
-        }
-        .sam-checkbox {
-          margin-right: 8px;
-        }
-        .sam-color-input {
-          width: 60px;
-          height: 32px;
-          border: 1px solid var(--divider-color);
-          border-radius: 4px;
+        .sam-button-primary {
+          background: var(--primary-color);
+          color: white;
         }
         .sam-loading {
           text-align: center;
-          padding: 32px;
+          padding: 48px;
           color: var(--secondary-text-color);
+          font-size: 1.1em;
+        }
+        .sam-modal {
+          position: fixed;
+          top: 0;
+          left: 0;
+          width: 100%;
+          height: 100%;
+          background: rgba(0, 0, 0, 0.6);
+          backdrop-filter: blur(4px);
+          display: none;
+          justify-content: center;
+          align-items: center;
+          z-index: 1000;
+          animation: fadeIn 0.2s ease;
+        }
+        .sam-modal.show {
+          display: flex;
+        }
+        .sam-modal-content {
+          background: var(--card-background-color);
+          border-radius: 16px;
+          padding: 28px;
+          max-width: 650px;
+          width: 90%;
+          max-height: 85vh;
+          overflow-y: auto;
+          box-shadow: 0 10px 40px rgba(0,0,0,0.3);
+          animation: slideUp 0.3s ease;
+        }
+        @keyframes fadeIn {
+          from { opacity: 0; }
+          to { opacity: 1; }
+        }
+        @keyframes slideUp {
+          from { transform: translateY(20px); opacity: 0; }
+          to { transform: translateY(0); opacity: 1; }
+        }
+        .sam-modal-header {
+          display: flex;
+          justify-content: space-between;
+          align-items: center;
+          margin-bottom: 24px;
+          padding-bottom: 16px;
+          border-bottom: 2px solid var(--divider-color);
+        }
+        .sam-modal-title {
+          font-size: 1.6em;
+          font-weight: 700;
+          color: var(--primary-text-color);
+        }
+        .sam-modal-close {
+          background: var(--secondary-background-color);
+          border: none;
+          width: 36px;
+          height: 36px;
+          border-radius: 50%;
+          font-size: 1.4em;
+          cursor: pointer;
+          color: var(--primary-text-color);
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          transition: all 0.2s ease;
+        }
+        .sam-modal-close:hover {
+          background: var(--error-color);
+          color: white;
+          transform: rotate(90deg);
+        }
+        .sam-form-group {
+          margin-bottom: 20px;
+        }
+        .sam-form-label {
+          display: block;
+          margin-bottom: 12px;
+          font-weight: 600;
+          font-size: 1.1em;
+          color: var(--primary-text-color);
+        }
+        .sam-checkbox-group {
+          display: flex;
+          flex-direction: column;
+          gap: 10px;
+        }
+        .sam-checkbox-item {
+          display: flex;
+          align-items: flex-start;
+          padding: 14px;
+          background: var(--secondary-background-color);
+          border-radius: 10px;
+          border: 2px solid transparent;
+          transition: all 0.2s ease;
+          cursor: pointer;
+        }
+        .sam-checkbox-item:hover {
+          border-color: var(--primary-color);
+          background: var(--card-background-color);
+        }
+        .sam-checkbox-item input {
+          margin-right: 14px;
+          width: 22px;
+          height: 22px;
+          cursor: pointer;
+          flex-shrink: 0;
+          margin-top: 2px;
+        }
+        .sam-checkbox-item label {
+          flex: 1;
+          cursor: pointer;
+        }
+        .sam-checkbox-item .description {
+          font-size: 0.9em;
+          color: var(--secondary-text-color);
+          margin-top: 4px;
+          line-height: 1.4;
+        }
+        .sam-modal-actions {
+          display: flex;
+          gap: 12px;
+          justify-content: flex-end;
+          margin-top: 28px;
+          padding-top: 20px;
+          border-top: 1px solid var(--divider-color);
+        }
+        .sam-dashboard-status {
+          display: flex;
+          align-items: center;
+          gap: 12px;
+          padding: 16px;
+          background: var(--secondary-background-color);
+          border-radius: 10px;
+          margin-bottom: 16px;
+        }
+        .sam-dashboard-status-icon {
+          font-size: 2em;
+        }
+        .sam-logs-container {
+          max-height: 200px;
+          overflow-y: auto;
+          font-family: 'Courier New', monospace;
+          font-size: 0.9em;
+          background: var(--secondary-background-color);
+          padding: 12px;
+          border-radius: 8px;
+        }
+        .sam-log-entry {
+          padding: 4px 0;
+          border-bottom: 1px solid var(--divider-color);
+        }
+        .sam-log-entry:last-child {
+          border-bottom: none;
         }
       </style>
       <div class="sam-config-panel">
         <div class="sam-header">
-          <h1>⚡ Smart Appliances Configuration</h1>
+          <div class="sam-header-left">
+            <h1>⚡ Smart Appliances</h1>
+            <span class="sam-header-badge" id="appliances-count">0 appareils</span>
+          </div>
         </div>
         
-        <div class="sam-section">
-          <div class="sam-section-title">🌍 Configuration Globale</div>
-          <div id="global-settings">
-            <label>
-              <input type="checkbox" class="sam-checkbox" id="use-custom-cards" />
-              Utiliser les cartes personnalisées
-            </label>
-            <br />
-            <label>
-              <input type="checkbox" class="sam-checkbox" id="auto-update" />
-              Mise à jour automatique
-            </label>
-            <br />
-            <label>
-              Couleur principale:
-              <input type="color" class="sam-color-input" id="primary-color" value="#3498db" />
-            </label>
-          </div>
-        </div>
-
-        <div class="sam-section">
+        <div class="sam-card">
           <div class="sam-section-title">📊 Dashboard</div>
           <div id="dashboard-status" class="sam-loading">Chargement...</div>
-          <div id="dashboard-actions" style="margin-top: 16px; display: none;">
-            <button class="sam-button" id="create-dashboard">Créer le Dashboard</button>
-            <button class="sam-button sam-button-secondary" id="rebuild-dashboard">Reconstruire</button>
+          <div id="dashboard-actions" style="margin-top: 16px; display: none; display: flex; gap: 12px;">
+            <button class="sam-button sam-button-primary" id="create-dashboard">📝 Créer le Dashboard</button>
+            <button class="sam-button sam-button-secondary" id="rebuild-dashboard">🔄 Reconstruire</button>
           </div>
         </div>
 
-        <div class="sam-section">
-          <div class="sam-section-title">🔧 Appareils (Vues)</div>
+        <div class="sam-card">
+          <div class="sam-section-title">🔧 Appareils</div>
           <div id="appliances-list" class="sam-loading">Chargement des appareils...</div>
         </div>
 
-        <div class="sam-section">
+        <div class="sam-card">
           <div class="sam-section-title">📝 Logs</div>
-          <div id="logs-container" style="font-family: monospace; font-size: 0.9em;">
-            <div>Dashboard configuration panel chargé</div>
+          <div id="logs-container" class="sam-logs-container">
+            <div class="sam-log-entry">✅ Panel de configuration chargé</div>
           </div>
+        </div>
+      </div>
+      
+      <!-- Modal for card sections configuration -->
+      <div class="sam-modal" id="config-modal">
+        <div class="sam-modal-content">
+          <div class="sam-modal-header">
+            <div class="sam-modal-title" id="modal-title">Configuration</div>
+            <button class="sam-modal-close" id="modal-close">×</button>
+          </div>
+          <div id="modal-body"></div>
         </div>
       </div>
     `;
@@ -169,6 +403,20 @@ class SamConfigPanel extends HTMLElement {
     if (rebuildBtn) {
       rebuildBtn.addEventListener("click", () => this._rebuildDashboard());
     }
+
+    const modalClose = this.querySelector("#modal-close");
+    if (modalClose) {
+      modalClose.addEventListener("click", () => this._closeModal());
+    }
+
+    const modal = this.querySelector("#config-modal");
+    if (modal) {
+      modal.addEventListener("click", (e) => {
+        if (e.target === modal) {
+          this._closeModal();
+        }
+      });
+    }
   }
 
   async _update() {
@@ -186,18 +434,8 @@ class SamConfigPanel extends HTMLElement {
 
   async _loadConfig() {
     try {
-      // Get config via service call (not WebSocket)
-      // For now, use default config - in production, this would call a service
-      this._config = {
-        global_settings: {
-          use_custom_cards: true,
-          auto_update: true,
-          color_scheme: {
-            primary: "#3498db",
-          },
-        },
-      };
-      this._updateGlobalSettings();
+      // No need for config anymore (removed color settings)
+      this._config = { global_settings: {} };
     } catch (err) {
       this._log(`Erreur chargement config: ${err.message}`);
     }
@@ -215,6 +453,13 @@ class SamConfigPanel extends HTMLElement {
       );
 
       this._coordinators = applianceStates;
+      
+      // Update appliances count in header
+      const countBadge = this.querySelector("#appliances-count");
+      if (countBadge) {
+        countBadge.textContent = `${applianceStates.length} appareil${applianceStates.length > 1 ? "s" : ""}`;
+      }
+      
       this._updateAppliancesList();
     } catch (err) {
       this._log(`Erreur chargement appareils: ${err.message}`);
@@ -263,26 +508,6 @@ class SamConfigPanel extends HTMLElement {
     return this._coordinators.length > 0;
   }
 
-  _updateGlobalSettings() {
-    if (!this._config) return;
-
-    const useCustomCards = this.querySelector("#use-custom-cards");
-    const autoUpdate = this.querySelector("#auto-update");
-    const primaryColor = this.querySelector("#primary-color");
-
-    if (useCustomCards) {
-      useCustomCards.checked =
-        this._config.global_settings?.use_custom_cards ?? true;
-    }
-    if (autoUpdate) {
-      autoUpdate.checked = this._config.global_settings?.auto_update ?? true;
-    }
-    if (primaryColor) {
-      primaryColor.value =
-        this._config.global_settings?.color_scheme?.primary ?? "#3498db";
-    }
-  }
-
   _updateAppliancesList() {
     const container = this.querySelector("#appliances-list");
     if (!container) return;
@@ -299,17 +524,49 @@ class SamConfigPanel extends HTMLElement {
         const name = state.attributes.friendly_name;
         const entityId = state.entity_id;
         const applianceId = entityId.replace("sensor.", "").replace("_state", "");
+        const currentState = state.state || "idle";
+        
+        // Get badge class based on state
+        const badgeClass = `sam-badge-${currentState}`;
+        const stateLabel = currentState.charAt(0).toUpperCase() + currentState.slice(1);
+        
+        // Try to get stats from related entities
+        const dailyCyclesEntity = this._hass.states[`sensor.${applianceId}_daily_cycles`] || 
+                                   this._hass.states[`sensor.${applianceId}_total_cycles_today`];
+        const dailyCostEntity = this._hass.states[`sensor.${applianceId}_daily_cost`];
+        const monthlyCyclesEntity = this._hass.states[`sensor.${applianceId}_monthly_cycles`];
+        
+        const dailyCycles = dailyCyclesEntity ? dailyCyclesEntity.state : "0";
+        const dailyCost = dailyCostEntity ? parseFloat(dailyCostEntity.state).toFixed(2) : "0.00";
+        const monthlyCycles = monthlyCyclesEntity ? monthlyCyclesEntity.state : "0";
 
         return `
-        <div class="sam-appliance-item">
-          <div class="sam-appliance-info">
-            <div class="sam-appliance-name">${name}</div>
-            <div class="sam-appliance-status">ID: ${applianceId}</div>
-          </div>
-          <div class="sam-appliance-actions">
-            <button class="sam-button sam-button-secondary" data-action="configure" data-id="${applianceId}">
+        <div class="sam-appliance-card">
+          <div class="sam-appliance-header">
+            <div class="sam-appliance-info">
+              <span class="sam-appliance-icon">🔌</span>
+              <div>
+                <div class="sam-appliance-name">${name}</div>
+                <span class="sam-badge ${badgeClass}">${stateLabel}</span>
+              </div>
+            </div>
+            <button class="sam-button sam-button-primary" data-action="configure" data-id="${applianceId}">
               ⚙️ Configurer
             </button>
+          </div>
+          <div class="sam-stats-grid">
+            <div class="sam-stat-item">
+              <span class="sam-stat-value">${dailyCycles}</span>
+              <span class="sam-stat-label">Cycles Aujourd'hui</span>
+            </div>
+            <div class="sam-stat-item">
+              <span class="sam-stat-value">${dailyCost}€</span>
+              <span class="sam-stat-label">Coût Aujourd'hui</span>
+            </div>
+            <div class="sam-stat-item">
+              <span class="sam-stat-value">${monthlyCycles}</span>
+              <span class="sam-stat-label">Cycles Ce Mois</span>
+            </div>
           </div>
         </div>
       `;
@@ -361,8 +618,142 @@ class SamConfigPanel extends HTMLElement {
   }
 
   _handleApplianceAction(action, applianceId) {
-    this._log(`Action ${action} pour ${applianceId}`);
-    // Implement configuration dialog here
+    if (action === "configure") {
+      this._openConfigureModal(applianceId);
+    }
+  }
+
+  _openConfigureModal(applianceId) {
+    const modal = this.querySelector("#config-modal");
+    const modalTitle = this.querySelector("#modal-title");
+    const modalBody = this.querySelector("#modal-body");
+
+    // Find appliance name
+    const state = this._coordinators.find(
+      (s) => s.entity_id === `sensor.${applianceId}_state`
+    );
+    const applianceName = state ? state.attributes.friendly_name : applianceId;
+
+    modalTitle.textContent = `⚙️ Configuration - ${applianceName}`;
+
+    // Build form
+    const sections = [
+      { id: "status", label: "Status", description: "Gauge de puissance et état" },
+      {
+        id: "statistics_basic",
+        label: "Statistiques Basiques",
+        description: "Stats aujourd'hui et ce mois",
+      },
+      {
+        id: "statistics_advanced",
+        label: "Statistiques Avancées",
+        description: "Fréquences, moyennes, tendances",
+      },
+      {
+        id: "current_cycle",
+        label: "Cycle en Cours",
+        description: "Durée, énergie, coût du cycle actuel",
+      },
+      {
+        id: "power_graph",
+        label: "Graphique Puissance",
+        description: "Historique de puissance sur 24h",
+      },
+      { id: "ai_actions", label: "Actions IA", description: "Boutons d'analyse IA" },
+      {
+        id: "services",
+        label: "Services & Actions",
+        description: "Export, sync, historique",
+      },
+      {
+        id: "controls",
+        label: "Contrôles",
+        description: "Monitoring, notifications, reset",
+      },
+    ];
+
+    const checkboxes = sections
+      .map(
+        (section) => `
+        <div class="sam-checkbox-item">
+          <input type="checkbox" id="section-${section.id}" checked />
+          <label for="section-${section.id}">
+            <div><strong>${section.label}</strong></div>
+            <div class="description">${section.description}</div>
+          </label>
+        </div>
+      `
+      )
+      .join("");
+
+    modalBody.innerHTML = `
+      <div class="sam-form-group">
+        <div class="sam-form-label">Sections de cartes à afficher :</div>
+        <div class="sam-checkbox-group">
+          ${checkboxes}
+        </div>
+      </div>
+      <div class="sam-modal-actions">
+        <button class="sam-button sam-button-secondary" id="modal-cancel">Annuler</button>
+        <button class="sam-button" id="modal-save">💾 Sauvegarder</button>
+      </div>
+    `;
+
+    // Attach modal actions
+    modalBody.querySelector("#modal-cancel").addEventListener("click", () => {
+      this._closeModal();
+    });
+
+    modalBody.querySelector("#modal-save").addEventListener("click", () => {
+      this._saveApplianceConfig(applianceId);
+    });
+
+    modal.classList.add("show");
+  }
+
+  _closeModal() {
+    const modal = this.querySelector("#config-modal");
+    modal.classList.remove("show");
+  }
+
+  async _saveApplianceConfig(applianceId) {
+    const sections = {
+      status: this.querySelector("#section-status").checked,
+      statistics_basic: this.querySelector("#section-statistics_basic").checked,
+      statistics_advanced: this.querySelector("#section-statistics_advanced")
+        .checked,
+      current_cycle: this.querySelector("#section-current_cycle").checked,
+      power_graph: this.querySelector("#section-power_graph").checked,
+      ai_actions: this.querySelector("#section-ai_actions").checked,
+      services: this.querySelector("#section-services").checked,
+      controls: this.querySelector("#section-controls").checked,
+    };
+
+    this._log(`Sauvegarde configuration pour ${applianceId}...`);
+
+    try {
+      await this._hass.callService("smart_appliance_monitor", "configure_dashboard", {
+        appliance_views: {
+          [applianceId]: {
+            sections_visible: sections,
+          },
+        },
+      });
+
+      this._log(`✅ Configuration sauvegardée pour ${applianceId}`);
+      this._closeModal();
+
+      // Rebuild dashboard
+      this._log("🔄 Régénération du dashboard...");
+      await this._hass.callService(
+        "smart_appliance_monitor",
+        "generate_dashboard_yaml",
+        {}
+      );
+      this._log("✅ Dashboard régénéré avec succès !");
+    } catch (err) {
+      this._log(`❌ Erreur sauvegarde: ${err.message}`);
+    }
   }
 
   _log(message) {
@@ -371,6 +762,7 @@ class SamConfigPanel extends HTMLElement {
 
     const time = new Date().toLocaleTimeString();
     const logEntry = document.createElement("div");
+    logEntry.className = "sam-log-entry";
     logEntry.textContent = `[${time}] ${message}`;
     container.appendChild(logEntry);
 
@@ -378,6 +770,9 @@ class SamConfigPanel extends HTMLElement {
     while (container.children.length > 10) {
       container.removeChild(container.firstChild);
     }
+    
+    // Auto-scroll to bottom
+    container.scrollTop = container.scrollHeight;
   }
 }
 

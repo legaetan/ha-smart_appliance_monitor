@@ -5,6 +5,99 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.2.0] - 2025-10-23
+
+### 🎨 Modern Design & Enhanced Cost Overview
+
+This release brings a complete design overhaul of the frontend configuration panel and adds a comprehensive cost overview table to the dashboard.
+
+### Added
+
+- **Cost Overview Table in Dashboard** (`dashboard_manager.py`):
+  - New `_build_appliances_cost_grid_card()` method that generates a comprehensive HTML/CSS table
+  - Displays all appliances with: name, state, daily/monthly cycles, daily/monthly costs
+  - **Visual enhancements**:
+    - Proportional progress bars for costs (relative to max)
+    - Adaptive colors: Green (<1€), Orange (<1-5€), Red (≥5€)
+    - Color-coded state badges with pulse animation for "running" state
+    - Hover effects on table rows
+    - Automatic sorting by monthly cost (descending)
+  - Helper method `_get_cost_color()` for color determination
+  - Integrated in Overview view (position 2, right after global metrics)
+
+- **Enhanced Appliance Cards in Frontend Panel** (`sam-config-panel.js`):
+  - Appliances now displayed as modern cards instead of simple list items
+  - Each card shows:
+    - Appliance icon and name
+    - State badge with color coding (idle/running/finished)
+    - Statistics grid: cycles today, cost today, cycles this month
+    - Configure button with primary styling
+  - Dynamic appliance count badge in header
+
+### Changed
+
+- **Frontend Panel Complete CSS Refactoring** (`sam-config-panel.js`):
+  - Modern design system with shadows, transitions, and animations
+  - **Header**: Larger title (2.5em), badge with appliance count, border-bottom separator
+  - **Cards**: Elevated design with hover effects (transform + enhanced shadow)
+  - **State badges**: Rounded, uppercase, with adaptive colors and pulse animation for "running"
+  - **Modal**: Backdrop blur effect, smooth animations (fadeIn, slideUp), rounded close button with hover rotation
+  - **Form elements**: Enhanced checkbox items with hover border color, better spacing
+  - **Logs container**: Styled with monospace font, scroll, border for entries
+  - **Buttons**: Larger padding, transitions on hover (translateY + shadow), primary/secondary variants
+  - **Statistics grid**: Responsive auto-fit grid with colored values and labels
+  - Spacing system: 24px panel padding, 20px card padding, consistent gaps
+
+- **Configuration Flow Improvements** (`config_flow.py`):
+  - Added dashboard configuration step in options flow
+  - 8 checkboxes for card visibility (status, basic stats, advanced stats, current cycle, power graph, controls, AI actions, services)
+  - Stored in `entry.options["dashboard_sections_visible"]`
+  - Accessible from notifications step via "Configure Dashboard" checkbox
+
+- **Dashboard Configuration Integration** (`dashboard_config.py`):
+  - Updated `DEFAULT_APPLIANCE_SECTIONS` with new sections: `statistics_advanced`, `ai_actions`, `services`
+  - Modified `get_appliance_view_config()` to merge `dashboard_sections_visible` from options
+
+- **Dashboard Manager Enhancements** (`dashboard_manager.py`):
+  - `_async_build_appliance_view()` now merges `dashboard_sections_visible` from entry options
+  - `_build_appliance_cards_direct()` uses conditional logic based on `sections_visible` config
+  - Added missing `APPLIANCE_TYPE_AIR_CONDITIONER` to TEMPLATE_MAP and ICON_MAP
+
+### Removed
+
+- **Frontend Panel Cleanup** (`sam-config-panel.js`):
+  - Removed "Global Configuration" section (color picker, custom cards checkbox, auto-update)
+  - Removed `_updateGlobalSettings()` method (no longer needed)
+  - Simplified config loading (no more color scheme management)
+
+### Technical Details
+
+- **Files modified**: 7 files
+- **Lines added**: +1,278
+- **Lines removed**: -225
+- **New methods**:
+  - `_build_appliances_cost_grid_card()`: Generates cost overview table with HTML/CSS
+  - `_get_cost_color()`: Returns color based on cost threshold
+- **CSS animations**:
+  - `fadeIn`: Modal backdrop (0.2s)
+  - `slideUp`: Modal content (0.3s)
+  - `pulse`: Running state badge (2s infinite)
+- **Frontend data sources**:
+  - Panel cards fetch data from: `sensor.{id}_daily_cycles`, `sensor.{id}_daily_cost`, `sensor.{id}_monthly_cycles`
+  - Cost overview reads from: `coordinator.daily_stats`, `coordinator.monthly_stats`, `state_machine.state`
+
+### Performance
+
+- No additional API calls required (uses coordinator cache)
+- CSS animations are GPU-accelerated
+- Lightweight calculations (max values, percentages)
+- Efficient DOM updates (event delegation)
+
+### Documentation
+
+- `docs/dev/DESIGN_IMPROVEMENTS_SUMMARY.md`: Complete implementation summary
+- `docs/dev/FILES_TO_SYNC_DESIGN.txt`: Sync instructions and file list
+
 ## [1.1.0] - 2025-10-23
 
 ### 🎉 Optimized Detection & Air Conditioner Profile

@@ -28,6 +28,7 @@ from .const import (
     APPLIANCE_TYPE_NAS,
     APPLIANCE_TYPE_PRINTER_3D,
     APPLIANCE_TYPE_VMC,
+    APPLIANCE_TYPE_AIR_CONDITIONER,
     APPLIANCE_TYPE_OTHER,
     SESSION_BASED_TYPES,
 )
@@ -51,6 +52,7 @@ TEMPLATE_MAP = {
     APPLIANCE_TYPE_NAS: "nas",
     APPLIANCE_TYPE_PRINTER_3D: "printer_3d",
     APPLIANCE_TYPE_VMC: "vmc",
+    APPLIANCE_TYPE_AIR_CONDITIONER: "air_conditioner",
     APPLIANCE_TYPE_OTHER: "generic",
 }
 
@@ -65,6 +67,7 @@ ICON_MAP = {
     APPLIANCE_TYPE_NAS: "mdi:nas",
     APPLIANCE_TYPE_PRINTER_3D: "mdi:printer-3d",
     APPLIANCE_TYPE_VMC: "mdi:fan",
+    APPLIANCE_TYPE_AIR_CONDITIONER: "mdi:air-conditioner",
     APPLIANCE_TYPE_OTHER: "mdi:power-plug",
 }
 
@@ -341,21 +344,25 @@ Le fichier a été créé à : {yaml_path}"""
         # 1. Global metrics card
         cards.append(self._build_global_metrics_card(coordinators))
 
-        # 2. Energy consumption cards (Energy Dashboard style)
+        # 2. Cost overview grid - NEW: Compact view of all appliances with costs
+        if len(coordinators) > 0:
+            cards.append(self._build_appliances_cost_grid_card(coordinators))
+
+        # 3. Energy consumption cards (Energy Dashboard style)
         if len(coordinators) > 0:
             cards.append(self._build_energy_consumption_today(coordinators))
             if self._custom_cards_available.get("apexcharts_card"):
                 cards.append(self._build_energy_graph_7days(coordinators))
                 cards.append(self._build_energy_distribution_donut(coordinators))
         
-        # 3. Real-time monitoring
+        # 4. Real-time monitoring
         cards.append(self._build_realtime_monitoring_card(coordinators, use_custom_cards))
 
-        # 4. Top consumers
+        # 5. Top consumers
         if len(coordinators) > 0:
             cards.append(self._build_top_consumers_card(coordinators))
 
-        # 5. Power graph
+        # 6. Power graph
         if self._custom_cards_available.get("apexcharts_card") and len(coordinators) > 0:
             cards.append(self._build_power_graph_card(coordinators))
         elif len(coordinators) > 0:
@@ -387,6 +394,191 @@ Le fichier a été créé à : {yaml_path}"""
 **Appareils configurés**: {len(coordinators)}
 
 Utilisez les onglets ci-dessus pour accéder aux détails de chaque appareil.""",
+        }
+    
+    def _get_cost_color(self, cost: float) -> str:
+        """Get color for cost bar based on amount."""
+        if cost < 1.0:
+            return "#2ecc71"  # Green
+        elif cost < 5.0:
+            return "#f39c12"  # Orange
+        else:
+            return "#e74c3c"  # Red
+    
+    def _build_appliances_cost_grid_card(
+        self, coordinators: list[SmartApplianceCoordinator]
+    ) -> dict[str, Any]:
+        """Build cost overview table card with graphical elements."""
+        if not coordinators:
+            return None
+        
+        # Collect data from all coordinators
+        appliances_data = []
+        max_daily_cost = 0.01  # Minimum to avoid division by zero
+        max_monthly_cost = 0.01
+        
+        for coord in coordinators:
+            appliance_type = coord.entry.data.get(CONF_APPLIANCE_TYPE, "other")
+            icon = ICON_MAP.get(appliance_type, "mdi:power-plug")
+            
+            daily_cost = coord.daily_stats.get("total_cost", 0)
+            monthly_cost = coord.monthly_stats.get("total_cost", 0)
+            daily_cycles = coord.daily_stats.get("cycle_count", 0)
+            monthly_cycles = coord.monthly_stats.get("cycle_count", 0)
+            
+            max_daily_cost = max(max_daily_cost, daily_cost)
+            max_monthly_cost = max(max_monthly_cost, monthly_cost)
+            
+            appliances_data.append({
+                "name": coord.appliance_name,
+                "icon": icon,
+                "state": coord.state_machine.state,
+                "daily_cycles": daily_cycles,
+                "monthly_cycles": monthly_cycles,
+                "daily_cost": daily_cost,
+                "monthly_cost": monthly_cost,
+                "currency": coord.currency,
+            })
+        
+        # Sort by monthly cost descending
+        appliances_data.sort(key=lambda x: x["monthly_cost"], reverse=True)
+        
+        # Generate HTML table rows
+        rows = []
+        for data in appliances_data:
+            # Calculate bar widths
+            daily_bar_width = (data["daily_cost"] / max_daily_cost * 100) if max_daily_cost > 0 else 0
+            monthly_bar_width = (data["monthly_cost"] / max_monthly_cost * 100) if max_monthly_cost > 0 else 0
+            
+            # Determine bar colors
+            daily_bar_color = self._get_cost_color(data["daily_cost"])
+            monthly_bar_color = self._get_cost_color(data["monthly_cost"])
+            
+            # State badge
+            state_class = f"status-{data['state']}"
+            state_label = data['state'].capitalize()
+            
+            row_html = f"""
+        <tr>
+          <td>
+            <div style="display: flex; align-items: center; gap: 8px;">
+              <span class="appliance-icon">{data['icon']}</span>
+              <strong>{data['name']}</strong>
+            </div>
+          </td>
+          <td><span class="status-badge {state_class}">{state_label}</span></td>
+          <td style="text-align: center;"><strong>{data['daily_cycles']}</strong></td>
+          <td style="text-align: center;"><strong>{data['monthly_cycles']}</strong></td>
+          <td>
+            <div class="metric-value">{data['daily_cost']:.2f} {data['currency']}</div>
+            <div class="cost-bar" style="width: {daily_bar_width:.0f}%; background: {daily_bar_color};"></div>
+          </td>
+          <td>
+            <div class="metric-value">{data['monthly_cost']:.2f} {data['currency']}</div>
+            <div class="cost-bar" style="width: {monthly_bar_width:.0f}%; background: {monthly_bar_color};"></div>
+          </td>
+        </tr>
+            """
+            rows.append(row_html)
+        
+        # Build complete markdown with CSS
+        table_html = "\n".join(rows)
+        content = f"""<style>
+.cost-overview-table {{
+  width: 100%;
+  border-collapse: collapse;
+  margin-top: 16px;
+  font-size: 0.95em;
+}}
+.cost-overview-table th {{
+  background: var(--primary-color);
+  color: white;
+  padding: 14px 12px;
+  text-align: left;
+  font-weight: 600;
+  font-size: 0.9em;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}}
+.cost-overview-table td {{
+  padding: 14px 12px;
+  border-bottom: 1px solid var(--divider-color);
+  vertical-align: middle;
+}}
+.cost-overview-table tr:hover {{
+  background: var(--table-row-background-hover-color, rgba(var(--rgb-primary-color), 0.05));
+}}
+.cost-overview-table tr:last-child td {{
+  border-bottom: none;
+}}
+.appliance-icon {{
+  font-size: 1.8em;
+}}
+.status-badge {{
+  display: inline-block;
+  padding: 6px 12px;
+  border-radius: 14px;
+  font-size: 0.8em;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.3px;
+}}
+.status-idle {{
+  background: #95a5a6;
+  color: white;
+}}
+.status-running {{
+  background: #3498db;
+  color: white;
+  animation: pulse 2s ease-in-out infinite;
+}}
+.status-finished {{
+  background: #2ecc71;
+  color: white;
+}}
+.status-analyzing {{
+  background: #9b59b6;
+  color: white;
+}}
+@keyframes pulse {{
+  0%, 100% {{ opacity: 1; }}
+  50% {{ opacity: 0.7; }}
+}}
+.cost-bar {{
+  height: 8px;
+  background: var(--primary-color);
+  border-radius: 4px;
+  margin-top: 6px;
+  transition: width 0.3s ease;
+}}
+.metric-value {{
+  font-size: 1.15em;
+  font-weight: 700;
+  color: var(--primary-text-color);
+}}
+</style>
+
+<table class="cost-overview-table">
+  <thead>
+    <tr>
+      <th>🏠 Appareil</th>
+      <th>📊 État</th>
+      <th style="text-align: center;">🔄 Cycles Aujourd'hui</th>
+      <th style="text-align: center;">📅 Cycles Mois</th>
+      <th>💰 Coût Aujourd'hui</th>
+      <th>💰 Coût Mensuel</th>
+    </tr>
+  </thead>
+  <tbody>
+{table_html}
+  </tbody>
+</table>
+"""
+        
+        return {
+            "type": "markdown",
+            "title": "💰 Vue d'Ensemble des Coûts",
+            "content": content,
         }
 
     def _build_realtime_monitoring_card(
@@ -477,6 +669,65 @@ Utilisez les onglets ci-dessus pour accéder aux détails de chaque appareil."""
             "title": "📊 Puissances (24h)",
             "entities": entities,
             "hours_to_show": 24,
+        }
+
+    def _build_appliances_cost_grid_card(self, coordinators: list[SmartApplianceCoordinator]) -> dict[str, Any]:
+        """Build compact cost overview card for all appliances."""
+        if not coordinators:
+            return {"type": "markdown", "content": "Aucun appareil configuré"}
+
+        entities = []
+        
+        for coord in coordinators:
+            appliance_id = self._get_appliance_id(coord)
+            appliance_type = coord.entry.data.get(CONF_APPLIANCE_TYPE, "other")
+            icon = ICON_MAP.get(appliance_type, "mdi:power-plug")
+            
+            # Add header/separator for each appliance
+            entities.append({
+                "type": "section",
+                "label": coord.appliance_name,
+            })
+            
+            # State sensor
+            state_entity = f"sensor.{appliance_id}_state"
+            if self.hass.states.get(state_entity):
+                entities.append({
+                    "entity": state_entity,
+                    "name": "État",
+                    "icon": icon,
+                })
+            
+            # Daily cycles
+            daily_cycles_entity = f"sensor.{appliance_id}_daily_cycles"
+            if self.hass.states.get(daily_cycles_entity):
+                entities.append({
+                    "entity": daily_cycles_entity,
+                    "name": "Cycles aujourd'hui",
+                    "icon": "mdi:refresh",
+                })
+            
+            # Daily cost
+            daily_cost_entity = f"sensor.{appliance_id}_daily_cost"
+            if self.hass.states.get(daily_cost_entity):
+                entities.append({
+                    "entity": daily_cost_entity,
+                    "name": "Coût aujourd'hui",
+                })
+            
+            # Monthly cost
+            monthly_cost_entity = f"sensor.{appliance_id}_monthly_cost"
+            if self.hass.states.get(monthly_cost_entity):
+                entities.append({
+                    "entity": monthly_cost_entity,
+                    "name": "Coût mensuel",
+                })
+
+        return {
+            "type": "entities",
+            "title": "💰 Vue d'ensemble des Coûts",
+            "entities": entities,
+            "state_color": True,
         }
 
     def _build_energy_consumption_today(self, coordinators: list[SmartApplianceCoordinator]) -> dict[str, Any]:
@@ -618,10 +869,18 @@ Utilisez les onglets ci-dessus pour accéder aux détails de chaque appareil."""
             # Determine session or cycle
             is_session_based = appliance_type in SESSION_BASED_TYPES
             cycle_or_session = "session" if is_session_based else "cycle"
+            
+            # Merge dashboard sections from entry.options if present
+            entry_sections = coordinator.entry.options.get("dashboard_sections_visible", {})
+            if entry_sections:
+                # Merge entry options with view config
+                if "sections_visible" not in view_config:
+                    view_config["sections_visible"] = {}
+                view_config["sections_visible"].update(entry_sections)
 
             # Build cards directly using real entities from coordinator (no mapping!)
             cards = self._build_appliance_cards_direct(
-                coordinator, appliance_name, cycle_or_session
+                coordinator, appliance_name, cycle_or_session, view_config
             )
 
             return {
@@ -641,23 +900,281 @@ Utilisez les onglets ci-dessus pour accéder aux détails de chaque appareil."""
 
         return None
 
+    def _build_statistics_advanced_card(
+        self,
+        coordinator: SmartApplianceCoordinator,
+        appliance_name: str,
+        cycle_or_session: str,
+        find_entity: callable,
+    ) -> dict[str, Any] | None:
+        """Build advanced statistics card with frequency, averages, and trends."""
+        # Calculate advanced metrics from coordinator data
+        daily_stats = coordinator.daily_stats
+        monthly_stats = coordinator.monthly_stats
+        
+        # Get cycle counts
+        total_cycles_today = daily_stats.get("cycle_count", 0)
+        total_cycles_month = monthly_stats.get("cycle_count", 0)
+        
+        # Calculate frequency (cycles per day based on monthly average)
+        days_in_month = 30  # Approximation
+        freq_per_day = round(total_cycles_month / days_in_month, 1) if total_cycles_month > 0 else 0
+        freq_per_week = round(freq_per_day * 7, 1)
+        
+        # Get averages from coordinator
+        avg_duration = coordinator.daily_stats.get("avg_duration", 0)  # in seconds
+        avg_duration_min = round(avg_duration / 60, 0) if avg_duration > 0 else 0
+        avg_energy = coordinator.daily_stats.get("avg_energy", 0)
+        avg_cost = coordinator.daily_stats.get("avg_cost", 0)
+        
+        # Build markdown content
+        content = f"""## 📊 Statistiques Avancées
+
+**Fréquence d'utilisation:**
+- Aujourd'hui: {total_cycles_today} {cycle_or_session}(s)
+- Ce mois: {total_cycles_month} {cycle_or_session}(s)
+- Moyenne: {freq_per_day} {cycle_or_session}/jour | {freq_per_week} {cycle_or_session}/semaine
+
+**Moyennes par {cycle_or_session}:**
+- Durée: {avg_duration_min} min
+- Énergie: {round(avg_energy, 2)} kWh
+- Coût: {round(avg_cost, 2)} {coordinator.currency}
+
+**Temps d'utilisation:**
+- Aujourd'hui: {round(daily_stats.get('total_duration', 0) / 3600, 1)} h
+- Ce mois: {round(monthly_stats.get('total_duration', 0) / 3600, 1)} h
+"""
+        
+        return {
+            "type": "markdown",
+            "title": "📊 Statistiques Avancées",
+            "content": content,
+        }
+
+    def _build_ai_actions_card(
+        self,
+        coordinator: SmartApplianceCoordinator,
+        appliance_id: str,
+        find_entity: callable,
+    ) -> dict[str, Any] | None:
+        """Build AI actions card with service buttons and last analysis display."""
+        state_entity = find_entity("_state")
+        if not state_entity:
+            return None
+        
+        # Check if AI analysis entity exists
+        ai_analysis_entity = find_entity("_ai_analysis")
+        
+        cards = [
+            {
+                "type": "markdown",
+                "content": "## 🤖 Actions IA"
+            },
+            {
+                "type": "entities",
+                "title": "Analyses Disponibles",
+                "entities": [
+                    {
+                        "type": "button",
+                        "name": "🔍 Analyser les Cycles (Complet)",
+                        "tap_action": {
+                            "action": "call-service",
+                            "service": "smart_appliance_monitor.analyze_cycles",
+                            "service_data": {
+                                "entity_id": state_entity,
+                                "analysis_type": "all",
+                                "cycle_count": 10,
+                            },
+                        },
+                    },
+                    {
+                        "type": "button",
+                        "name": "💡 Obtenir Recommandations",
+                        "tap_action": {
+                            "action": "call-service",
+                            "service": "smart_appliance_monitor.analyze_cycles",
+                            "service_data": {
+                                "entity_id": state_entity,
+                                "analysis_type": "recommendations",
+                                "cycle_count": 10,
+                            },
+                        },
+                    },
+                    {
+                        "type": "button",
+                        "name": "📈 Analyser Patterns",
+                        "tap_action": {
+                            "action": "call-service",
+                            "service": "smart_appliance_monitor.analyze_cycles",
+                            "service_data": {
+                                "entity_id": state_entity,
+                                "analysis_type": "pattern",
+                                "cycle_count": 10,
+                            },
+                        },
+                    },
+                ],
+            },
+        ]
+        
+        # Add last analysis display if entity exists
+        if ai_analysis_entity and self.hass.states.get(ai_analysis_entity):
+            cards.append({
+                "type": "entities",
+                "title": "📝 Dernière Analyse IA",
+                "entities": [
+                    {
+                        "entity": ai_analysis_entity,
+                        "type": "attribute",
+                        "attribute": "summary",
+                        "name": "Résumé",
+                    },
+                    {
+                        "entity": ai_analysis_entity,
+                        "type": "attribute",
+                        "attribute": "status",
+                        "name": "Statut",
+                    },
+                    {
+                        "entity": ai_analysis_entity,
+                        "type": "attribute",
+                        "attribute": "last_analysis_date",
+                        "name": "Analysé le",
+                    },
+                ],
+            })
+        else:
+            cards.append({
+                "type": "markdown",
+                "content": "ℹ️ *Configuration IA requise via service `set_global_config`*",
+            })
+        
+        return {
+            "type": "vertical-stack",
+            "cards": cards,
+        }
+
+    def _build_services_card(
+        self,
+        coordinator: SmartApplianceCoordinator,
+        appliance_id: str,
+        find_entity: callable,
+    ) -> dict[str, Any] | None:
+        """Build services card with all available actions."""
+        state_entity = find_entity("_state")
+        if not state_entity:
+            return None
+        
+        entities = [
+            {
+                "type": "button",
+                "name": "📤 Exporter en CSV",
+                "tap_action": {
+                    "action": "call-service",
+                    "service": "smart_appliance_monitor.export_to_csv",
+                    "service_data": {
+                        "entity_id": state_entity,
+                    },
+                },
+            },
+            {
+                "type": "button",
+                "name": "📤 Exporter en JSON",
+                "tap_action": {
+                    "action": "call-service",
+                    "service": "smart_appliance_monitor.export_to_json",
+                    "service_data": {
+                        "entity_id": state_entity,
+                    },
+                },
+            },
+            {
+                "type": "button",
+                "name": "🔄 Sync Energy Dashboard",
+                "tap_action": {
+                    "action": "call-service",
+                    "service": "smart_appliance_monitor.sync_with_energy_dashboard",
+                    "service_data": {
+                        "entity_id": state_entity,
+                    },
+                },
+            },
+            {
+                "type": "button",
+                "name": "📜 Obtenir Historique",
+                "tap_action": {
+                    "action": "call-service",
+                    "service": "smart_appliance_monitor.get_cycle_history",
+                    "service_data": {
+                        "entity_id": state_entity,
+                    },
+                },
+            },
+            {
+                "type": "button",
+                "name": "📥 Importer Historique",
+                "tap_action": {
+                    "action": "call-service",
+                    "service": "smart_appliance_monitor.import_historical_cycles",
+                    "service_data": {
+                        "entity_id": state_entity,
+                        "dry_run": True,
+                    },
+                },
+            },
+        ]
+        
+        # Add auto-shutdown button if enabled
+        if coordinator.entry.options.get("enable_auto_shutdown", False):
+            entities.append({
+                "type": "button",
+                "name": "⚡ Force Shutdown",
+                "tap_action": {
+                    "action": "call-service",
+                    "service": "smart_appliance_monitor.force_shutdown",
+                    "service_data": {
+                        "entity_id": state_entity,
+                    },
+                },
+            })
+        
+        return {
+            "type": "entities",
+            "title": "🛠️ Services & Actions",
+            "entities": entities,
+        }
+
     def _build_appliance_cards_direct(
         self,
         coordinator: SmartApplianceCoordinator,
         appliance_name: str,
-        cycle_or_session: str
+        cycle_or_session: str,
+        view_config: dict[str, Any]
     ) -> list[dict[str, Any]]:
         """Build cards for an appliance directly using real entities (no templates, no mapping)."""
         appliance_id = self._get_appliance_id(coordinator)
         cards = []
         
+        # Get sections visibility configuration
+        from .dashboard_config import DEFAULT_APPLIANCE_SECTIONS
+        sections_visible = view_config.get("sections_visible", DEFAULT_APPLIANCE_SECTIONS)
+        
+        _LOGGER.info("Building cards for appliance: %s (type: %s, cycle_or_session: %s)", 
+                     appliance_name, coordinator.entry.data.get(CONF_APPLIANCE_TYPE), cycle_or_session)
+        
         # Get configured sensors from entry data
         power_sensor = coordinator.entry.data.get("power_sensor")
         energy_sensor = coordinator.entry.data.get("energy_sensor")
         
+        _LOGGER.info("Configured sensors - power: %s, energy: %s", power_sensor, energy_sensor)
+        
         # Get SAM-generated entities via entity registry
         entity_reg = er.async_get(self.hass)
         sam_entities = er.async_entries_for_config_entry(entity_reg, coordinator.entry.entry_id)
+        
+        _LOGGER.info("Found %d SAM entities for %s: %s", 
+                     len(sam_entities), appliance_name, 
+                     [e.entity_id for e in sam_entities])
         
         # Helper to find entity by suffix
         def find_entity(suffix: str) -> str | None:
@@ -685,15 +1202,18 @@ Utilisez les onglets ci-dessus pour accéder aux détails de chaque appareil."""
                 # Check all entities exist
                 for ent_id in entities_to_check:
                     if not self.hass.states.get(ent_id):
-                        _LOGGER.warning("Entity %s not found, skipping card", ent_id)
+                        _LOGGER.warning("Entity %s not found for %s, skipping card: %s", 
+                                       ent_id, appliance_name, card_config.get("title", "Unknown"))
                         return
                 
                 cards.append(card_config)
+                _LOGGER.debug("Added card: %s with %d entities", 
+                             card_config.get("title", card_config.get("type")), len(entities_to_check))
             except Exception as err:
-                _LOGGER.error("Error adding card: %s", err, exc_info=True)
+                _LOGGER.error("Error adding card for %s: %s", appliance_name, err, exc_info=True)
         
         # 1. Status card with configured power sensor
-        if power_sensor:
+        if sections_visible.get("status", True) and power_sensor:
             add_card({
                 "type": "gauge",
                 "entity": power_sensor,
@@ -703,89 +1223,102 @@ Utilisez les onglets ci-dessus pour accéder aux détails de chaque appareil."""
                 "severity": {"green": 0, "yellow": 500, "red": 2000}
             })
         
-        # 2. State card
-        state_entity = find_entity("_state")
-        cycle_duration = find_entity("_cycle_duration") or find_entity("_session_duration")
-        energy_per_cycle = find_entity("_energy_per_cycle") or find_entity("_energy_per_session")
+        # 2. State card (basic status)
+        if sections_visible.get("status", True):
+            state_entity = find_entity("_state")
+            cycle_duration = find_entity("_cycle_duration") or find_entity("_session_duration")
+            energy_per_cycle = find_entity("_energy_per_cycle") or find_entity("_energy_per_session")
+            
+            status_entities = []
+            if state_entity:
+                status_entities.append({"entity": state_entity, "name": "État"})
+            if power_sensor:
+                status_entities.append({"entity": power_sensor, "name": "Puissance"})
+            if cycle_duration:
+                status_entities.append({"entity": cycle_duration, "name": "Durée"})
+            if energy_per_cycle:
+                status_entities.append({"entity": energy_per_cycle, "name": "Énergie"})
+            
+            if status_entities:
+                add_card({
+                    "type": "entities",
+                    "title": f"🔄 {appliance_name} - Status",
+                    "entities": status_entities
+                })
         
-        status_entities = []
-        if state_entity:
-            status_entities.append({"entity": state_entity, "name": "État"})
-        if power_sensor:
-            status_entities.append({"entity": power_sensor, "name": "Puissance"})
-        if cycle_duration:
-            status_entities.append({"entity": cycle_duration, "name": "Durée"})
-        if energy_per_cycle:
-            status_entities.append({"entity": energy_per_cycle, "name": "Énergie"})
+        # 3. Today stats (basic statistics)
+        if sections_visible.get("statistics_basic", True):
+            today_entities = []
+            total_cycles = find_entity("_total_cycles_today") or find_entity("_total_sessions_today") or find_entity("_daily_cycles")
+            total_energy = find_entity("_total_energy_today") or find_entity("_daily_energy")
+            daily_cost = find_entity("_daily_cost")
+            
+            if total_cycles:
+                today_entities.append({"entity": total_cycles})
+            if total_energy:
+                today_entities.append({"entity": total_energy})
+            if daily_cost:
+                today_entities.append({"entity": daily_cost})
+            
+            if today_entities:
+                add_card({
+                    "type": "entities",
+                    "title": "📊 Aujourd'hui",
+                    "entities": today_entities
+                })
         
-        if status_entities:
-            add_card({
-                "type": "entities",
-                "title": f"🔄 {appliance_name} - Status",
-                "entities": status_entities
-            })
+        # 4. Monthly stats (basic statistics)
+        if sections_visible.get("statistics_basic", True):
+            monthly_entities = []
+            monthly_cycles = find_entity("_monthly_cycles") or find_entity("_monthly_sessions")
+            monthly_energy = find_entity("_monthly_energy")
+            monthly_cost = find_entity("_monthly_cost")
+            
+            if monthly_cycles:
+                monthly_entities.append({"entity": monthly_cycles})
+            if monthly_energy:
+                monthly_entities.append({"entity": monthly_energy})
+            if monthly_cost:
+                monthly_entities.append({"entity": monthly_cost})
+            
+            if monthly_entities:
+                add_card({
+                    "type": "entities",
+                    "title": "📅 Ce mois",
+                    "entities": monthly_entities
+                })
         
-        # 3. Today stats
-        today_entities = []
-        total_cycles = find_entity("_total_cycles_today") or find_entity("_total_sessions_today") or find_entity("_daily_cycles")
-        total_energy = find_entity("_total_energy_today") or find_entity("_daily_energy")
-        daily_cost = find_entity("_daily_cost")
+        # 5. Advanced statistics card (NEW)
+        if sections_visible.get("statistics_advanced", True):
+            adv_stats_card = self._build_statistics_advanced_card(
+                coordinator, appliance_name, cycle_or_session, find_entity
+            )
+            if adv_stats_card:
+                cards.append(adv_stats_card)
         
-        if total_cycles:
-            today_entities.append({"entity": total_cycles})
-        if total_energy:
-            today_entities.append({"entity": total_energy})
-        if daily_cost:
-            today_entities.append({"entity": daily_cost})
+        # 6. Current cycle/session
+        if sections_visible.get("current_cycle", True):
+            current_entities = []
+            cycle_duration = find_entity("_cycle_duration") or find_entity("_session_duration")
+            cycle_energy = find_entity("_cycle_energy") or find_entity("_session_energy")
+            cycle_cost = find_entity("_cycle_cost") or find_entity("_session_cost")
+            
+            if cycle_duration:
+                current_entities.append({"entity": cycle_duration})
+            if cycle_energy:
+                current_entities.append({"entity": cycle_energy})
+            if cycle_cost:
+                current_entities.append({"entity": cycle_cost})
+            
+            if current_entities:
+                add_card({
+                    "type": "entities",
+                    "title": f"⚡ {cycle_or_session.capitalize()} en cours",
+                    "entities": current_entities
+                })
         
-        if today_entities:
-            add_card({
-                "type": "entities",
-                "title": "📊 Aujourd'hui",
-                "entities": today_entities
-            })
-        
-        # 4. Monthly stats
-        monthly_entities = []
-        monthly_cycles = find_entity("_monthly_cycles") or find_entity("_monthly_sessions")
-        monthly_energy = find_entity("_monthly_energy")
-        monthly_cost = find_entity("_monthly_cost")
-        
-        if monthly_cycles:
-            monthly_entities.append({"entity": monthly_cycles})
-        if monthly_energy:
-            monthly_entities.append({"entity": monthly_energy})
-        if monthly_cost:
-            monthly_entities.append({"entity": monthly_cost})
-        
-        if monthly_entities:
-            add_card({
-                "type": "entities",
-                "title": "📅 Ce mois",
-                "entities": monthly_entities
-            })
-        
-        # 5. Current cycle/session
-        current_entities = []
-        cycle_energy = find_entity("_cycle_energy") or find_entity("_session_energy")
-        cycle_cost = find_entity("_cycle_cost") or find_entity("_session_cost")
-        
-        if cycle_duration:
-            current_entities.append({"entity": cycle_duration})
-        if cycle_energy:
-            current_entities.append({"entity": cycle_energy})
-        if cycle_cost:
-            current_entities.append({"entity": cycle_cost})
-        
-        if current_entities:
-            add_card({
-                "type": "entities",
-                "title": f"⚡ {cycle_or_session.capitalize()} en cours",
-                "entities": current_entities
-            })
-        
-        # 6. Power history graph
-        if power_sensor:
+        # 7. Power history graph
+        if sections_visible.get("power_graph", True) and power_sensor:
             add_card({
                 "type": "history-graph",
                 "title": "📈 Historique Puissance",
@@ -793,27 +1326,40 @@ Utilisez les onglets ci-dessus pour accéder aux détails de chaque appareil."""
                 "hours_to_show": 24
             })
         
-        # 7. Controls
-        control_entities = []
-        monitoring_switch = find_entity("_monitoring")
-        notifications_switch = find_entity("_notifications")
-        reset_button = find_entity("_reset_stats")
+        # 8. AI Actions card (NEW)
+        if sections_visible.get("ai_actions", True):
+            ai_card = self._build_ai_actions_card(coordinator, appliance_id, find_entity)
+            if ai_card:
+                cards.append(ai_card)
         
-        if monitoring_switch:
-            control_entities.append({"entity": monitoring_switch})
-        if notifications_switch:
-            control_entities.append({"entity": notifications_switch})
-        if reset_button:
-            control_entities.append({"entity": reset_button})
+        # 9. Services card (NEW)
+        if sections_visible.get("services", True):
+            services_card = self._build_services_card(coordinator, appliance_id, find_entity)
+            if services_card:
+                cards.append(services_card)
         
-        if control_entities:
-            add_card({
-                "type": "entities",
-                "title": "🎛️ Contrôles",
-                "entities": control_entities
-            })
+        # 10. Controls
+        if sections_visible.get("controls", True):
+            control_entities = []
+            monitoring_switch = find_entity("_monitoring")
+            notifications_switch = find_entity("_notifications")
+            reset_button = find_entity("_reset_stats")
+            
+            if monitoring_switch:
+                control_entities.append({"entity": monitoring_switch})
+            if notifications_switch:
+                control_entities.append({"entity": notifications_switch})
+            if reset_button:
+                control_entities.append({"entity": reset_button})
+            
+            if control_entities:
+                add_card({
+                    "type": "entities",
+                    "title": "🎛️ Contrôles",
+                    "entities": control_entities
+                })
         
-        _LOGGER.debug("Built %d cards for %s", len(cards), appliance_id)
+        _LOGGER.info("✅ Built %d cards for %s", len(cards), appliance_name)
         return cards
 
     async def async_add_appliance_view(

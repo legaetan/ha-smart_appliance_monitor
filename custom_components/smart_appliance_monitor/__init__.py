@@ -21,6 +21,7 @@ from .const import (
     APPLIANCE_TYPE_NAS,
     APPLIANCE_TYPE_PRINTER_3D,
     APPLIANCE_TYPE_VMC,
+    APPLIANCE_TYPE_AIR_CONDITIONER,
 )
 from .coordinator import SmartApplianceCoordinator
 
