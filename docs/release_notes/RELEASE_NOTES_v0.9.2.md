@@ -119,3 +119,4 @@ Thank you for using Smart Appliance Monitor! Your feedback helps improve the int
 
 **Previous Release**: [v0.9.1](https://github.com/legaetan/ha-smart_appliance_monitor/releases/tag/v0.9.1) - Dashboard Enhancements & Energy Dashboard Integration
 
+

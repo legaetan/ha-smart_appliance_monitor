@@ -265,6 +265,54 @@
         "recommendations": "Recommandations uniquement"
       }
     }
+  },
+  "services": {
+    "create_dashboard": {
+      "name": "Créer le dashboard",
+      "description": "Crée un dashboard unifié multi-onglets avec une vue d'ensemble et une vue par appareil configuré.",
+      "fields": {
+        "force_recreate": {
+          "name": "Forcer la recréation",
+          "description": "Si vrai, supprime et recrée le dashboard depuis zéro."
+        }
+      }
+    },
+    "update_dashboard": {
+      "name": "Mettre à jour le dashboard",
+      "description": "Met à jour le dashboard existant en ajoutant les vues pour les nouveaux appareils et en supprimant les vues des appareils supprimés."
+    },
+    "configure_dashboard": {
+      "name": "Configurer le dashboard",
+      "description": "Applique les paramètres de personnalisation au dashboard (couleurs, sections visibles, noms personnalisés).",
+      "fields": {
+        "global_settings": {
+          "name": "Paramètres globaux",
+          "description": "Paramètres globaux du dashboard (cartes personnalisées, thème, couleurs, mise à jour auto)"
+        },
+        "overview_sections": {
+          "name": "Sections de la vue d'ensemble",
+          "description": "Liste des sections à afficher dans la vue d'ensemble"
+        },
+        "appliance_views": {
+          "name": "Configuration des vues d'appareils",
+          "description": "Configuration par appareil (activé, template, couleur, visibilité des sections)"
+        }
+      }
+    },
+    "toggle_view": {
+      "name": "Activer/désactiver une vue",
+      "description": "Active ou désactive une vue d'appareil spécifique dans le dashboard.",
+      "fields": {
+        "appliance_id": {
+          "name": "ID de l'appareil",
+          "description": "ID de l'appareil (ex: lave_linge, lave_vaisselle)"
+        },
+        "enabled": {
+          "name": "Activé",
+          "description": "Activer (vrai) ou désactiver (faux) la vue"
+        }
+      }
+    }
   }
 }
 

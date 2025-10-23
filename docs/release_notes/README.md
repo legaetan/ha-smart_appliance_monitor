@@ -4,6 +4,20 @@ This directory contains detailed release notes for each version of Smart Applian
 
 ## 📋 Version Index
 
+### Version 1.0.x - Integrated Dashboard System 🎉
+
+- **[v1.0.0](RELEASE_NOTES_v1.0.0.md)** - October 23, 2025 - **MAJOR RELEASE**: Integrated Dashboard System 🎨
+  - **NEW**: Complete integrated dashboard management system
+  - **NEW**: Automated dashboard generation with YAML mode
+  - **NEW**: Configuration panel "Smart Appliances Config" in sidebar
+  - **NEW**: Energy Dashboard style graphs (7-day, donut chart, real-time)
+  - **NEW**: 3 new services (generate_dashboard_yaml, configure_dashboard, toggle_view)
+  - **NEW**: Multi-tab dashboard (overview + individual appliance tabs)
+  - **CHANGED**: Direct entity integration (no more entity ID guessing)
+  - **CHANGED**: All dashboard cards built programmatically in Python
+  - **REMOVED**: All YAML template files (14 templates deleted)
+  - **REMOVED**: Template loading system completely removed
+
 ### Version 0.9.x - Global Configuration & Dynamic Currency 🌍
 
 - **[v0.9.2](RELEASE_NOTES_v0.9.2.md)** - January 23, 2025 - Bug Fixes & Code Quality 🐛

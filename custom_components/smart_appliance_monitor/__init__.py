@@ -158,6 +158,41 @@ SERVICE_IMPORT_HISTORICAL_CYCLES_SCHEMA = vol.Schema(
     }
 )
 
+# Dashboard management services
+SERVICE_GENERATE_DASHBOARD_YAML_SCHEMA = vol.Schema(
+    {
+        vol.Optional("output_path"): cv.string,
+    }
+)
+
+SERVICE_CONFIGURE_DASHBOARD_SCHEMA = vol.Schema(
+    {
+        vol.Optional("global_settings"): vol.Schema(
+            {
+                vol.Optional("use_custom_cards"): cv.boolean,
+                vol.Optional("theme"): cv.string,
+                vol.Optional("auto_update"): cv.boolean,
+                vol.Optional("color_scheme"): vol.Schema(
+                    {
+                        vol.Optional("primary"): cv.string,
+                        vol.Optional("secondary"): cv.string,
+                        vol.Optional("accent"): cv.string,
+                    }
+                ),
+            }
+        ),
+        vol.Optional("overview_sections"): cv.ensure_list,
+        vol.Optional("appliance_views"): dict,
+    }
+)
+
+SERVICE_TOGGLE_VIEW_SCHEMA = vol.Schema(
+    {
+        vol.Required("appliance_id"): cv.string,
+        vol.Required("enabled"): cv.boolean,
+    }
+)
+
 
 async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     """Set up Smart Appliance Monitor from a config entry."""
@@ -172,6 +207,49 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
         await global_config.async_load()
         hass.data[DOMAIN]["global_config"] = global_config
         _LOGGER.info("Global AI configuration manager initialized")
+    
+    # Initialize dashboard managers if not already done
+    if "dashboard_config_manager" not in hass.data[DOMAIN]:
+        from .dashboard_config import DashboardConfigManager
+        from .dashboard_manager import DashboardManager
+        
+        dashboard_config_manager = DashboardConfigManager(hass)
+        await dashboard_config_manager.async_load()
+        hass.data[DOMAIN]["dashboard_config_manager"] = dashboard_config_manager
+        
+        dashboard_manager = DashboardManager(hass, dashboard_config_manager)
+        hass.data[DOMAIN]["dashboard_manager"] = dashboard_manager
+        
+        # Initialize dashboard manager
+        await dashboard_manager.async_initialize()
+        
+        # Register dashboard if it already exists
+        await dashboard_manager.async_register_dashboard_if_exists()
+        
+        _LOGGER.info("Dashboard managers initialized")
+        
+        # Register configuration panel
+        try:
+            # Register static path for frontend files
+            frontend_path = Path(__file__).parent / "frontend"
+            from homeassistant.components.http import StaticPathConfig
+            
+            await hass.http.async_register_static_paths(
+                [
+                    StaticPathConfig(
+                        url_path="/smart_appliance_monitor_frontend",
+                        path=str(frontend_path),
+                        cache_headers=False,
+                    )
+                ]
+            )
+            
+            # Register the panel
+            from . import panel
+            await panel.async_register_panel(hass)
+            _LOGGER.info("Dashboard configuration panel registered")
+        except Exception as err:
+            _LOGGER.warning("Could not register dashboard panel: %s", err)
     
     # Check for legacy price configuration (v0.9.0 migration)
     if "price_entity" in entry.data or "price_kwh" in entry.data:
@@ -262,6 +340,20 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
         await _register_frontend_resources(hass)
         hass.data[DOMAIN]["_frontend_registered"] = True
     
+    # Setup dashboard auto-update listener
+    if "dashboard_manager" in hass.data[DOMAIN]:
+        dashboard_manager = hass.data[DOMAIN]["dashboard_manager"]
+        config = await hass.data[DOMAIN]["dashboard_config_manager"].async_get_config()
+        
+        if config.global_settings.get("auto_update", True):
+            # Add view for this appliance if dashboard exists
+            if await dashboard_manager.async_check_dashboard_exists():
+                try:
+                    await dashboard_manager.async_add_appliance_view(coordinator)
+                    _LOGGER.debug("Dashboard view added for %s", coordinator.appliance_name)
+                except Exception as err:
+                    _LOGGER.debug("Dashboard view already exists or error: %s", err)
+    
     # Écouter les changements d'options
     entry.async_on_unload(entry.add_update_listener(async_reload_entry))
     
@@ -271,6 +363,22 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
 async def async_unload_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     """Unload a config entry."""
     _LOGGER.info("Unloading Smart Appliance Monitor integration for '%s'", entry.data.get("appliance_name"))
+    
+    # Remove dashboard view if auto-update is enabled
+    if "dashboard_manager" in hass.data[DOMAIN] and "dashboard_config_manager" in hass.data[DOMAIN]:
+        dashboard_manager = hass.data[DOMAIN]["dashboard_manager"]
+        config_manager = hass.data[DOMAIN]["dashboard_config_manager"]
+        config = await config_manager.async_get_config()
+        
+        if config.global_settings.get("auto_update", True):
+            try:
+                coordinator = hass.data[DOMAIN].get(entry.entry_id)
+                if coordinator:
+                    appliance_id = dashboard_manager._get_appliance_id(coordinator)
+                    await dashboard_manager.async_remove_appliance_view(appliance_id)
+                    _LOGGER.info("Dashboard view removed for %s", coordinator.appliance_name)
+            except Exception as err:
+                _LOGGER.debug("Error removing dashboard view: %s", err)
     
     # Décharger les platforms
     unload_ok = await hass.config_entries.async_unload_platforms(entry, PLATFORMS)
@@ -1494,6 +1602,142 @@ async def async_setup_services(hass: HomeAssistant) -> None:
             "dry-run" if dry_run else "saved",
         )
     
+    async def handle_generate_dashboard_yaml(call: ServiceCall) -> None:
+        """Handle generate_dashboard_yaml service call."""
+        output_path = call.data.get("output_path")
+        
+        _LOGGER.info("Generating Smart Appliances dashboard YAML (output_path=%s)", output_path or "default")
+        
+        dashboard_manager = hass.data[DOMAIN].get("dashboard_manager")
+        if not dashboard_manager:
+            _LOGGER.error("Dashboard manager not initialized")
+            return
+        
+        try:
+            result = await dashboard_manager.async_generate_yaml_file(output_path)
+            
+            if result.get("success"):
+                message = (
+                    f"✅ **Dashboard YAML généré avec succès !**\n\n"
+                    f"**Fichier**: `{result.get('path')}`\n"
+                    f"**Vues**: {result.get('views_count', 0)}\n\n"
+                    f"{result.get('instructions', '')}"
+                )
+                title = "✅ Dashboard YAML généré"
+            else:
+                message = (
+                    f"❌ **Erreur lors de la génération du dashboard**\n\n"
+                    f"**Erreur**: {result.get('error', 'Unknown error')}\n\n"
+                    f"Consultez les logs pour plus de détails."
+                )
+                title = "❌ Erreur Dashboard"
+            
+            await hass.services.async_call(
+                "persistent_notification",
+                "create",
+                {
+                    "title": title,
+                    "message": message,
+                    "notification_id": "sam_dashboard_yaml_generation",
+                },
+            )
+        except Exception as err:
+            _LOGGER.error("Error generating dashboard YAML: %s", err)
+            await hass.services.async_call(
+                "persistent_notification",
+                "create",
+                {
+                    "title": "❌ Erreur Dashboard",
+                    "message": f"Erreur lors de la génération: {str(err)}",
+                    "notification_id": "sam_dashboard_error",
+                },
+            )
+    
+    async def handle_configure_dashboard(call: ServiceCall) -> None:
+        """Handle configure_dashboard service call."""
+        global_settings = call.data.get("global_settings")
+        overview_sections = call.data.get("overview_sections")
+        appliance_views = call.data.get("appliance_views")
+        
+        _LOGGER.info("Configuring dashboard settings")
+        
+        config_manager = hass.data[DOMAIN].get("dashboard_config_manager")
+        if not config_manager:
+            _LOGGER.error("Dashboard config manager not initialized")
+            return
+        
+        try:
+            if global_settings:
+                await config_manager.async_update_global_settings(global_settings)
+            
+            if overview_sections:
+                await config_manager.async_update_overview_config({
+                    "sections_visible": {section: True for section in overview_sections}
+                })
+            
+            if appliance_views:
+                for appliance_id, view_config in appliance_views.items():
+                    await config_manager.async_update_view_config(appliance_id, view_config)
+            
+            # Rebuild dashboard with new configuration
+            dashboard_manager = hass.data[DOMAIN].get("dashboard_manager")
+            if dashboard_manager:
+                await dashboard_manager.async_rebuild_dashboard()
+            
+            await hass.services.async_call(
+                "persistent_notification",
+                "create",
+                {
+                    "title": "✅ Configuration appliquée",
+                    "message": "La configuration du dashboard a été mise à jour et appliquée.",
+                    "notification_id": "sam_dashboard_config",
+                },
+            )
+            
+        except Exception as err:
+            _LOGGER.error("Error configuring dashboard: %s", err)
+    
+    async def handle_toggle_view(call: ServiceCall) -> None:
+        """Handle toggle_view service call."""
+        appliance_id = call.data["appliance_id"]
+        enabled = call.data["enabled"]
+        
+        _LOGGER.info("Toggling view for %s: %s", appliance_id, enabled)
+        
+        config_manager = hass.data[DOMAIN].get("dashboard_config_manager")
+        dashboard_manager = hass.data[DOMAIN].get("dashboard_manager")
+        
+        if not config_manager or not dashboard_manager:
+            _LOGGER.error("Dashboard managers not initialized")
+            return
+        
+        try:
+            await config_manager.async_update_view_config(appliance_id, {"enabled": enabled})
+            await dashboard_manager.async_create_or_update_dashboard()
+            
+            status = "activée" if enabled else "désactivée"
+            await hass.services.async_call(
+                "persistent_notification",
+                "create",
+                {
+                    "title": f"✅ Vue {status}",
+                    "message": f"La vue pour '{appliance_id}' a été {status}.",
+                    "notification_id": f"sam_view_toggle_{appliance_id}",
+                },
+            )
+            
+        except Exception as err:
+            _LOGGER.error("Error toggling view: %s", err)
+    
+    def _get_all_coordinators(hass: HomeAssistant) -> list:
+        """Get all SAM coordinators."""
+        coordinators = []
+        for entry in hass.config_entries.async_entries(DOMAIN):
+            coordinator = hass.data[DOMAIN].get(entry.entry_id)
+            if coordinator:
+                coordinators.append(coordinator)
+        return coordinators
+    
     # Register services
     hass.services.async_register(
         DOMAIN,
@@ -1617,7 +1861,29 @@ async def async_setup_services(hass: HomeAssistant) -> None:
         schema=SERVICE_IMPORT_HISTORICAL_CYCLES_SCHEMA,
     )
     
-    _LOGGER.info("Services Smart Appliance Monitor enregistrés (17 services)")
+    # Dashboard management services
+    hass.services.async_register(
+        DOMAIN,
+        "generate_dashboard_yaml",
+        handle_generate_dashboard_yaml,
+        schema=SERVICE_GENERATE_DASHBOARD_YAML_SCHEMA,
+    )
+    
+    hass.services.async_register(
+        DOMAIN,
+        "configure_dashboard",
+        handle_configure_dashboard,
+        schema=SERVICE_CONFIGURE_DASHBOARD_SCHEMA,
+    )
+    
+    hass.services.async_register(
+        DOMAIN,
+        "toggle_view",
+        handle_toggle_view,
+        schema=SERVICE_TOGGLE_VIEW_SCHEMA,
+    )
+    
+    _LOGGER.info("Services Smart Appliance Monitor enregistrés (20 services)")
 
 
 def _get_coordinator_from_entity_id(hass: HomeAssistant, entity_id: str) -> SmartApplianceCoordinator | None:

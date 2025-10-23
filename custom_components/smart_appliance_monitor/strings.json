@@ -265,6 +265,54 @@
         "recommendations": "Recommendations Only"
       }
     }
+  },
+  "services": {
+    "create_dashboard": {
+      "name": "Create Dashboard",
+      "description": "Creates a unified multi-tab dashboard with an overview view and one view per configured appliance.",
+      "fields": {
+        "force_recreate": {
+          "name": "Force Recreate",
+          "description": "If true, deletes and recreates the dashboard from scratch."
+        }
+      }
+    },
+    "update_dashboard": {
+      "name": "Update Dashboard",
+      "description": "Updates the existing dashboard by adding views for new appliances and removing views for deleted appliances."
+    },
+    "configure_dashboard": {
+      "name": "Configure Dashboard",
+      "description": "Applies personalization settings to the dashboard (colors, visible sections, custom names).",
+      "fields": {
+        "global_settings": {
+          "name": "Global Settings",
+          "description": "Global dashboard settings (custom cards, theme, colors, auto-update)"
+        },
+        "overview_sections": {
+          "name": "Overview Sections",
+          "description": "List of sections to show in the overview view"
+        },
+        "appliance_views": {
+          "name": "Appliance Views Configuration",
+          "description": "Per-appliance view configuration (enabled, template, color, sections visibility)"
+        }
+      }
+    },
+    "toggle_view": {
+      "name": "Toggle View",
+      "description": "Enables or disables a specific appliance view in the dashboard.",
+      "fields": {
+        "appliance_id": {
+          "name": "Appliance ID",
+          "description": "ID of the appliance (e.g., lave_linge, lave_vaisselle)"
+        },
+        "enabled": {
+          "name": "Enabled",
+          "description": "Enable (true) or disable (false) the view"
+        }
+      }
+    }
   }
 }
 

@@ -5,6 +5,100 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.0.0] - 2025-10-23
+
+### 🎉 Major Release - Integrated Dashboard System
+
+This is a **major milestone** release introducing a complete integrated dashboard management system for Smart Appliance Monitor.
+
+### Added
+- **Integrated Dashboard System**:
+  - **YAML Mode Dashboard**: Automated dashboard generation with YAML file output
+  - **Dashboard Manager**: New `dashboard_manager.py` module for complete dashboard lifecycle management
+  - **Dashboard Configuration Manager**: Persistent storage of dashboard settings via `dashboard_config.py`
+  - **Configuration Panel**: Dedicated sidebar panel for dashboard management and configuration
+    - Accessible via "Smart Appliances Config" in Home Assistant sidebar
+    - Interactive UI for dashboard generation and customization
+  
+- **Dashboard Features**:
+  - **Multi-tab Dashboard**: Single unified dashboard with overview + individual appliance tabs
+  - **Energy Dashboard Integration**: Energy consumption graphs inspired by HA native Energy Dashboard
+    - Daily energy consumption summary with total kWh and cost
+    - 7-day energy consumption graph (column chart)
+    - Energy distribution donut chart
+  - **Real-time Power Monitoring**: Live power consumption for all appliances
+  - **Top Consumers**: Dynamic ranking of appliances by energy usage
+  - **Direct Card Building**: All cards generated programmatically in Python (no template files)
+  
+- **Services**:
+  - `smart_appliance_monitor.generate_dashboard_yaml`: Generate/update dashboard YAML file
+  - `smart_appliance_monitor.configure_dashboard`: Update dashboard configuration
+  - `smart_appliance_monitor.toggle_view`: Enable/disable individual appliance views
+  
+- **Entity Registry Integration**: Dashboard uses actual configured entities from Home Assistant entity registry
+  - No entity ID guessing or assumptions
+  - Direct use of `power_sensor` and `energy_sensor` from appliance configuration
+  - SAM-generated entities discovered via entity registry scan
+  
+- **Energy Dashboard Helpers** (in `energy_dashboard.py`):
+  - `async_get_hourly_breakdown()`: Hourly energy breakdown for dashboard graphs
+  - `async_get_device_distribution()`: Device energy distribution with percentages
+  - `async_get_device_ranking()`: Device ranking by energy consumption
+
+### Changed
+- **Dashboard Architecture**: Complete rewrite from manual YAML templates to automated generation
+  - Old system: Manual copy-paste of YAML templates
+  - New system: Automated YAML generation via service call
+- **Entity Mapping**: Simplified entity resolution
+  - Removed complex entity mapping and guessing logic
+  - Direct use of configured entities from `coordinator.entry.data`
+  - Real-time validation of entity existence before adding to dashboard
+- **Frontend Integration**: New frontend module with Web Components
+  - `/smart_appliance_monitor_frontend/` static path for JS/HTML files
+  - Modern Web Component-based configuration UI
+
+### Removed
+- **Manual Dashboard Templates**: All YAML template files deleted
+  - Removed `dashboards/templates/` directory and all template files:
+    - `_card_templates.yaml`, `generic.yaml`, `washing_machine.yaml`, `dishwasher.yaml`
+    - `dryer.yaml`, `water_heater.yaml`, `oven.yaml`, `monitor.yaml`, `desktop.yaml`
+    - `nas.yaml`, `printer_3d.yaml`, `vmc.yaml`, `sam-energy-dashboard.yaml`
+  - Removed `dashboards/README.md`
+- **Template Loading System**: No more template files, all generated in Python
+- **Entity Mapping Complexity**: Simplified entity resolution logic
+
+### Technical Details
+- **New Files**:
+  - `custom_components/smart_appliance_monitor/dashboard_manager.py` (858 lines)
+  - `custom_components/smart_appliance_monitor/dashboard_config.py` (213 lines)
+  - `custom_components/smart_appliance_monitor/panel.py` (panel registration)
+  - `custom_components/smart_appliance_monitor/frontend/sam-config-panel.js` (Web Component)
+  - `custom_components/smart_appliance_monitor/frontend/sam-config-panel.html` (panel HTML)
+  
+- **Modified Files**:
+  - `custom_components/smart_appliance_monitor/__init__.py`: Dashboard initialization, service registration
+  - `custom_components/smart_appliance_monitor/energy_dashboard.py`: Added helper methods
+  - `custom_components/smart_appliance_monitor/services.yaml`: New dashboard services
+  - `custom_components/smart_appliance_monitor/strings.json`: Dashboard service descriptions
+  - `custom_components/smart_appliance_monitor/translations/fr.json`: French translations
+  
+- **Deleted Files**: All template YAML files (14 files total)
+
+### Documentation
+- New: `docs/DASHBOARD_YAML_MODE.md` - Complete guide for YAML mode dashboard
+- New: `docs/TESTING_DASHBOARD.md` - Testing guide for dashboard features
+- New: `README_DASHBOARD.md` - Quick start guide for dashboard system
+
+### Migration Notes
+- **No Breaking Changes**: Existing installations continue to work
+- **New Feature**: Dashboard system is completely new, optional functionality
+- **Manual Step Required**: Users must add generated YAML to `configuration.yaml`
+- **Requires Restart**: HA restart needed after dashboard configuration changes
+
+### Known Issues
+- Dashboard requires `apexcharts-card` for advanced energy graphs (optional, fallback available)
+- Overview tab "Entité non trouvée" issues resolved by using actual configured entities
+
 ## [0.9.2] - 2025-01-23
 
 ### Fixed

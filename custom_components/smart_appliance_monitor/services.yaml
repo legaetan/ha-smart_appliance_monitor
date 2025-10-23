@@ -303,8 +303,8 @@ set_global_config:
         number:
           min: 0
           max: 10
-          step: 0.0001
-          unit_of_measurement: "/kWh"
+          step: 0.001
+          unit_of_measurement: "€/kWh"
     enable_ai_analysis:
       name: Enable AI Analysis
       description: Enable or disable AI analysis globally
@@ -499,9 +499,84 @@ import_historical_cycles:
         boolean:
     replace_existing:
       name: Replace Existing Cycles
-      description: If enabled, DELETE all existing cycles in this period for this appliance and import fresh data. Useful when changing detection thresholds or correcting data. CAUTION: This permanently removes old cycles from the database.
+      description: >
+        If enabled, DELETE all existing cycles in this period for this appliance and import fresh data.
+        Useful when changing detection thresholds or correcting data.
+        CAUTION: This permanently removes old cycles from the database.
       default: false
       advanced: true
       selector:
         boolean:
 
+generate_dashboard_yaml:
+  name: Generate Dashboard YAML
+  description: Generates the Smart Appliances dashboard as a YAML file. You must then configure it manually in configuration.yaml (see service response for instructions).
+  fields:
+    output_path:
+      name: Output Path
+      description: Custom output path for the YAML file (optional, defaults to config/dashboards/smart-appliances.yaml)
+      required: false
+      selector:
+        text:
+
+configure_dashboard:
+  name: Configure Dashboard
+  description: Applies personalization settings to the dashboard (colors, visible sections, custom names). After applying configuration, the dashboard is automatically rebuilt.
+  fields:
+    global_settings:
+      name: Global Settings
+      description: Global dashboard settings (custom cards, theme, colors, auto-update)
+      required: false
+      advanced: true
+      selector:
+        object:
+      example:
+        use_custom_cards: true
+        auto_update: true
+        color_scheme:
+          primary: "#3498db"
+          secondary: "#16a085"
+    overview_sections:
+      name: Overview Sections
+      description: List of sections to show in the overview view (metrics, monitoring, energy_costs, ai_analysis, alerts, energy_management, controls, export)
+      required: false
+      example:
+        - metrics
+        - monitoring
+        - energy_costs
+      selector:
+        object:
+    appliance_views:
+      name: Appliance Views Configuration
+      description: Per-appliance view configuration (enabled, template, color, sections visibility)
+      required: false
+      advanced: true
+      example:
+        lave_linge:
+          enabled: true
+          template: washing_machine
+          color: "#3498db"
+          sections:
+            status: true
+            statistics: true
+            controls: true
+      selector:
+        object:
+
+toggle_view:
+  name: Toggle View
+  description: Enables or disables a specific appliance view in the dashboard. When disabled, the tab is removed from the dashboard.
+  fields:
+    appliance_id:
+      name: Appliance ID
+      description: ID of the appliance (e.g., lave_linge, lave_vaisselle)
+      required: true
+      example: "lave_linge"
+      selector:
+        text:
+    enabled:
+      name: Enabled
+      description: Enable (true) or disable (false) the view
+      required: true
+      selector:
+        boolean:

@@ -548,3 +548,113 @@ class CustomEnergyDashboard:
         
         return export_data
 
+    async def async_get_hourly_breakdown(
+        self, coordinators: list[SmartApplianceCoordinator], hours: int = 24
+    ) -> dict[str, Any]:
+        """Get hourly energy breakdown for dashboard graphs.
+        
+        Args:
+            coordinators: List of SAM coordinators
+            hours: Number of hours to look back
+            
+        Returns:
+            Hourly breakdown data for each appliance
+        """
+        end = dt_util.now()
+        start = end - timedelta(hours=hours)
+        
+        breakdown = {
+            "period": {"start": start.isoformat(), "end": end.isoformat()},
+            "appliances": [],
+        }
+        
+        for coord in coordinators:
+            # Get daily energy for simple approximation
+            daily_energy = coord.daily_stats.get("total_energy", 0)
+            
+            breakdown["appliances"].append({
+                "name": coord.appliance_name,
+                "id": coord.appliance_name.lower().replace(" ", "_"),
+                "energy_kwh": round(daily_energy, 3),
+                "power_sensor": coord.entry.data.get("power_sensor"),
+            })
+        
+        return breakdown
+
+    async def async_get_device_distribution(
+        self, coordinators: list[SmartApplianceCoordinator]
+    ) -> dict[str, Any]:
+        """Get device energy distribution for donut charts.
+        
+        Args:
+            coordinators: List of SAM coordinators
+            
+        Returns:
+            Distribution data with percentages
+        """
+        total_energy = 0
+        devices = []
+        
+        for coord in coordinators:
+            daily_energy = coord.daily_stats.get("total_energy", 0)
+            total_energy += daily_energy
+            devices.append({
+                "name": coord.appliance_name,
+                "energy_kwh": daily_energy,
+            })
+        
+        # Calculate percentages
+        distribution = []
+        for device in devices:
+            percentage = (device["energy_kwh"] / total_energy * 100) if total_energy > 0 else 0
+            distribution.append({
+                "name": device["name"],
+                "energy_kwh": round(device["energy_kwh"], 3),
+                "percentage": round(percentage, 1),
+            })
+        
+        # Sort by energy descending
+        distribution.sort(key=lambda x: x["energy_kwh"], reverse=True)
+        
+        return {
+            "total_energy_kwh": round(total_energy, 3),
+            "distribution": distribution,
+        }
+
+    async def async_get_device_ranking(
+        self, coordinators: list[SmartApplianceCoordinator], period: str = "today"
+    ) -> list[dict[str, Any]]:
+        """Get device ranking by energy consumption.
+        
+        Args:
+            coordinators: List of SAM coordinators
+            period: Time period ("today", "month", "year")
+            
+        Returns:
+            Sorted list of devices by consumption
+        """
+        ranking = []
+        
+        for coord in coordinators:
+            if period == "today":
+                energy = coord.daily_stats.get("total_energy", 0)
+                cost = coord.daily_stats.get("total_cost", 0)
+            elif period == "month":
+                energy = coord.monthly_stats.get("total_energy", 0)
+                cost = coord.monthly_stats.get("total_cost", 0)
+            else:  # year
+                energy = coord.yearly_stats.get("total_energy", 0)
+                cost = coord.yearly_stats.get("total_cost", 0)
+            
+            ranking.append({
+                "name": coord.appliance_name,
+                "energy_kwh": round(energy, 3),
+                "cost_eur": round(cost, 2),
+                "type": coord.appliance_type,
+            })
+        
+        # Sort by energy descending
+        ranking.sort(key=lambda x: x["energy_kwh"], reverse=True)
+        
+        return ranking
+

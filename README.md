@@ -2,8 +2,33 @@
 
 [![hacs_badge](https://img.shields.io/badge/HACS-Custom-orange.svg)](https://github.com/custom-components/hacs)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
+[![Version](https://img.shields.io/badge/version-1.0.0-blue.svg)](https://github.com/legaetan/ha-smart_appliance_monitor/releases)
 
-> Transform any smart plug into an intelligent appliance monitoring system for Home Assistant.
+> Transform any smart plug into an intelligent appliance monitoring system with **integrated dashboard** for Home Assistant.
+
+## 🎉 What's New in v1.0.0
+
+### Integrated Dashboard System
+
+**Smart Appliance Monitor now includes a complete dashboard management system!**
+
+- ✨ **Automated Dashboard Generation** - Create beautiful dashboards with one service call
+- 🎨 **Energy Dashboard Style** - Modern graphs inspired by HA's native Energy Dashboard
+- 📊 **Multi-Tab Dashboard** - Overview + individual tabs for each appliance
+- ⚙️ **Configuration Panel** - Manage dashboards from dedicated sidebar panel
+- 🔄 **No Manual YAML** - System generates everything automatically
+- 💾 **YAML Mode** - User-editable YAML files for maximum flexibility
+
+[See full CHANGELOG for details](CHANGELOG.md#100---2025-10-23)
+
+### Key Features
+- **Real-time Power Monitoring** for all appliances
+- **Energy Consumption Graphs** (7-day history, distribution donut chart)
+- **Top Consumers Ranking** dynamically updated
+- **Direct Entity Integration** - No entity ID guessing
+- **Configuration UI** via "Smart Appliances Config" in sidebar
+
+---
 
 ## ⚠️ Breaking Changes in v0.9.0
 
@@ -69,6 +94,23 @@ Smart Appliance Monitor is a Home Assistant custom integration that automaticall
 - **Anomaly Detection** - AI-powered detection of unusual consumption patterns
 - **Data Export** - Export statistics to CSV or JSON for external analysis
 - **Energy Dashboard Integration** - Native support for Home Assistant Energy Dashboard
+
+### Dashboard System (v1.0.0+)
+- **Integrated Dashboard Manager** - Automated dashboard generation with configuration UI
+- **YAML Mode** - Generate user-editable YAML dashboard files
+- **Configuration Panel** - Dedicated "Smart Appliances Config" sidebar panel
+- **Multi-Tab Dashboard** - Single unified dashboard with:
+  - **Overview Tab**: Real-time monitoring, energy graphs, top consumers
+  - **Individual Appliance Tabs**: Detailed monitoring for each appliance
+- **Energy Dashboard Style Graphs**:
+  - Daily energy consumption summary (total kWh + cost)
+  - 7-day energy consumption history (column chart)
+  - Energy distribution by appliance (donut chart)
+  - Real-time power monitoring for all devices
+- **Services**:
+  - `generate_dashboard_yaml` - Create/update dashboard YAML file
+  - `configure_dashboard` - Update dashboard settings
+  - `toggle_view` - Enable/disable appliance views
 - **State Persistence** (v0.5.1) - Cycles and statistics are preserved across Home Assistant restarts
 
 ### AI Analysis Features (v0.7.0+) ⚡
