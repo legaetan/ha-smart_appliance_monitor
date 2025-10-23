@@ -229,6 +229,7 @@
         "nas": "NAS",
         "printer_3d": "Imprimante 3D",
         "vmc": "VMC",
+        "air_conditioner": "Climatisation",
         "other": "Autre"
       }
     },

@@ -61,6 +61,7 @@ APPLIANCE_TYPE_MONITOR = "monitor"
 APPLIANCE_TYPE_NAS = "nas"
 APPLIANCE_TYPE_PRINTER_3D = "printer_3d"
 APPLIANCE_TYPE_VMC = "vmc"
+APPLIANCE_TYPE_AIR_CONDITIONER = "air_conditioner"
 APPLIANCE_TYPE_OTHER = "other"
 
 APPLIANCE_TYPES = [
@@ -74,6 +75,7 @@ APPLIANCE_TYPES = [
     APPLIANCE_TYPE_NAS,
     APPLIANCE_TYPE_PRINTER_3D,
     APPLIANCE_TYPE_VMC,
+    APPLIANCE_TYPE_AIR_CONDITIONER,
     APPLIANCE_TYPE_OTHER,
 ]
 
@@ -179,72 +181,79 @@ APPLIANCE_PROFILES = {
     APPLIANCE_TYPE_OVEN: {
         "start_threshold": 100,  # Four: puissance élevée
         "stop_threshold": 10,
-        "start_delay": 60,  # Démarrage rapide
-        "stop_delay": 180,  # Arrêt lent (refroidissement)
+        "start_delay": 30,  # Détection rapide
+        "stop_delay": 120,  # Refroidissement
         "alert_duration": 7200,  # 2h
     },
     APPLIANCE_TYPE_DISHWASHER: {
-        "start_threshold": 20,  # Lave-vaisselle: puissance variable
-        "stop_threshold": 5,
-        "start_delay": 120,
-        "stop_delay": 300,
+        "start_threshold": 150,  # Lave-vaisselle: optimisé (basé sur analyse)
+        "stop_threshold": 50,
+        "start_delay": 60,  # Détection rapide
+        "stop_delay": 120,  # Fin de cycle confirmée
         "alert_duration": 10800,  # 3h
     },
     APPLIANCE_TYPE_WASHING_MACHINE: {
-        "start_threshold": 10,  # Lave-linge: puissance variable
-        "stop_threshold": 5,
-        "start_delay": 120,
-        "stop_delay": 300,
+        "start_threshold": 100,  # Lave-linge: optimisé (basé sur analyse)
+        "stop_threshold": 20,
+        "start_delay": 60,  # Détection rapide
+        "stop_delay": 120,  # Fin de cycle confirmée
         "alert_duration": 10800,  # 3h
     },
     APPLIANCE_TYPE_DRYER: {
-        "start_threshold": 100,  # Sèche-linge: puissance élevée
-        "stop_threshold": 10,
-        "start_delay": 60,
-        "stop_delay": 180,
+        "start_threshold": 200,  # Sèche-linge: optimisé (basé sur analyse)
+        "stop_threshold": 50,
+        "start_delay": 30,  # Détection rapide
+        "stop_delay": 120,  # Fin de séchage
         "alert_duration": 7200,  # 2h
     },
     APPLIANCE_TYPE_WATER_HEATER: {
         "start_threshold": 1000,  # Chauffe-eau: très haute puissance
         "stop_threshold": 50,
-        "start_delay": 60,
-        "stop_delay": 120,
+        "start_delay": 30,  # Détection rapide
+        "stop_delay": 60,  # Arrêt rapide
         "alert_duration": 14400,  # 4h
     },
     APPLIANCE_TYPE_COFFEE_MAKER: {
         "start_threshold": 50,  # Machine à café: puissance moyenne
         "stop_threshold": 5,
-        "start_delay": 30,  # Très rapide
-        "stop_delay": 60,  # Très rapide
+        "start_delay": 15,  # Très rapide
+        "stop_delay": 30,  # Très rapide
         "alert_duration": 1800,  # 30min
     },
     APPLIANCE_TYPE_MONITOR: {
-        "start_threshold": 30,  # Écran: détection allumage
+        "start_threshold": 40,  # Écran: optimisé (basé sur analyse)
         "stop_threshold": 5,  # Mode veille/éteint
-        "start_delay": 60,
-        "stop_delay": 120,
+        "start_delay": 30,  # Détection rapide allumage
+        "stop_delay": 60,  # Détection rapide extinction
         "alert_duration": 28800,  # 8h - sessions longues
     },
     APPLIANCE_TYPE_NAS: {
         "start_threshold": 50,  # Activité intensive (baseline ~30W)
         "stop_threshold": 20,  # Retour à idle ou arrêt
-        "start_delay": 180,  # Confirmer début backup/transfert
-        "stop_delay": 300,  # Fin d'activité confirmée
+        "start_delay": 120,  # Confirmer début backup/transfert
+        "stop_delay": 180,  # Fin d'activité confirmée
         "alert_duration": 21600,  # 6h pour backups longs
     },
     APPLIANCE_TYPE_PRINTER_3D: {
-        "start_threshold": 50,  # Imprimante 3D: démarrage impression
-        "stop_threshold": 10,  # Certaines gardent ventilo actif
-        "start_delay": 120,
-        "stop_delay": 180,
+        "start_threshold": 30,  # Imprimante 3D: optimisé (basé sur analyse)
+        "stop_threshold": 10,  # Ventilo/veille
+        "start_delay": 60,  # Détection rapide
+        "stop_delay": 120,  # Fin d'impression confirmée
         "alert_duration": 86400,  # 24h - impressions très longues
     },
     APPLIANCE_TYPE_VMC: {
-        "start_threshold": 20,  # VMC: passage en mode boost
-        "stop_threshold": 10,  # Retour mode normal/arrêt
-        "start_delay": 60,
-        "stop_delay": 120,
+        "start_threshold": 5,  # VMC: passage en mode boost
+        "stop_threshold": 5,  # Retour mode normal/arrêt
+        "start_delay": 30,  # Détection rapide
+        "stop_delay": 60,  # Détection rapide
         "alert_duration": 7200,  # 2h pour un boost long
+    },
+    APPLIANCE_TYPE_AIR_CONDITIONER: {
+        "start_threshold": 50,  # Climatisation: démarrage compresseur
+        "stop_threshold": 20,  # Arrêt compresseur (veille ~12W)
+        "start_delay": 60,  # Détection rapide - 1 minute
+        "stop_delay": 180,  # 3 minutes - cycles du compresseur
+        "alert_duration": 43200,  # 12 heures
     },
     APPLIANCE_TYPE_OTHER: {
         "start_threshold": DEFAULT_START_THRESHOLD,

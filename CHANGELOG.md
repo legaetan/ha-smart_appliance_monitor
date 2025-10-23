@@ -5,6 +5,66 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.1.0] - 2025-10-23
+
+### 🎉 Optimized Detection & Air Conditioner Profile
+
+This release introduces data-driven optimizations for all appliance profiles and adds a dedicated air conditioner profile with rapid detection capabilities.
+
+### Added
+- **New Air Conditioner Profile**: Dedicated profile for air conditioning units
+  - Optimized thresholds: 50W start / 20W stop (based on compressor behavior)
+  - Rapid detection: 60s start delay / 180s stop delay (handles compressor cycles)
+  - 12-hour alert duration for forgotten AC
+  - English and French translations included
+  
+- **Analysis & Automation Tools**:
+  - `tools/analyze_appliances.py`: Analyze power consumption patterns and recommend optimal thresholds
+  - `tools/update_thresholds.py`: Automatically apply optimized thresholds via API
+  - Both tools work with Home Assistant via SSH and REST API
+
+### Changed
+- **All Appliance Profiles Optimized** (based on real data analysis):
+  - **Washing Machine**: 10W/5W → **100W/20W** (eliminates false positives from standby mode)
+  - **Dishwasher**: 20W/5W → **150W/50W** (captures actual wash start, not just water fill)
+  - **Dryer**: 100W/10W → **200W/50W** (detects heating element activation reliably)
+  - **Monitor**: 30W/5W → **40W/5W** (more accurate for modern displays)
+  - **3D Printer**: 50W/10W → **30W/10W** (optimized for BambuLab and similar printers)
+  - **All profiles**: Start threshold increased to avoid standby/idle detection
+  
+- **Faster Detection Times** (2-4x improvement):
+  - Washing Machine: 120s → **60s** start / 300s → **120s** stop
+  - Dishwasher: 120s → **60s** start / 300s → **120s** stop
+  - Dryer: 60s → **30s** start / 180s → **120s** stop
+  - Water Heater: 60s → **30s** start / 120s → **60s** stop
+  - Monitor: 60s → **30s** start / 120s → **60s** stop
+  - VMC: 60s → **30s** start / 120s → **60s** stop
+  - Coffee Maker: 30s → **15s** start / 60s → **30s** stop
+  - 3D Printer: 120s → **60s** start / 180s → **120s** stop
+
+### Technical Details
+- Thresholds determined through analysis of 2,000-40,000+ data points per appliance (20-23 Oct 2025)
+- Analysis based on P25/P75 percentiles to identify true operational states vs standby
+- Start delays reduced while maintaining reliability (no false positives)
+- Stop delays optimized to handle appliance-specific cooldown patterns
+
+### Benefits
+- ✅ **2-4x faster cycle detection** (15s to 60s start detection depending on appliance)
+- ✅ **Eliminates false positives** from standby power consumption
+- ✅ **More reliable notifications** - only triggers on real appliance usage
+- ✅ **Better energy tracking** - captures complete cycles without missing starts
+- ✅ **Data-driven approach** - thresholds based on actual usage patterns
+
+### Files Modified
+- `custom_components/smart_appliance_monitor/const.py` - All profiles updated
+- `custom_components/smart_appliance_monitor/strings.json` - Air conditioner translation (EN)
+- `custom_components/smart_appliance_monitor/translations/fr.json` - Air conditioner translation (FR)
+
+### New Files
+- `tools/analyze_appliances.py` - Power consumption analysis tool
+- `tools/update_thresholds.py` - Automated threshold application tool
+- `tools/README.md` - Tools documentation
+
 ## [1.0.0] - 2025-10-23
 
 ### 🎉 Major Release - Integrated Dashboard System

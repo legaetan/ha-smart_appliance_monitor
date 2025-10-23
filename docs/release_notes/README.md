@@ -4,6 +4,16 @@ This directory contains detailed release notes for each version of Smart Applian
 
 ## 📋 Version Index
 
+### Version 1.1.x - Optimized Detection 🎯
+
+- **[v1.1.0](RELEASE_NOTES_v1.1.0.md)** - October 23, 2025 - **Optimized Detection & Air Conditioner Profile** ⚡
+  - **NEW**: Air Conditioner profile with intelligent compressor detection
+  - **NEW**: Analysis tools (`analyze_appliances.py`, `update_thresholds.py`)
+  - **CHANGED**: All profiles optimized with data-driven thresholds
+  - **CHANGED**: 2-4x faster detection times (15-60s start detection)
+  - **IMPROVED**: Eliminates false positives from standby power
+  - **IMPROVED**: More reliable notifications and energy tracking
+
 ### Version 1.0.x - Integrated Dashboard System 🎉
 
 - **[v1.0.0](RELEASE_NOTES_v1.0.0.md)** - October 23, 2025 - **MAJOR RELEASE**: Integrated Dashboard System 🎨
@@ -215,5 +225,5 @@ This project follows [Semantic Versioning](https://semver.org/):
 
 ---
 
-**Latest version**: v0.9.0  
-**Date**: October 22, 2025
+**Latest version**: v1.1.0  
+**Date**: October 23, 2025

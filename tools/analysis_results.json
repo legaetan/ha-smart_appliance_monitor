@@ -1,0 +1,188 @@
+[
+  {
+    "name": "Chauffe-Eau",
+    "type": "water_heater",
+    "power_sensor": "sensor.chauffe_eau_energy_power",
+    "current_start": 1000,
+    "current_stop": 50,
+    "analysis": {
+      "min": 2.0,
+      "max": 2953.0,
+      "mean": 463.77,
+      "median": 3.0,
+      "p10": 2.0,
+      "p25": 2.0,
+      "p75": 3.0,
+      "p90": 2692.0,
+      "recommended_stop_threshold": 0,
+      "recommended_start_threshold": 0,
+      "sample_count": 6802
+    },
+    "status": "needs_adjustment"
+  },
+  {
+    "name": "Lave Linge",
+    "type": "washing_machine",
+    "power_sensor": "sensor.lave_linge_puissance",
+    "current_start": 10,
+    "current_stop": 10,
+    "analysis": {
+      "min": 0.0,
+      "max": 2085.0,
+      "mean": 713.34,
+      "median": 98.0,
+      "p10": 7.0,
+      "p25": 36.0,
+      "p75": 1866.0,
+      "p90": 1926.0,
+      "recommended_stop_threshold": 45,
+      "recommended_start_threshold": 580,
+      "sample_count": 2099
+    },
+    "status": "needs_adjustment"
+  },
+  {
+    "name": "Four",
+    "type": "oven",
+    "power_sensor": "sensor.four_puissance",
+    "current_start": 100,
+    "current_stop": 10,
+    "analysis": {
+      "min": 0.0,
+      "max": 3.0,
+      "mean": 0.04,
+      "median": 0.0,
+      "p10": 0.0,
+      "p25": 0.0,
+      "p75": 0.0,
+      "p90": 0.0,
+      "recommended_stop_threshold": 0,
+      "recommended_start_threshold": 0,
+      "sample_count": 84
+    },
+    "status": "needs_adjustment"
+  },
+  {
+    "name": "Lave Vaisselle",
+    "type": "dishwasher",
+    "power_sensor": "sensor.lave_vaisselle_puissance",
+    "current_start": 20,
+    "current_stop": 5,
+    "analysis": {
+      "min": 0.0,
+      "max": 1817.0,
+      "mean": 1180.53,
+      "median": 1686.0,
+      "p10": 7.0,
+      "p25": 85.0,
+      "p75": 1741.0,
+      "p90": 1768.0,
+      "recommended_stop_threshold": 100,
+      "recommended_start_threshold": 580,
+      "sample_count": 1519
+    },
+    "status": "needs_adjustment"
+  },
+  {
+    "name": "Ecran PC",
+    "type": "monitor",
+    "power_sensor": "sensor.ecran_puissance",
+    "current_start": 50,
+    "current_stop": 5,
+    "analysis": {
+      "min": 0.0,
+      "max": 91.0,
+      "mean": 81.42,
+      "median": 87.0,
+      "p10": 85.0,
+      "p25": 87.0,
+      "p75": 88.0,
+      "p90": 89.0,
+      "recommended_stop_threshold": 105,
+      "recommended_start_threshold": 130,
+      "sample_count": 714
+    },
+    "status": "needs_adjustment"
+  },
+  {
+    "name": "Bambulab X1C",
+    "type": "printer_3d",
+    "power_sensor": "sensor.bambulab_x1c_puissance",
+    "current_start": 50,
+    "current_stop": 10,
+    "analysis": {
+      "min": 0.0,
+      "max": 911.0,
+      "mean": 39.13,
+      "median": 7.0,
+      "p10": 6.0,
+      "p25": 6.0,
+      "p75": 57.0,
+      "p90": 136.0,
+      "recommended_stop_threshold": 5,
+      "recommended_start_threshold": 20,
+      "sample_count": 4423
+    },
+    "status": "needs_adjustment"
+  },
+  {
+    "name": "VMC",
+    "type": "vmc",
+    "power_sensor": "sensor.vmc_device_power",
+    "current_start": 10,
+    "current_stop": 3,
+    "analysis": {
+      "min": 0.0,
+      "max": 15.0,
+      "mean": 0.45,
+      "median": 0.0,
+      "p10": 0.0,
+      "p25": 0.0,
+      "p75": 0.0,
+      "p90": 0.0,
+      "recommended_stop_threshold": 0,
+      "recommended_start_threshold": 0,
+      "sample_count": 199
+    },
+    "status": "needs_adjustment"
+  },
+  {
+    "name": "Bureau PC",
+    "type": "other",
+    "power_sensor": "sensor.bureau_pc_puissance",
+    "current_start": "N/A",
+    "current_stop": "N/A",
+    "analysis": null,
+    "status": "other_skipped"
+  },
+  {
+    "name": "S\u00e9che Linge",
+    "type": "dryer",
+    "power_sensor": "sensor.seche_linge_puissance_2",
+    "current_start": 50,
+    "current_stop": 15,
+    "analysis": {
+      "min": 0.0,
+      "max": 661.0,
+      "mean": 333.44,
+      "median": 299.0,
+      "p10": 225.0,
+      "p25": 260.0,
+      "p75": 386.0,
+      "p90": 635.0,
+      "recommended_stop_threshold": 310,
+      "recommended_start_threshold": 620,
+      "sample_count": 2156
+    },
+    "status": "needs_adjustment"
+  },
+  {
+    "name": "Clim",
+    "type": "other",
+    "power_sensor": "sensor.spm_spm_activepower_4",
+    "current_start": "N/A",
+    "current_stop": "N/A",
+    "analysis": null,
+    "status": "other_skipped"
+  }
+]
