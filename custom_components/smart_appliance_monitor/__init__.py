@@ -702,17 +702,34 @@ async def async_setup_services(hass: HomeAssistant) -> None:
         # Apply global price to all coordinators if available
         if global_price_result and global_price_result["success"]:
             new_price = global_price_result["new_price"]
-            price_source = global_price_result["price_entity"] or "static"
+            price_entity = global_price_result["price_entity"]
             
-            for coord in coordinators:
-                old_price = coord.price_kwh
-                coord.price_kwh = new_price
-                _LOGGER.info(
-                    "Applied global price to '%s': %.4f €/kWh (was %.4f)",
-                    coord.appliance_name,
-                    new_price,
-                    old_price
-                )
+            # Update global config with synced price
+            global_config = hass.data.get(DOMAIN, {}).get("global_config")
+            if global_config:
+                old_config = global_config.get_global_price_config()
+                old_price = old_config.get("global_price_fixed", 0.2516)
+                
+                # Update global price config
+                updates = {
+                    "global_price_fixed": new_price,
+                }
+                if price_entity:
+                    updates["global_price_entity"] = price_entity
+                
+                await global_config.async_update(updates)
+                
+                # Reload global config for all coordinators
+                for coord in coordinators:
+                    await coord.load_global_ai_config()
+                    _LOGGER.info(
+                        "Applied global price to '%s': %.4f €/kWh (was %.4f)",
+                        coord.appliance_name,
+                        new_price,
+                        old_price
+                    )
+            else:
+                _LOGGER.error("Global config manager not found, cannot apply price")
         
         # Generate sync report
         synced = []

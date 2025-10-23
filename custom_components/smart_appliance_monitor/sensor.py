@@ -79,7 +79,6 @@ class SmartApplianceStateSensor(SmartApplianceEntity, SensorEntity):
     def __init__(self, coordinator: SmartApplianceCoordinator) -> None:
         """Initialize the sensor."""
         super().__init__(coordinator, "state")
-        self._attr_name = "État"
     
     @property
     def native_value(self) -> str:
@@ -128,7 +127,6 @@ class SmartApplianceCycleDurationSensor(SmartApplianceEntity, SensorEntity):
         super().__init__(coordinator, entity_id)
         
         self._attr_translation_key = entity_id
-        self._attr_name = "Durée de session" if is_session_based else "Durée du cycle"
     
     @property
     def native_value(self) -> float:
@@ -160,7 +158,6 @@ class SmartApplianceCycleEnergySensor(SmartApplianceEntity, SensorEntity):
         super().__init__(coordinator, entity_id)
         
         self._attr_translation_key = entity_id
-        self._attr_name = "Énergie de session" if is_session_based else "Énergie du cycle"
     
     @property
     def native_value(self) -> float:
@@ -193,7 +190,6 @@ class SmartApplianceCycleCostSensor(SmartApplianceEntity, SensorEntity):
         super().__init__(coordinator, entity_id)
         
         self._attr_translation_key = entity_id
-        self._attr_name = "Coût de session" if is_session_based else "Coût du cycle"
         # Utiliser la devise dynamique
         self._attr_native_unit_of_measurement = coordinator.currency
     
@@ -247,7 +243,6 @@ class SmartApplianceLastCycleDurationSensor(SmartApplianceEntity, SensorEntity):
         super().__init__(coordinator, entity_id)
         
         self._attr_translation_key = entity_id
-        self._attr_name = "Durée de la dernière session" if is_session_based else "Durée du dernier cycle"
     
     @property
     def native_value(self) -> float | None:
@@ -293,7 +288,6 @@ class SmartApplianceLastCycleEnergySensor(SmartApplianceEntity, SensorEntity):
         super().__init__(coordinator, entity_id)
         
         self._attr_translation_key = entity_id
-        self._attr_name = "Énergie de la dernière session" if is_session_based else "Énergie du dernier cycle"
     
     @property
     def native_value(self) -> float | None:
@@ -326,7 +320,6 @@ class SmartApplianceLastCycleCostSensor(SmartApplianceEntity, SensorEntity):
         super().__init__(coordinator, entity_id)
         
         self._attr_translation_key = entity_id
-        self._attr_name = "Coût de la dernière session" if is_session_based else "Coût du dernier cycle"
         # Utiliser la devise dynamique
         self._attr_native_unit_of_measurement = coordinator.currency
     
@@ -370,7 +363,6 @@ class SmartApplianceDailyCyclesSensor(SmartApplianceEntity, SensorEntity):
         super().__init__(coordinator, entity_id)
         
         self._attr_translation_key = entity_id
-        self._attr_name = "Sessions du jour" if is_session_based else "Cycles du jour"
     
     @property
     def native_value(self) -> int:
@@ -403,7 +395,6 @@ class SmartApplianceDailyCostSensor(SmartApplianceEntity, SensorEntity):
     def __init__(self, coordinator: SmartApplianceCoordinator) -> None:
         """Initialize the sensor."""
         super().__init__(coordinator, "daily_cost")
-        self._attr_name = "Coût du jour"
         # Utiliser la devise dynamique
         self._attr_native_unit_of_measurement = coordinator.currency
     
@@ -449,7 +440,6 @@ class SmartApplianceDailyEnergySensor(SmartApplianceEntity, SensorEntity):
     def __init__(self, coordinator: SmartApplianceCoordinator) -> None:
         """Initialize the sensor."""
         super().__init__(coordinator, "daily_energy")
-        self._attr_name = "Énergie du jour"
     
     @property
     def native_value(self) -> float:
@@ -483,7 +473,6 @@ class SmartApplianceMonthlyCostSensor(SmartApplianceEntity, SensorEntity):
     def __init__(self, coordinator: SmartApplianceCoordinator) -> None:
         """Initialize the sensor."""
         super().__init__(coordinator, "monthly_cost")
-        self._attr_name = "Coût du mois"
         # Utiliser la devise dynamique
         self._attr_native_unit_of_measurement = coordinator.currency
     
@@ -532,7 +521,6 @@ class SmartApplianceMonthlyEnergySensor(SmartApplianceEntity, SensorEntity):
     def __init__(self, coordinator: SmartApplianceCoordinator) -> None:
         """Initialize the sensor."""
         super().__init__(coordinator, "monthly_energy")
-        self._attr_name = "Énergie du mois"
     
     @property
     def native_value(self) -> float:
@@ -566,7 +554,6 @@ class SmartApplianceAnomalyScoreSensor(SmartApplianceEntity, SensorEntity):
     def __init__(self, coordinator: SmartApplianceCoordinator) -> None:
         """Initialize the sensor."""
         super().__init__(coordinator, "anomaly_score")
-        self._attr_name = "Score d'anomalie"
     
     @property
     def native_value(self) -> float:
@@ -602,7 +589,6 @@ class SmartApplianceAIAnalysisSensor(SmartApplianceEntity, SensorEntity):
     def __init__(self, coordinator: SmartApplianceCoordinator) -> None:
         """Initialize the sensor."""
         super().__init__(coordinator, "ai_analysis")
-        self._attr_name = "AI Analysis"
     
     @property
     def native_value(self) -> str:
@@ -670,7 +656,6 @@ class EnergyDashboardAIAnalysisSensor(SensorEntity):
     def __init__(self, hass: HomeAssistant) -> None:
         """Initialize the sensor."""
         self.hass = hass
-        self._attr_name = "Energy Dashboard AI Analysis"
         self._attr_unique_id = f"{DOMAIN}_energy_dashboard_ai_analysis"
         self._last_result: dict[str, Any] | None = None
     

@@ -59,7 +59,6 @@ class SmartApplianceMonitoringSwitch(SmartApplianceEntity, SwitchEntity):
     def __init__(self, coordinator: SmartApplianceCoordinator) -> None:
         """Initialize the switch."""
         super().__init__(coordinator, "monitoring")
-        self._attr_name = "Surveillance"
     
     @property
     def icon(self) -> str:
@@ -107,7 +106,6 @@ class SmartApplianceNotificationsSwitch(SmartApplianceEntity, SwitchEntity):
     def __init__(self, coordinator: SmartApplianceCoordinator) -> None:
         """Initialize the switch."""
         super().__init__(coordinator, "notifications")
-        self._attr_name = "Notifications"
     
     @property
     def icon(self) -> str:
@@ -148,7 +146,6 @@ class SmartApplianceNotificationCycleStartedSwitch(SmartApplianceEntity, SwitchE
     def __init__(self, coordinator: SmartApplianceCoordinator) -> None:
         """Initialize the switch."""
         super().__init__(coordinator, "notification_cycle_started")
-        self._attr_name = "Notification cycle démarré"
         self._attr_entity_registry_enabled_default = True
     
     @property
@@ -164,11 +161,13 @@ class SmartApplianceNotificationCycleStartedSwitch(SmartApplianceEntity, SwitchE
     async def async_turn_on(self, **kwargs: Any) -> None:
         """Turn on notification type."""
         self.coordinator.notifier.set_notification_type_enabled(NOTIF_TYPE_CYCLE_STARTED, True)
+        await self.coordinator._save_state()
         self.async_write_ha_state()
     
     async def async_turn_off(self, **kwargs: Any) -> None:
         """Turn off notification type."""
         self.coordinator.notifier.set_notification_type_enabled(NOTIF_TYPE_CYCLE_STARTED, False)
+        await self.coordinator._save_state()
         self.async_write_ha_state()
 
 
@@ -180,7 +179,6 @@ class SmartApplianceNotificationCycleFinishedSwitch(SmartApplianceEntity, Switch
     def __init__(self, coordinator: SmartApplianceCoordinator) -> None:
         """Initialize the switch."""
         super().__init__(coordinator, "notification_cycle_finished")
-        self._attr_name = "Notification cycle terminé"
         self._attr_entity_registry_enabled_default = True
     
     @property
@@ -196,11 +194,13 @@ class SmartApplianceNotificationCycleFinishedSwitch(SmartApplianceEntity, Switch
     async def async_turn_on(self, **kwargs: Any) -> None:
         """Turn on notification type."""
         self.coordinator.notifier.set_notification_type_enabled(NOTIF_TYPE_CYCLE_FINISHED, True)
+        await self.coordinator._save_state()
         self.async_write_ha_state()
     
     async def async_turn_off(self, **kwargs: Any) -> None:
         """Turn off notification type."""
         self.coordinator.notifier.set_notification_type_enabled(NOTIF_TYPE_CYCLE_FINISHED, False)
+        await self.coordinator._save_state()
         self.async_write_ha_state()
 
 
@@ -212,7 +212,6 @@ class SmartApplianceNotificationAlertDurationSwitch(SmartApplianceEntity, Switch
     def __init__(self, coordinator: SmartApplianceCoordinator) -> None:
         """Initialize the switch."""
         super().__init__(coordinator, "notification_alert_duration")
-        self._attr_name = "Notification alerte durée"
         self._attr_entity_registry_enabled_default = True
     
     @property
@@ -228,11 +227,13 @@ class SmartApplianceNotificationAlertDurationSwitch(SmartApplianceEntity, Switch
     async def async_turn_on(self, **kwargs: Any) -> None:
         """Turn on notification type."""
         self.coordinator.notifier.set_notification_type_enabled(NOTIF_TYPE_ALERT_DURATION, True)
+        await self.coordinator._save_state()
         self.async_write_ha_state()
     
     async def async_turn_off(self, **kwargs: Any) -> None:
         """Turn off notification type."""
         self.coordinator.notifier.set_notification_type_enabled(NOTIF_TYPE_ALERT_DURATION, False)
+        await self.coordinator._save_state()
         self.async_write_ha_state()
 
 
@@ -244,7 +245,6 @@ class SmartApplianceNotificationUnpluggedSwitch(SmartApplianceEntity, SwitchEnti
     def __init__(self, coordinator: SmartApplianceCoordinator) -> None:
         """Initialize the switch."""
         super().__init__(coordinator, "notification_unplugged")
-        self._attr_name = "Notification débranché"
         self._attr_entity_registry_enabled_default = True
     
     @property
@@ -260,11 +260,13 @@ class SmartApplianceNotificationUnpluggedSwitch(SmartApplianceEntity, SwitchEnti
     async def async_turn_on(self, **kwargs: Any) -> None:
         """Turn on notification type."""
         self.coordinator.notifier.set_notification_type_enabled(NOTIF_TYPE_UNPLUGGED, True)
+        await self.coordinator._save_state()
         self.async_write_ha_state()
     
     async def async_turn_off(self, **kwargs: Any) -> None:
         """Turn off notification type."""
         self.coordinator.notifier.set_notification_type_enabled(NOTIF_TYPE_UNPLUGGED, False)
+        await self.coordinator._save_state()
         self.async_write_ha_state()
 
 
@@ -276,7 +278,6 @@ class SmartApplianceAutoShutdownSwitch(SmartApplianceEntity, SwitchEntity):
     def __init__(self, coordinator: SmartApplianceCoordinator) -> None:
         """Initialize the switch."""
         super().__init__(coordinator, "auto_shutdown")
-        self._attr_name = "Extinction automatique"
         self._attr_entity_registry_enabled_default = False
     
     @property
@@ -318,7 +319,6 @@ class SmartApplianceEnergyLimitsSwitch(SmartApplianceEntity, SwitchEntity):
     def __init__(self, coordinator: SmartApplianceCoordinator) -> None:
         """Initialize the switch."""
         super().__init__(coordinator, "energy_limits")
-        self._attr_name = "Limites énergétiques"
         self._attr_entity_registry_enabled_default = False
     
     @property
@@ -360,7 +360,6 @@ class SmartApplianceSchedulingSwitch(SmartApplianceEntity, SwitchEntity):
     def __init__(self, coordinator: SmartApplianceCoordinator) -> None:
         """Initialize the switch."""
         super().__init__(coordinator, "scheduling")
-        self._attr_name = "Planification"
         self._attr_entity_registry_enabled_default = False
     
     @property
@@ -402,7 +401,6 @@ class SmartApplianceAIAnalysisSwitch(SmartApplianceEntity, SwitchEntity):
     def __init__(self, coordinator: SmartApplianceCoordinator) -> None:
         """Initialize the switch."""
         super().__init__(coordinator, "ai_analysis")
-        self._attr_name = "AI Analysis"
         self._attr_entity_registry_enabled_default = False
     
     @property

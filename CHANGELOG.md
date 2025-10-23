@@ -5,6 +5,30 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.9.2] - 2025-01-23
+
+### Fixed
+- **Notification Persistence**: Fixed notification switches states not being saved and restored after Home Assistant restart
+  - Added `notification_type_switches` to state persistence in `coordinator.py`
+  - Added state save triggers in notification switches (`switch.py`)
+  - Individual notification switches (cycle_started, cycle_finished, alert_duration, unplugged) now properly maintain their state across restarts
+- **Energy Dashboard Sync Service**: Fixed "property 'price_kwh' has no setter" error
+  - Updated `sync_with_energy_dashboard` service to use `GlobalConfigManager` instead of direct property assignment (`__init__.py`)
+  - Removed direct `price_kwh` assignments in `energy.py`
+  - Service now properly updates global price configuration for all appliances
+
+### Changed
+- **Entity Names Translation**: Removed hardcoded French entity names for proper translation system usage
+  - Removed all `_attr_name` assignments in `sensor.py`, `binary_sensor.py`, `switch.py`, and `button.py`
+  - Entity IDs remain in English (e.g., `sensor.clim_cycle_cost`)
+  - Display names are now automatically translated via `_attr_translation_key` system
+  - Improves code maintainability and follows Home Assistant best practices
+
+### Technical Details
+- Files modified: `coordinator.py`, `switch.py`, `__init__.py`, `energy.py`, `sensor.py`, `binary_sensor.py`, `button.py`
+- No breaking changes for existing installations (entity IDs remain unchanged in entity registry)
+- New installations will have cleaner entity ID generation
+
 ## [0.9.1] - 2025-10-23
 
 ### Added

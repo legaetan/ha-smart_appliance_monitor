@@ -1213,6 +1213,7 @@ class SmartApplianceCoordinator(DataUpdateCoordinator):
                 ],
                 "monitoring_enabled": self.monitoring_enabled,
                 "notifications_enabled": self.notifications_enabled,
+                "notification_type_switches": self.notifier.notification_type_switches,
                 "ai_analysis_enabled": self.ai_analysis_enabled,
                 "last_ai_analysis_result": self.last_ai_analysis_result,
             }
@@ -1309,6 +1310,16 @@ class SmartApplianceCoordinator(DataUpdateCoordinator):
             self.notifications_enabled = data.get("notifications_enabled", True)
             self.ai_analysis_enabled = data.get("ai_analysis_enabled", False)
             self.notifier.set_enabled(self.notifications_enabled)
+            
+            # Restaurer les états des switches de notification individuels
+            saved_notification_switches = data.get("notification_type_switches")
+            if saved_notification_switches:
+                self.notifier.notification_type_switches.update(saved_notification_switches)
+                _LOGGER.debug(
+                    "États des switches de notification restaurés pour '%s': %s",
+                    self.appliance_name,
+                    saved_notification_switches,
+                )
             
             # Restaurer les résultats d'analyse AI
             self.last_ai_analysis_result = data.get("last_ai_analysis_result", None)

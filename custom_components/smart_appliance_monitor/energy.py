@@ -313,11 +313,11 @@ class EnergyDashboardSync:
                                     new_price = float(price_state.state)
                                     old_price = self.coordinator.price_kwh
                                     
-                                    # Update coordinator price
-                                    self.coordinator.price_kwh = new_price
+                                    # Note: Price will be updated in global config by the service
+                                    # Do not update coordinator.price_kwh directly (it's read-only)
                                     
                                     _LOGGER.info(
-                                        "Synced price for '%s': %.4f €/kWh (from %s)",
+                                        "Found price for '%s': %.4f €/kWh (from %s)",
                                         self.coordinator.appliance_name,
                                         new_price,
                                         price_entity
@@ -329,7 +329,7 @@ class EnergyDashboardSync:
                                         "price_entity": price_entity,
                                         "old_price": old_price,
                                         "new_price": new_price,
-                                        "message": f"Price updated from {old_price:.4f} to {new_price:.4f} €/kWh"
+                                        "message": f"Price found: {new_price:.4f} €/kWh from {price_entity}"
                                     }
                                 except (ValueError, TypeError) as err:
                                     _LOGGER.error("Invalid price value from %s: %s", price_entity, err)
@@ -339,10 +339,11 @@ class EnergyDashboardSync:
                             old_price = self.coordinator.price_kwh
                             new_price = float(static_price)
                             
-                            self.coordinator.price_kwh = new_price
+                            # Note: Price will be updated in global config by the service
+                            # Do not update coordinator.price_kwh directly (it's read-only)
                             
                             _LOGGER.info(
-                                "Synced static price for '%s': %.4f €/kWh",
+                                "Found static price for '%s': %.4f €/kWh",
                                 self.coordinator.appliance_name,
                                 new_price
                             )
@@ -353,7 +354,7 @@ class EnergyDashboardSync:
                                 "price_entity": None,
                                 "old_price": old_price,
                                 "new_price": new_price,
-                                "message": f"Price updated from {old_price:.4f} to {new_price:.4f} €/kWh"
+                                "message": f"Static price found: {new_price:.4f} €/kWh"
                             }
             
             # No price configured in Energy Dashboard

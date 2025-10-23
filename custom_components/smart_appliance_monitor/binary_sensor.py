@@ -71,7 +71,6 @@ class SmartApplianceRunningBinarySensor(SmartApplianceEntity, BinarySensorEntity
     def __init__(self, coordinator: SmartApplianceCoordinator) -> None:
         """Initialize the binary sensor."""
         super().__init__(coordinator, "running")
-        self._attr_name = "En marche"
     
     @property
     def is_on(self) -> bool:
@@ -100,7 +99,6 @@ class SmartApplianceAlertDurationBinarySensor(SmartApplianceEntity, BinarySensor
     def __init__(self, coordinator: SmartApplianceCoordinator) -> None:
         """Initialize the binary sensor."""
         super().__init__(coordinator, "alert_duration")
-        self._attr_name = "Alerte durée"
         self._alert_triggered = False
         
         # Écouter les événements d'alerte
@@ -150,7 +148,6 @@ class SmartApplianceUnpluggedBinarySensor(SmartApplianceEntity, BinarySensorEnti
     def __init__(self, coordinator: SmartApplianceCoordinator) -> None:
         """Initialize the binary sensor."""
         super().__init__(coordinator, "unplugged")
-        self._attr_name = "Débranché"
     
     @property
     def is_on(self) -> bool:
@@ -181,7 +178,6 @@ class SmartApplianceEnergyLimitBinarySensor(SmartApplianceEntity, BinarySensorEn
     def __init__(self, coordinator: SmartApplianceCoordinator) -> None:
         """Initialize the binary sensor."""
         super().__init__(coordinator, "energy_limit_exceeded")
-        self._attr_name = "Limite énergétique dépassée"
     
     @property
     def is_on(self) -> bool:
@@ -228,7 +224,6 @@ class SmartApplianceBudgetBinarySensor(SmartApplianceEntity, BinarySensorEntity)
     def __init__(self, coordinator: SmartApplianceCoordinator) -> None:
         """Initialize the binary sensor."""
         super().__init__(coordinator, "budget_exceeded")
-        self._attr_name = "Budget dépassé"
     
     @property
     def is_on(self) -> bool:
@@ -261,7 +256,6 @@ class SmartApplianceUsageAllowedBinarySensor(SmartApplianceEntity, BinarySensorE
     def __init__(self, coordinator: SmartApplianceCoordinator) -> None:
         """Initialize the binary sensor."""
         super().__init__(coordinator, "usage_allowed")
-        self._attr_name = "Utilisation autorisée"
     
     @property
     def is_on(self) -> bool:
@@ -291,7 +285,6 @@ class SmartApplianceAnomalyBinarySensor(SmartApplianceEntity, BinarySensorEntity
     def __init__(self, coordinator: SmartApplianceCoordinator) -> None:
         """Initialize the binary sensor."""
         super().__init__(coordinator, "anomaly_detected")
-        self._attr_name = "Anomalie détectée"
         self._anomaly_triggered = False
         
         # Écouter les événements d'anomalie

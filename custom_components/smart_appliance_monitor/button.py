@@ -43,7 +43,6 @@ class SmartApplianceResetStatsButton(SmartApplianceEntity, ButtonEntity):
     def __init__(self, coordinator: SmartApplianceCoordinator) -> None:
         """Initialize the button."""
         super().__init__(coordinator, "reset_stats")
-        self._attr_name = "Réinitialiser les statistiques"
     
     @property
     def icon(self) -> str:

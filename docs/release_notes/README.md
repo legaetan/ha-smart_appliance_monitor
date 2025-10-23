@@ -6,6 +6,12 @@ This directory contains detailed release notes for each version of Smart Applian
 
 ### Version 0.9.x - Global Configuration & Dynamic Currency 🌍
 
+- **[v0.9.2](RELEASE_NOTES_v0.9.2.md)** - January 23, 2025 - Bug Fixes & Code Quality 🐛
+  - **FIXED**: Notification switches not preserving state after restart
+  - **FIXED**: Energy Dashboard sync service error ("price_kwh has no setter")
+  - **CHANGED**: Removed hardcoded French entity names for proper translation system
+  - **IMPROVED**: Better code maintainability following HA best practices
+
 - **[v0.9.1](RELEASE_NOTES_v0.9.1.md)** - October 23, 2025 - Dashboard Enhancement & Energy Integration 🎨
   - **NEW**: Complete dashboard redesign with 9 comprehensive views
   - **NEW**: Generic card templates system (`_card_templates.yaml`)
