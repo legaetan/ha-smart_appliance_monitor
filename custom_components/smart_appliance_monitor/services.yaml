@@ -508,8 +508,8 @@ import_historical_cycles:
       selector:
         boolean:
 
-generate_dashboard_yaml:
-  name: Generate Dashboard YAML
+generate_full_dashboard_yaml:
+  name: Generate Full Dashboard YAML
   description: Generates the Smart Appliances dashboard as a YAML file. You must then configure it manually in configuration.yaml (see service response for instructions).
   fields:
     output_path:

@@ -37,7 +37,7 @@ async def async_register_panel(hass: HomeAssistant) -> None:
 async def async_unregister_panel(hass: HomeAssistant) -> None:
     """Unregister the Smart Appliances configuration panel."""
     try:
-        await hass.components.frontend.async_remove_panel(PANEL_URL)
+        frontend.async_remove_panel(hass, PANEL_URL)
         _LOGGER.info("Smart Appliances configuration panel unregistered")
     except Exception as err:
         _LOGGER.error("Error unregistering configuration panel: %s", err)

@@ -160,7 +160,7 @@ SERVICE_IMPORT_HISTORICAL_CYCLES_SCHEMA = vol.Schema(
 )
 
 # Dashboard management services
-SERVICE_GENERATE_DASHBOARD_YAML_SCHEMA = vol.Schema(
+SERVICE_GENERATE_FULL_DASHBOARD_YAML_SCHEMA = vol.Schema(
     {
         vol.Optional("output_path"): cv.string,
     }
@@ -1603,11 +1603,11 @@ async def async_setup_services(hass: HomeAssistant) -> None:
             "dry-run" if dry_run else "saved",
         )
     
-    async def handle_generate_dashboard_yaml(call: ServiceCall) -> None:
-        """Handle generate_dashboard_yaml service call."""
+    async def handle_generate_full_dashboard_yaml(call: ServiceCall) -> None:
+        """Handle generate_full_dashboard_yaml service call."""
         output_path = call.data.get("output_path")
-        
-        _LOGGER.info("Generating Smart Appliances dashboard YAML (output_path=%s)", output_path or "default")
+
+        _LOGGER.info("Generating Smart Appliances full dashboard YAML (output_path=%s)", output_path or "default")
         
         dashboard_manager = hass.data[DOMAIN].get("dashboard_manager")
         if not dashboard_manager:
@@ -1865,9 +1865,9 @@ async def async_setup_services(hass: HomeAssistant) -> None:
     # Dashboard management services
     hass.services.async_register(
         DOMAIN,
-        "generate_dashboard_yaml",
-        handle_generate_dashboard_yaml,
-        schema=SERVICE_GENERATE_DASHBOARD_YAML_SCHEMA,
+        "generate_full_dashboard_yaml",
+        handle_generate_full_dashboard_yaml,
+        schema=SERVICE_GENERATE_FULL_DASHBOARD_YAML_SCHEMA,
     )
     
     hass.services.async_register(
