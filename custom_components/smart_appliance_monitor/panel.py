@@ -15,6 +15,11 @@ PANEL_ICON = "mdi:cog-sync"
 
 async def async_register_panel(hass: HomeAssistant) -> None:
     """Register the Smart Appliances configuration panel."""
+    # Check if panel already registered
+    if PANEL_URL in hass.data.get("frontend_panels", {}):
+        _LOGGER.debug("Panel already registered, skipping")
+        return
+
     try:
         # Register the panel as an iframe
         await frontend.async_register_built_in_panel(
@@ -31,7 +36,6 @@ async def async_register_panel(hass: HomeAssistant) -> None:
 
     except Exception as err:
         _LOGGER.error("Error registering configuration panel: %s", err)
-        raise
 
 
 async def async_unregister_panel(hass: HomeAssistant) -> None:
