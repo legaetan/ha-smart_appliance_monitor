@@ -911,22 +911,26 @@ Utilisez les onglets ci-dessus pour accéder aux détails de chaque appareil."""
         # Calculate advanced metrics from coordinator data
         daily_stats = coordinator.daily_stats
         monthly_stats = coordinator.monthly_stats
-        
-        # Get cycle counts
-        total_cycles_today = daily_stats.get("cycle_count", 0)
-        total_cycles_month = monthly_stats.get("cycle_count", 0)
-        
+
+        # Get cycle counts (use "cycles" not "cycle_count")
+        total_cycles_today = daily_stats.get("cycles", 0)
+        total_cycles_month = monthly_stats.get("cycles", 0)
+
         # Calculate frequency (cycles per day based on monthly average)
         days_in_month = 30  # Approximation
         freq_per_day = round(total_cycles_month / days_in_month, 1) if total_cycles_month > 0 else 0
         freq_per_week = round(freq_per_day * 7, 1)
-        
-        # Get averages from coordinator
-        avg_duration = coordinator.daily_stats.get("avg_duration", 0)  # in seconds
-        avg_duration_min = round(avg_duration / 60, 0) if avg_duration > 0 else 0
-        avg_energy = coordinator.daily_stats.get("avg_energy", 0)
-        avg_cost = coordinator.daily_stats.get("avg_cost", 0)
-        
+
+        # Calculate averages from cycle history
+        cycle_history = coordinator._cycle_history if hasattr(coordinator, '_cycle_history') else []
+        if cycle_history:
+            avg_duration = sum(c.get("duration", 0) for c in cycle_history) / len(cycle_history)  # en minutes
+            avg_energy = sum(c.get("energy", 0) for c in cycle_history) / len(cycle_history)
+            avg_cost = sum(c.get("cost", 0) for c in cycle_history) / len(cycle_history)
+        else:
+            avg_duration = avg_energy = avg_cost = 0
+        avg_duration_min = round(avg_duration, 0)  # déjà en minutes
+
         # Build markdown content
         content = f"""## 📊 Statistiques Avancées
 
@@ -941,8 +945,8 @@ Utilisez les onglets ci-dessus pour accéder aux détails de chaque appareil."""
 - Coût: {round(avg_cost, 2)} {coordinator.currency}
 
 **Temps d'utilisation:**
-- Aujourd'hui: {round(daily_stats.get('total_duration', 0) / 3600, 1)} h
-- Ce mois: {round(monthly_stats.get('total_duration', 0) / 3600, 1)} h
+- Aujourd'hui: {round(daily_stats.get('total_duration', 0) / 60, 1)} h
+- Ce mois: {round(monthly_stats.get('total_duration', 0) / 60, 1)} h
 """
         
         return {

@@ -228,6 +228,7 @@ class SmartApplianceCoordinator(DataUpdateCoordinator):
             "cycles": 0,
             "total_energy": 0.0,
             "total_cost": 0.0,
+            "total_duration": 0.0,  # en minutes
         }
     
     def _init_monthly_stats(self) -> dict[str, Any]:
@@ -236,8 +237,10 @@ class SmartApplianceCoordinator(DataUpdateCoordinator):
         return {
             "year": now.year,
             "month": now.month,
+            "cycles": 0,
             "total_energy": 0.0,
             "total_cost": 0.0,
+            "total_duration": 0.0,  # en minutes
         }
     
     async def _async_update_data(self) -> dict[str, Any]:
@@ -390,7 +393,8 @@ class SmartApplianceCoordinator(DataUpdateCoordinator):
         
         # Mise à jour des statistiques (avec validation pour éviter valeurs négatives)
         self.daily_stats["cycles"] += 1
-        
+        self.monthly_stats["cycles"] = self.monthly_stats.get("cycles", 0) + 1
+
         # Validation : si l'énergie du cycle est négative, c'est une erreur de données
         if energy < 0:
             _LOGGER.warning(
@@ -404,6 +408,9 @@ class SmartApplianceCoordinator(DataUpdateCoordinator):
             self.daily_stats["total_cost"] += cost
             self.monthly_stats["total_energy"] += energy
             self.monthly_stats["total_cost"] += cost
+            # Ajouter la durée aux statistiques (duration est en minutes)
+            self.daily_stats["total_duration"] = self.daily_stats.get("total_duration", 0) + duration
+            self.monthly_stats["total_duration"] = self.monthly_stats.get("total_duration", 0) + duration
         
         # Validation finale : si les totaux sont négatifs, réinitialiser
         if self.daily_stats["total_energy"] < 0:

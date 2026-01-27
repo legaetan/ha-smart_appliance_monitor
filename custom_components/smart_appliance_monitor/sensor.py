@@ -52,6 +52,7 @@ async def async_setup_entry(
         SmartApplianceDailyEnergySensor(coordinator),
         SmartApplianceMonthlyCostSensor(coordinator),
         SmartApplianceMonthlyEnergySensor(coordinator),
+        SmartApplianceMonthlyCyclesSensor(coordinator),
     ]
     
     # Ajouter sensor anomaly score si activé
@@ -541,6 +542,42 @@ class SmartApplianceMonthlyEnergySensor(SmartApplianceEntity, SensorEntity):
             "year": monthly_stats.get("year"),
             "month": monthly_stats.get("month"),
             "total_cost": round(monthly_stats.get("total_cost", 0), 2),
+        }
+
+
+class SmartApplianceMonthlyCyclesSensor(SmartApplianceEntity, SensorEntity):
+    """Sensor pour le nombre de cycles mensuels."""
+
+    _attr_state_class = SensorStateClass.TOTAL
+
+    def __init__(self, coordinator: SmartApplianceCoordinator) -> None:
+        """Initialize the sensor."""
+        appliance_type = coordinator.entry.data.get(CONF_APPLIANCE_TYPE)
+        is_session_based = appliance_type in SESSION_BASED_TYPES
+
+        entity_id = "monthly_sessions" if is_session_based else "monthly_cycles"
+        super().__init__(coordinator, entity_id)
+        self._attr_translation_key = entity_id
+
+    @property
+    def native_value(self) -> int:
+        """Return the number of cycles this month."""
+        monthly_stats = self.coordinator.data.get("monthly_stats", {})
+        return monthly_stats.get("cycles", 0)
+
+    @property
+    def icon(self) -> str:
+        """Return the icon to use in the frontend."""
+        return "mdi:counter"
+
+    @property
+    def extra_state_attributes(self) -> dict[str, Any]:
+        """Return additional state attributes."""
+        monthly_stats = self.coordinator.data.get("monthly_stats", {})
+        return {
+            "year": monthly_stats.get("year"),
+            "month": monthly_stats.get("month"),
+            "total_energy": round(monthly_stats.get("total_energy", 0), 3),
         }
 
 
