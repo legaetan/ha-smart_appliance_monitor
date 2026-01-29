@@ -228,9 +228,12 @@ class SmartApplianceCoordinator(DataUpdateCoordinator):
             "cycles": 0,
             "total_energy": 0.0,
             "total_cost": 0.0,
-            "total_duration": 0.0,  # en minutes
+            "total_duration": 0.0,  # secondes cumulées
+            "avg_duration": 0.0,    # moyenne en secondes
+            "avg_energy": 0.0,      # moyenne en kWh
+            "avg_cost": 0.0,        # moyenne en devise
         }
-    
+
     def _init_monthly_stats(self) -> dict[str, Any]:
         """Initialise les statistiques mensuelles."""
         now = datetime.now()
@@ -240,7 +243,7 @@ class SmartApplianceCoordinator(DataUpdateCoordinator):
             "cycles": 0,
             "total_energy": 0.0,
             "total_cost": 0.0,
-            "total_duration": 0.0,  # en minutes
+            "total_duration": 0.0,  # secondes cumulées
         }
     
     async def _async_update_data(self) -> dict[str, Any]:
@@ -408,9 +411,15 @@ class SmartApplianceCoordinator(DataUpdateCoordinator):
             self.daily_stats["total_cost"] += cost
             self.monthly_stats["total_energy"] += energy
             self.monthly_stats["total_cost"] += cost
-            # Ajouter la durée aux statistiques (duration est en minutes)
-            self.daily_stats["total_duration"] = self.daily_stats.get("total_duration", 0) + duration
-            self.monthly_stats["total_duration"] = self.monthly_stats.get("total_duration", 0) + duration
+            # Ajouter la durée aux statistiques (duration est en minutes, stocké en secondes)
+            self.daily_stats["total_duration"] = self.daily_stats.get("total_duration", 0) + duration * 60
+            self.monthly_stats["total_duration"] = self.monthly_stats.get("total_duration", 0) + duration * 60
+
+        # Recalculer les moyennes journalières
+        cycles_today = max(1, self.daily_stats.get("cycles", 0))
+        self.daily_stats["avg_duration"] = (self.daily_stats.get("total_duration", 0.0)) / cycles_today
+        self.daily_stats["avg_energy"] = (self.daily_stats.get("total_energy", 0.0)) / cycles_today
+        self.daily_stats["avg_cost"] = (self.daily_stats.get("total_cost", 0.0)) / cycles_today
         
         # Validation finale : si les totaux sont négatifs, réinitialiser
         if self.daily_stats["total_energy"] < 0:

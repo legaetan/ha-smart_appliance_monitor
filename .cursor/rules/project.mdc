@@ -1,5 +1,5 @@
 ---
-alwaysApply: true
+alwaysApply: false
 ---
 
 # Smart Appliance Monitor - Cursor Rules
@@ -68,6 +68,32 @@ The `.ha_config` file is sourced in testing and release workflows:
 - Pre-release testing: Restart HA after manual sync
 - Automated commands: Load variables with `source .ha_config`
 - Scripts can access `$HA_URL`, `$HA_TOKEN`, `$HA_SSH_*` environment variables
+
+## User Communication
+
+### Sending Telegram Messages
+
+When the user requests to send a Telegram message (e.g., for notifications, confirmations, or updates), use the following Home Assistant service call:
+
+```yaml
+action: script.telegram_envoyer
+data:
+  message: "Your message here"
+```
+
+**Usage:**
+- Use this to notify the user about important events during development or testing
+- Send confirmations when tasks are completed
+- Alert about errors or issues that require attention
+- Can be triggered via Home Assistant REST API or developer tools
+
+**Example curl command:**
+```bash
+source .ha_config && curl -X POST -H "Authorization: Bearer $HA_TOKEN" \
+  -H "Content-Type: application/json" \
+  -d '{"message": "Task completed successfully!"}' \
+  "$HA_URL/api/services/script/telegram_envoyer"
+```
 
 ## Release Workflow
 

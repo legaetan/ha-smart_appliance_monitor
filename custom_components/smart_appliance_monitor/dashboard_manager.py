@@ -909,27 +909,99 @@ Utilisez les onglets ci-dessus pour accéder aux détails de chaque appareil."""
     ) -> dict[str, Any] | None:
         """Build advanced statistics card with frequency, averages, and trends."""
         # Calculate advanced metrics from coordinator data
-        daily_stats = coordinator.daily_stats
-        monthly_stats = coordinator.monthly_stats
+        daily_stats = coordinator.daily_stats or {}
+        monthly_stats = coordinator.monthly_stats or {}
 
-        # Get cycle counts (use "cycles" not "cycle_count")
-        total_cycles_today = daily_stats.get("cycles", 0)
-        total_cycles_month = monthly_stats.get("cycles", 0)
+        # Resolve cycle counters (support both legacy and new keys)
+        total_cycles_today = daily_stats.get("cycles", daily_stats.get("cycle_count", 0))
+        total_cycles_month = monthly_stats.get("cycles", monthly_stats.get("cycle_count", 0))
+
+        # If monthly cycles not tracked, approximate from history for current month
+        try:
+            if not total_cycles_month and hasattr(coordinator, "_cycle_history"):
+                from datetime import datetime as _dt
+                total_cycles_month = sum(
+                    1
+                    for c in coordinator._cycle_history
+                    if isinstance(c.get("timestamp"), _dt)
+                    and c["timestamp"].year == _dt.now().year
+                    and c["timestamp"].month == _dt.now().month
+                )
+        except Exception:
+            pass
 
         # Calculate frequency (cycles per day based on monthly average)
         days_in_month = 30  # Approximation
         freq_per_day = round(total_cycles_month / days_in_month, 1) if total_cycles_month > 0 else 0
         freq_per_week = round(freq_per_day * 7, 1)
 
-        # Calculate averages from cycle history
-        cycle_history = coordinator._cycle_history if hasattr(coordinator, '_cycle_history') else []
-        if cycle_history:
-            avg_duration = sum(c.get("duration", 0) for c in cycle_history) / len(cycle_history)  # en minutes
-            avg_energy = sum(c.get("energy", 0) for c in cycle_history) / len(cycle_history)
-            avg_cost = sum(c.get("cost", 0) for c in cycle_history) / len(cycle_history)
-        else:
-            avg_duration = avg_energy = avg_cost = 0
-        avg_duration_min = round(avg_duration, 0)  # déjà en minutes
+        # Average duration/energy/cost for today
+        # Prefer values from stats; otherwise compute from cycle history
+        avg_duration_sec = daily_stats.get("avg_duration", 0)
+        avg_energy = daily_stats.get("avg_energy", 0)
+        avg_cost = daily_stats.get("avg_cost", 0)
+
+        if (not avg_duration_sec) or (not avg_energy and total_cycles_today) or (not avg_cost and total_cycles_today):
+            try:
+                from datetime import datetime as _dt
+                today = _dt.now().date()
+                durations_min = []
+                energies_kwh = []
+                costs = []
+                if hasattr(coordinator, "_cycle_history"):
+                    for c in coordinator._cycle_history:
+                        ts = c.get("timestamp")
+                        if isinstance(ts, _dt) and ts.date() == today:
+                            # History stores duration in minutes and energy in kWh
+                            if "duration" in c:
+                                durations_min.append(float(c.get("duration", 0)))
+                            if "energy" in c:
+                                energies_kwh.append(float(c.get("energy", 0)))
+                            if "energy" in c:
+                                costs.append(float(c.get("energy", 0)) * coordinator.price_kwh)
+                n = len(durations_min)
+                if n > 0:
+                    avg_duration_sec = sum(durations_min) / n * 60
+                if total_cycles_today:
+                    # If totals exist, use them; otherwise compute from history
+                    if daily_stats.get("total_energy") is not None:
+                        avg_energy = daily_stats.get("total_energy", 0) / max(1, total_cycles_today)
+                    elif energies_kwh:
+                        avg_energy = sum(energies_kwh) / n
+                    if daily_stats.get("total_cost") is not None:
+                        avg_cost = daily_stats.get("total_cost", 0) / max(1, total_cycles_today)
+                    elif costs:
+                        avg_cost = sum(costs) / n
+            except Exception:
+                pass
+
+        avg_duration_min = round(avg_duration_sec / 60, 0) if avg_duration_sec > 0 else 0
+
+        # Total usage time today/month (hours)
+        total_usage_today_h = 0.0
+        total_usage_month_h = 0.0
+        try:
+            if daily_stats.get("total_duration"):
+                total_usage_today_h = round(daily_stats.get("total_duration", 0) / 3600, 1)
+            else:
+                # Fallback: compute from history
+                from datetime import datetime as _dt
+                today = _dt.now().date()
+                total_usage_today_h = round(
+                    sum((c.get("duration", 0) for c in getattr(coordinator, "_cycle_history", []) if isinstance(c.get("timestamp"), _dt) and c["timestamp"].date() == today)) / 60,
+                    1,
+                )
+            if monthly_stats.get("total_duration"):
+                total_usage_month_h = round(monthly_stats.get("total_duration", 0) / 3600, 1)
+            else:
+                from datetime import datetime as _dt
+                now = _dt.now()
+                total_usage_month_h = round(
+                    sum((c.get("duration", 0) for c in getattr(coordinator, "_cycle_history", []) if isinstance(c.get("timestamp"), _dt) and c["timestamp"].year == now.year and c["timestamp"].month == now.month)) / 60,
+                    1,
+                )
+        except Exception:
+            pass
 
         # Build markdown content
         content = f"""## 📊 Statistiques Avancées
@@ -945,8 +1017,8 @@ Utilisez les onglets ci-dessus pour accéder aux détails de chaque appareil."""
 - Coût: {round(avg_cost, 2)} {coordinator.currency}
 
 **Temps d'utilisation:**
-- Aujourd'hui: {round(daily_stats.get('total_duration', 0) / 60, 1)} h
-- Ce mois: {round(monthly_stats.get('total_duration', 0) / 60, 1)} h
+- Aujourd'hui: {total_usage_today_h} h
+- Ce mois: {total_usage_month_h} h
 """
         
         return {

@@ -278,7 +278,7 @@ class SmartApplianceAutoShutdownSwitch(SmartApplianceEntity, SwitchEntity):
     def __init__(self, coordinator: SmartApplianceCoordinator) -> None:
         """Initialize the switch."""
         super().__init__(coordinator, "auto_shutdown")
-        self._attr_entity_registry_enabled_default = False
+        self._attr_entity_registry_enabled_default = True
     
     @property
     def icon(self) -> str:
@@ -319,7 +319,7 @@ class SmartApplianceEnergyLimitsSwitch(SmartApplianceEntity, SwitchEntity):
     def __init__(self, coordinator: SmartApplianceCoordinator) -> None:
         """Initialize the switch."""
         super().__init__(coordinator, "energy_limits")
-        self._attr_entity_registry_enabled_default = False
+        self._attr_entity_registry_enabled_default = True
     
     @property
     def icon(self) -> str:
@@ -360,7 +360,7 @@ class SmartApplianceSchedulingSwitch(SmartApplianceEntity, SwitchEntity):
     def __init__(self, coordinator: SmartApplianceCoordinator) -> None:
         """Initialize the switch."""
         super().__init__(coordinator, "scheduling")
-        self._attr_entity_registry_enabled_default = False
+        self._attr_entity_registry_enabled_default = True
     
     @property
     def icon(self) -> str:
@@ -401,7 +401,7 @@ class SmartApplianceAIAnalysisSwitch(SmartApplianceEntity, SwitchEntity):
     def __init__(self, coordinator: SmartApplianceCoordinator) -> None:
         """Initialize the switch."""
         super().__init__(coordinator, "ai_analysis")
-        self._attr_entity_registry_enabled_default = False
+        self._attr_entity_registry_enabled_default = True
     
     @property
     def icon(self) -> str:

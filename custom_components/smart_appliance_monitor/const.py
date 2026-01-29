@@ -47,6 +47,24 @@ CONF_SCHEDULING_MODE = "scheduling_mode"
 # Anomaly Detection Configuration
 CONF_ENABLE_ANOMALY_DETECTION = "enable_anomaly_detection"
 
+# UI-facing configuration keys for options flow
+CONF_START_DELAY_MINUTES = "start_delay_minutes"
+CONF_STOP_DELAY_MINUTES = "stop_delay_minutes"
+CONF_ALERT_DURATION_HOURS = "alert_duration_hours"
+CONF_UNPLUGGED_TIMEOUT_MINUTES = "unplugged_timeout_minutes"
+CONF_AUTO_SHUTDOWN_DELAY_MINUTES = "auto_shutdown_delay_minutes"
+
+# Dashboard configuration keys
+CONF_DASHBOARD_SECTIONS_VISIBLE = "dashboard_sections_visible"
+CONF_DASHBOARD_SHOW_STATUS = "show_status"
+CONF_DASHBOARD_SHOW_STATISTICS_BASIC = "show_statistics_basic"
+CONF_DASHBOARD_SHOW_STATISTICS_ADVANCED = "show_statistics_advanced"
+CONF_DASHBOARD_SHOW_CURRENT_CYCLE = "show_current_cycle"
+CONF_DASHBOARD_SHOW_POWER_GRAPH = "show_power_graph"
+CONF_DASHBOARD_SHOW_CONTROLS = "show_controls"
+CONF_DASHBOARD_SHOW_AI_ACTIONS = "show_ai_actions"
+CONF_DASHBOARD_SHOW_SERVICES = "show_services"
+
 # Energy Dashboard Integration
 CONF_ENABLE_ENERGY_DASHBOARD_SYNC = "enable_energy_dashboard_sync"
 

@@ -47,57 +47,75 @@
   "options": {
     "step": {
       "init": {
-        "title": "Detection Thresholds",
-        "description": "Configure power thresholds to detect when your appliance starts and stops. These values depend on your appliance type.",
+        "title": "Appliance Settings",
+        "description": "Configure all settings for your appliance. Default values are based on the appliance type.",
         "data": {
           "start_threshold": "Start Threshold (W)",
-          "stop_threshold": "Stop Threshold (W)"
-        },
-        "data_description": {
-          "start_threshold": "Minimum power consumption to detect appliance starting (e.g., 100W for oven, 10W for washing machine)",
-          "stop_threshold": "Maximum power consumption to detect appliance stopping (e.g., 10W for oven, 5W for washing machine)"
-        }
-      },
-      "delays": {
-        "title": "Detection Delays & Alerts",
-        "description": "Configure how long the power must remain stable before confirming a state change, and alert settings.",
-        "data": {
+          "stop_threshold": "Stop Threshold (W)",
           "start_delay_minutes": "Start Delay (minutes)",
           "stop_delay_minutes": "Stop Delay (minutes)",
           "enable_alert_duration": "Enable Duration Alert",
           "alert_duration_hours": "Alert Duration (hours)",
-          "expert_mode": "Enable Expert Mode"
-        },
-        "data_description": {
-          "start_delay_minutes": "How long power must stay above threshold before confirming start (0.5-10 min)",
-          "stop_delay_minutes": "How long power must stay below threshold before confirming stop (0.5-30 min)",
-          "enable_alert_duration": "Get notified if the cycle runs longer than expected",
-          "alert_duration_hours": "Maximum cycle duration before triggering an alert (0.5-24 hours)",
-          "expert_mode": "Access advanced settings (unplugged detection timeout, custom notification service)"
-        }
-      },
-      "notifications": {
-        "title": "Notifications",
-        "description": "Choose which notification services to use and which events to be notified about.",
-        "data": {
+          "enable_anomaly_detection": "Enable Anomaly Detection",
           "notification_services": "Notification Services",
-          "notification_types": "Notification Types"
-        },
-        "data_description": {
-          "notification_services": "Select one or more services: Mobile App, Telegram, Persistent notification, or Custom service",
-          "notification_types": "Select which events trigger notifications: cycle started, finished, duration alert, or unplugged"
-        }
-      },
-      "expert": {
-        "title": "Expert Settings",
-        "description": "Advanced configuration for power users. These settings are optional and have sensible defaults.",
-        "data": {
+          "notification_types": "Notification Types",
           "unplugged_timeout_minutes": "Unplugged Detection Timeout (minutes)",
-          "custom_notify_service": "Custom Notify Service Name"
+          "custom_notify_service": "Custom Notify Service Name",
+          "enable_auto_shutdown": "Enable Auto-Shutdown",
+          "auto_shutdown_delay_minutes": "Auto-Shutdown Delay (minutes)",
+          "auto_shutdown_entity": "Switch Entity for Auto-Shutdown",
+          "enable_energy_limits": "Enable Energy Limits",
+          "energy_limit_cycle": "Cycle Energy Limit (kWh)",
+          "energy_limit_daily": "Daily Energy Limit (kWh)",
+          "energy_limit_monthly": "Monthly Energy Limit (kWh)",
+          "cost_budget_monthly": "Monthly Cost Budget (€)",
+          "enable_scheduling": "Enable Scheduling",
+          "allowed_hours_start": "Allowed Hours Start Time",
+          "allowed_hours_end": "Allowed Hours End Time",
+          "blocked_days": "Blocked Days of Week",
+          "scheduling_mode": "Scheduling Mode",
+          "show_status": "Show Status Card",
+          "show_statistics_basic": "Show Basic Statistics Card",
+          "show_statistics_advanced": "Show Advanced Statistics Card",
+          "show_current_cycle": "Show Current Cycle Card",
+          "show_power_graph": "Show Power Graph Card",
+          "show_controls": "Show Controls Card",
+          "show_ai_actions": "Show AI Actions Card",
+          "show_services": "Show Services Card"
         },
         "data_description": {
-          "unplugged_timeout_minutes": "Duration at 0W before considering appliance unplugged (1-60 min, default: 5 min)",
-          "custom_notify_service": "Full service name for custom notifications (e.g., notify.my_custom_service)"
+          "start_threshold": "Power draw above which the appliance is considered running.",
+          "stop_threshold": "Power draw below which the appliance is considered idle.",
+          "start_delay_minutes": "Time the power must be above start threshold to confirm the appliance is running.",
+          "stop_delay_minutes": "Time the power must be below stop threshold to confirm the appliance has finished its cycle.",
+          "enable_alert_duration": "Notify if a cycle runs longer than the specified duration.",
+          "alert_duration_hours": "Maximum duration for a cycle before an alert is triggered.",
+          "enable_anomaly_detection": "Enable AI-based anomaly detection for appliance cycles.",
+          "notification_services": "Select notification services to use for alerts.",
+          "notification_types": "Select the types of events that should trigger a notification.",
+          "unplugged_timeout_minutes": "Time at 0W before considering the appliance unplugged.",
+          "custom_notify_service": "Full service name for custom notifications (e.g., notify.my_service).",
+          "enable_auto_shutdown": "Automatically turn off the appliance's switch after a cycle finishes.",
+          "auto_shutdown_delay_minutes": "Delay after cycle completion before turning off the switch.",
+          "auto_shutdown_entity": "The switch entity controlling the appliance's power.",
+          "enable_energy_limits": "Set energy consumption limits to receive alerts.",
+          "energy_limit_cycle": "Maximum energy consumption per cycle (in kWh).",
+          "energy_limit_daily": "Maximum daily energy consumption (in kWh).",
+          "energy_limit_monthly": "Maximum monthly energy consumption (in kWh).",
+          "cost_budget_monthly": "Monthly cost budget for this appliance (in your currency).",
+          "enable_scheduling": "Restrict appliance usage to specific times.",
+          "allowed_hours_start": "Start of the time window when usage is allowed.",
+          "allowed_hours_end": "End of the time window when usage is allowed.",
+          "blocked_days": "Select days of the week when usage is not allowed.",
+          "scheduling_mode": "Mode for handling usage outside allowed hours (notify or block).",
+          "show_status": "Toggle visibility of the Status card in the dashboard.",
+          "show_statistics_basic": "Toggle visibility of the Basic Statistics card.",
+          "show_statistics_advanced": "Toggle visibility of the Advanced Statistics card.",
+          "show_current_cycle": "Toggle visibility of the Current Cycle card.",
+          "show_power_graph": "Toggle visibility of the Power Graph card.",
+          "show_controls": "Toggle visibility of the Controls card.",
+          "show_ai_actions": "Toggle visibility of the AI Actions card.",
+          "show_services": "Toggle visibility of the Services card."
         }
       }
     }
@@ -159,6 +177,19 @@
       },
       "daily_sessions": {
         "name": "Daily Sessions"
+      },
+      "ai_analysis": {
+        "name": "AI Analysis",
+        "state": {
+          "optimized": "Optimized",
+          "normal": "Normal",
+          "needs_improvement": "Needs Improvement",
+          "not_analyzed": "Not Analyzed",
+          "unknown": "Unknown"
+        }
+      },
+      "energy_dashboard_ai_analysis": {
+        "name": "Energy Dashboard AI Analysis"
       }
     },
     "binary_sensor": {
@@ -198,21 +229,6 @@
       },
       "ai_analysis": {
         "name": "AI Analysis"
-      }
-    },
-    "sensor": {
-      "ai_analysis": {
-        "name": "AI Analysis",
-        "state": {
-          "optimized": "Optimized",
-          "normal": "Normal",
-          "needs_improvement": "Needs Improvement",
-          "not_analyzed": "Not Analyzed",
-          "unknown": "Unknown"
-        }
-      },
-      "energy_dashboard_ai_analysis": {
-        "name": "Energy Dashboard AI Analysis"
       }
     }
   },

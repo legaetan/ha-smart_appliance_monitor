@@ -47,57 +47,75 @@
   "options": {
     "step": {
       "init": {
-        "title": "Seuils de détection",
-        "description": "Configurez les seuils de puissance pour détecter le démarrage et l'arrêt de votre appareil. Ces valeurs dépendent du type d'appareil.",
+        "title": "Paramètres de l'appareil",
+        "description": "Configurez tous les paramètres de votre appareil. Les valeurs par défaut sont basées sur le type d'appareil.",
         "data": {
           "start_threshold": "Seuil de démarrage (W)",
-          "stop_threshold": "Seuil d'arrêt (W)"
-        },
-        "data_description": {
-          "start_threshold": "Puissance minimale pour détecter le démarrage de l'appareil (ex: 100W pour un four, 10W pour un lave-linge)",
-          "stop_threshold": "Puissance maximale pour détecter l'arrêt de l'appareil (ex: 10W pour un four, 5W pour un lave-linge)"
-        }
-      },
-      "delays": {
-        "title": "Délais de détection et alertes",
-        "description": "Configurez combien de temps la puissance doit rester stable avant de confirmer un changement d'état, et les paramètres d'alerte.",
-        "data": {
+          "stop_threshold": "Seuil d'arrêt (W)",
           "start_delay_minutes": "Délai de démarrage (minutes)",
           "stop_delay_minutes": "Délai d'arrêt (minutes)",
           "enable_alert_duration": "Activer l'alerte de durée",
           "alert_duration_hours": "Durée d'alerte (heures)",
-          "expert_mode": "Activer le mode expert"
-        },
-        "data_description": {
-          "start_delay_minutes": "Temps pendant lequel la puissance doit rester au-dessus du seuil avant de confirmer le démarrage (0,5-10 min)",
-          "stop_delay_minutes": "Temps pendant lequel la puissance doit rester en-dessous du seuil avant de confirmer l'arrêt (0,5-30 min)",
-          "enable_alert_duration": "Être notifié si le cycle dure plus longtemps que prévu",
-          "alert_duration_hours": "Durée maximale du cycle avant de déclencher une alerte (0,5-24 heures)",
-          "expert_mode": "Accéder aux paramètres avancés (délai de détection débranché, service de notification personnalisé)"
-        }
-      },
-      "notifications": {
-        "title": "Notifications",
-        "description": "Choisissez les services de notification à utiliser et les événements pour lesquels vous souhaitez être notifié.",
-        "data": {
+          "enable_anomaly_detection": "Activer la détection d'anomalies",
           "notification_services": "Services de notification",
-          "notification_types": "Types de notifications"
-        },
-        "data_description": {
-          "notification_services": "Sélectionnez un ou plusieurs services : Application mobile, Telegram, Notification persistante ou Service personnalisé",
-          "notification_types": "Sélectionnez les événements qui déclenchent une notification : cycle démarré, terminé, alerte de durée ou débranché"
-        }
-      },
-      "expert": {
-        "title": "Paramètres experts",
-        "description": "Configuration avancée pour utilisateurs expérimentés. Ces paramètres sont optionnels et ont des valeurs par défaut appropriées.",
-        "data": {
+          "notification_types": "Types de notifications",
           "unplugged_timeout_minutes": "Délai de détection débranché (minutes)",
-          "custom_notify_service": "Nom du service de notification personnalisé"
+          "custom_notify_service": "Nom du service de notification personnalisé",
+          "enable_auto_shutdown": "Activer l'arrêt automatique",
+          "auto_shutdown_delay_minutes": "Délai d'arrêt automatique (minutes)",
+          "auto_shutdown_entity": "Entité interrupteur pour l'arrêt automatique",
+          "enable_energy_limits": "Activer les limites d'énergie",
+          "energy_limit_cycle": "Limite d'énergie par cycle (kWh)",
+          "energy_limit_daily": "Limite d'énergie journalière (kWh)",
+          "energy_limit_monthly": "Limite d'énergie mensuelle (kWh)",
+          "cost_budget_monthly": "Budget de coût mensuel (€)",
+          "enable_scheduling": "Activer la planification",
+          "allowed_hours_start": "Heure de début de la plage autorisée",
+          "allowed_hours_end": "Heure de fin de la plage autorisée",
+          "blocked_days": "Jours de la semaine bloqués",
+          "scheduling_mode": "Mode de planification",
+          "show_status": "Afficher la carte d'état",
+          "show_statistics_basic": "Afficher la carte de statistiques de base",
+          "show_statistics_advanced": "Afficher la carte de statistiques avancées",
+          "show_current_cycle": "Afficher la carte du cycle en cours",
+          "show_power_graph": "Afficher la carte du graphique de puissance",
+          "show_controls": "Afficher la carte des contrôles",
+          "show_ai_actions": "Afficher la carte des actions IA",
+          "show_services": "Afficher la carte des services"
         },
         "data_description": {
-          "unplugged_timeout_minutes": "Durée à 0W avant de considérer l'appareil comme débranché (1-60 min, défaut : 5 min)",
-          "custom_notify_service": "Nom complet du service pour notifications personnalisées (ex : notify.mon_service_perso)"
+          "start_threshold": "Puissance au-dessus de laquelle l'appareil est considéré comme en marche.",
+          "stop_threshold": "Puissance en-dessous de laquelle l'appareil est considéré comme à l'arrêt.",
+          "start_delay_minutes": "Temps pendant lequel la puissance doit être au-dessus du seuil de démarrage pour confirmer que l'appareil est en marche.",
+          "stop_delay_minutes": "Temps pendant lequel la puissance doit être en-dessous du seuil d'arrêt pour confirmer que le cycle est terminé.",
+          "enable_alert_duration": "Notifier si un cycle dure plus longtemps que la durée spécifiée.",
+          "alert_duration_hours": "Durée maximale d'un cycle avant qu'une alerte ne soit déclenchée.",
+          "enable_anomaly_detection": "Activer la détection d'anomalies basée sur l'IA pour les cycles de l'appareil.",
+          "notification_services": "Sélectionnez les services de notification à utiliser pour les alertes.",
+          "notification_types": "Sélectionnez les types d'événements qui doivent déclencher une notification.",
+          "unplugged_timeout_minutes": "Temps à 0W avant de considérer l'appareil comme débranché.",
+          "custom_notify_service": "Nom complet du service pour les notifications personnalisées (ex: notify.mon_service).",
+          "enable_auto_shutdown": "Éteindre automatiquement l'interrupteur de l'appareil après la fin d'un cycle.",
+          "auto_shutdown_delay_minutes": "Délai après la fin du cycle avant d'éteindre l'interrupteur.",
+          "auto_shutdown_entity": "L'entité interrupteur qui contrôle l'alimentation de l'appareil.",
+          "enable_energy_limits": "Définir des limites de consommation d'énergie pour recevoir des alertes.",
+          "energy_limit_cycle": "Consommation d'énergie maximale par cycle (en kWh).",
+          "energy_limit_daily": "Consommation d'énergie journalière maximale (en kWh).",
+          "energy_limit_monthly": "Consommation d'énergie mensuelle maximale (en kWh).",
+          "cost_budget_monthly": "Budget de coût mensuel pour cet appareil (dans votre devise).",
+          "enable_scheduling": "Restreindre l'utilisation de l'appareil à des heures spécifiques.",
+          "allowed_hours_start": "Début de la plage horaire pendant laquelle l'utilisation est autorisée.",
+          "allowed_hours_end": "Fin de la plage horaire pendant laquelle l'utilisation est autorisée.",
+          "blocked_days": "Sélectionnez les jours de la semaine où l'utilisation n'est pas autorisée.",
+          "scheduling_mode": "Mode de gestion de l'utilisation en dehors des heures autorisées (notifier ou bloquer).",
+          "show_status": "Afficher/masquer la carte d'état dans le tableau de bord.",
+          "show_statistics_basic": "Afficher/masquer la carte des statistiques de base.",
+          "show_statistics_advanced": "Afficher/masquer la carte des statistiques avancées.",
+          "show_current_cycle": "Afficher/masquer la carte du cycle en cours.",
+          "show_power_graph": "Afficher/masquer la carte du graphique de puissance.",
+          "show_controls": "Afficher/masquer la carte des contrôles.",
+          "show_ai_actions": "Afficher/masquer la carte des actions IA.",
+          "show_services": "Afficher/masquer la carte des services."
         }
       }
     }
@@ -159,6 +177,19 @@
       },
       "daily_sessions": {
         "name": "Sessions du jour"
+      },
+      "ai_analysis": {
+        "name": "Analyse IA",
+        "state": {
+          "optimized": "Optimisé",
+          "normal": "Normal",
+          "needs_improvement": "À améliorer",
+          "not_analyzed": "Non analysé",
+          "unknown": "Inconnu"
+        }
+      },
+      "energy_dashboard_ai_analysis": {
+        "name": "Analyse IA du tableau de bord énergétique"
       }
     },
     "binary_sensor": {
@@ -198,21 +229,6 @@
       },
       "ai_analysis": {
         "name": "Analyse IA"
-      }
-    },
-    "sensor": {
-      "ai_analysis": {
-        "name": "Analyse IA",
-        "state": {
-          "optimized": "Optimisé",
-          "normal": "Normal",
-          "needs_improvement": "À améliorer",
-          "not_analyzed": "Non analysé",
-          "unknown": "Inconnu"
-        }
-      },
-      "energy_dashboard_ai_analysis": {
-        "name": "Analyse IA du tableau de bord énergétique"
       }
     }
   },

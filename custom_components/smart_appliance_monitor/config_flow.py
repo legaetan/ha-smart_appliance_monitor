@@ -63,6 +63,20 @@ from .const import (
     DEFAULT_SCHEDULING_MODE,
     DEFAULT_NOTIFICATION_SERVICES,
     DEFAULT_NOTIFICATION_TYPES,
+    CONF_START_DELAY_MINUTES,
+    CONF_STOP_DELAY_MINUTES,
+    CONF_ALERT_DURATION_HOURS,
+    CONF_UNPLUGGED_TIMEOUT_MINUTES,
+    CONF_AUTO_SHUTDOWN_DELAY_MINUTES,
+    CONF_DASHBOARD_SECTIONS_VISIBLE,
+    CONF_DASHBOARD_SHOW_STATUS,
+    CONF_DASHBOARD_SHOW_STATISTICS_BASIC,
+    CONF_DASHBOARD_SHOW_STATISTICS_ADVANCED,
+    CONF_DASHBOARD_SHOW_CURRENT_CYCLE,
+    CONF_DASHBOARD_SHOW_POWER_GRAPH,
+    CONF_DASHBOARD_SHOW_CONTROLS,
+    CONF_DASHBOARD_SHOW_AI_ACTIONS,
+    CONF_DASHBOARD_SHOW_SERVICES,
 )
 
 _LOGGER = logging.getLogger(__name__)
@@ -211,432 +225,153 @@ class SmartApplianceMonitorOptionsFlowHandler(config_entries.OptionsFlow):
     def __init__(self, config_entry: config_entries.ConfigEntry) -> None:
         """Initialize options flow."""
         self.config_entry = config_entry
-        self._options = dict(config_entry.options)
 
     async def async_step_init(
         self, user_input: dict[str, Any] | None = None
     ) -> FlowResult:
-        """Manage the options - Step 1: Detection thresholds."""
+        """Manage all options on a single screen."""
         if user_input is not None:
-            # Sauvegarder les options de cette étape
-            self._options.update(user_input)
-            # Passer à l'étape suivante
-            return await self.async_step_delays()
+            options = {}
 
-        # Récupérer le profil de l'appareil pour les valeurs par défaut
+            # Process and save all options
+            options[CONF_START_THRESHOLD] = user_input.get(CONF_START_THRESHOLD)
+            options[CONF_STOP_THRESHOLD] = user_input.get(CONF_STOP_THRESHOLD)
+            
+            options[CONF_START_DELAY] = user_input.get(CONF_START_DELAY_MINUTES, 0) * 60
+            options[CONF_STOP_DELAY] = user_input.get(CONF_STOP_DELAY_MINUTES, 0) * 60
+            options[CONF_ENABLE_ALERT_DURATION] = user_input.get(CONF_ENABLE_ALERT_DURATION)
+            options[CONF_ALERT_DURATION] = int(user_input.get(CONF_ALERT_DURATION_HOURS, 0) * 3600)
+            options[CONF_ENABLE_ANOMALY_DETECTION] = user_input.get(CONF_ENABLE_ANOMALY_DETECTION)
+            
+            options[CONF_NOTIFICATION_SERVICES] = user_input.get(CONF_NOTIFICATION_SERVICES)
+            options[CONF_NOTIFICATION_TYPES] = user_input.get(CONF_NOTIFICATION_TYPES)
+            
+            options[CONF_UNPLUGGED_TIMEOUT] = int(user_input.get(CONF_UNPLUGGED_TIMEOUT_MINUTES, 0) * 60)
+            options[CONF_CUSTOM_NOTIFY_SERVICE] = user_input.get(CONF_CUSTOM_NOTIFY_SERVICE)
+            options[CONF_ENABLE_AUTO_SHUTDOWN] = user_input.get(CONF_ENABLE_AUTO_SHUTDOWN)
+            options[CONF_AUTO_SHUTDOWN_DELAY] = int(user_input.get(CONF_AUTO_SHUTDOWN_DELAY_MINUTES, 0) * 60)
+            options[CONF_AUTO_SHUTDOWN_ENTITY] = user_input.get(CONF_AUTO_SHUTDOWN_ENTITY, "")
+
+            options[CONF_ENABLE_ENERGY_LIMITS] = user_input.get(CONF_ENABLE_ENERGY_LIMITS)
+            options[CONF_ENERGY_LIMIT_CYCLE] = user_input.get(CONF_ENERGY_LIMIT_CYCLE)
+            options[CONF_ENERGY_LIMIT_DAILY] = user_input.get(CONF_ENERGY_LIMIT_DAILY)
+            options[CONF_ENERGY_LIMIT_MONTHLY] = user_input.get(CONF_ENERGY_LIMIT_MONTHLY)
+            options[CONF_COST_BUDGET_MONTHLY] = user_input.get(CONF_COST_BUDGET_MONTHLY)
+
+            options[CONF_ENABLE_SCHEDULING] = user_input.get(CONF_ENABLE_SCHEDULING)
+            options[CONF_ALLOWED_HOURS_START] = user_input.get(CONF_ALLOWED_HOURS_START)
+            options[CONF_ALLOWED_HOURS_END] = user_input.get(CONF_ALLOWED_HOURS_END)
+            options[CONF_BLOCKED_DAYS] = user_input.get(CONF_BLOCKED_DAYS)
+            options[CONF_SCHEDULING_MODE] = user_input.get(CONF_SCHEDULING_MODE)
+
+            dashboard_sections = {
+                CONF_DASHBOARD_SHOW_STATUS: user_input.get(CONF_DASHBOARD_SHOW_STATUS, True),
+                CONF_DASHBOARD_SHOW_STATISTICS_BASIC: user_input.get(CONF_DASHBOARD_SHOW_STATISTICS_BASIC, True),
+                CONF_DASHBOARD_SHOW_STATISTICS_ADVANCED: user_input.get(CONF_DASHBOARD_SHOW_STATISTICS_ADVANCED, True),
+                CONF_DASHBOARD_SHOW_CURRENT_CYCLE: user_input.get(CONF_DASHBOARD_SHOW_CURRENT_CYCLE, True),
+                CONF_DASHBOARD_SHOW_POWER_GRAPH: user_input.get(CONF_DASHBOARD_SHOW_POWER_GRAPH, True),
+                CONF_DASHBOARD_SHOW_CONTROLS: user_input.get(CONF_DASHBOARD_SHOW_CONTROLS, True),
+                CONF_DASHBOARD_SHOW_AI_ACTIONS: user_input.get(CONF_DASHBOARD_SHOW_AI_ACTIONS, True),
+                CONF_DASHBOARD_SHOW_SERVICES: user_input.get(CONF_DASHBOARD_SHOW_SERVICES, True),
+            }
+            options[CONF_DASHBOARD_SECTIONS_VISIBLE] = dashboard_sections
+
+            return self.async_create_entry(title="", data=options)
+
         appliance_type = self.config_entry.data.get(CONF_APPLIANCE_TYPE, "other")
         profile = APPLIANCE_PROFILES.get(appliance_type, APPLIANCE_PROFILES["other"])
 
-        options_schema = vol.Schema(
-            {
-                vol.Optional(
-                    CONF_START_THRESHOLD,
-                    default=self.config_entry.options.get(
-                        CONF_START_THRESHOLD, profile["start_threshold"]
-                    ),
-                ): vol.All(vol.Coerce(int), vol.Range(min=1, max=5000)),
-                vol.Optional(
-                    CONF_STOP_THRESHOLD,
-                    default=self.config_entry.options.get(
-                        CONF_STOP_THRESHOLD, profile["stop_threshold"]
-                    ),
-                ): vol.All(vol.Coerce(int), vol.Range(min=1, max=100)),
-            }
-        )
+        start_delay_minutes = self.config_entry.options.get(CONF_START_DELAY, profile["start_delay"]) / 60
+        stop_delay_minutes = self.config_entry.options.get(CONF_STOP_DELAY, profile["stop_delay"]) / 60
+        alert_duration_hours = self.config_entry.options.get(CONF_ALERT_DURATION, profile["alert_duration"]) / 3600
+        unplugged_timeout_minutes = self.config_entry.options.get(CONF_UNPLUGGED_TIMEOUT, DEFAULT_UNPLUGGED_TIMEOUT) / 60
+        auto_shutdown_delay_minutes = self.config_entry.options.get(CONF_AUTO_SHUTDOWN_DELAY, DEFAULT_AUTO_SHUTDOWN_DELAY) / 60
+        current_sections = self.config_entry.options.get(CONF_DASHBOARD_SECTIONS_VISIBLE, {})
+
+        options_schema = vol.Schema({
+            # Detection settings
+            vol.Required(
+                CONF_START_THRESHOLD, 
+                default=self.config_entry.options.get(CONF_START_THRESHOLD, profile["start_threshold"])
+            ): selector.NumberSelector(selector.NumberSelectorConfig(min=1, max=5000, mode="box")),
+            vol.Required(
+                CONF_STOP_THRESHOLD, 
+                default=self.config_entry.options.get(CONF_STOP_THRESHOLD, profile["stop_threshold"])
+            ): selector.NumberSelector(selector.NumberSelectorConfig(min=1, max=100, mode="box")),
+            vol.Optional(CONF_START_DELAY_MINUTES, default=start_delay_minutes): selector.NumberSelector(
+                selector.NumberSelectorConfig(min=0.1, max=10, step=0.1, mode="slider")
+            ),
+            vol.Optional(CONF_STOP_DELAY_MINUTES, default=stop_delay_minutes): selector.NumberSelector(
+                selector.NumberSelectorConfig(min=0.1, max=30, step=0.1, mode="slider")
+            ),
+
+            # Alerts and Anomaly Detection
+            vol.Optional(CONF_ENABLE_ALERT_DURATION, default=self.config_entry.options.get(CONF_ENABLE_ALERT_DURATION, False)): cv.boolean,
+            vol.Optional(CONF_ALERT_DURATION_HOURS, default=alert_duration_hours): selector.NumberSelector(
+                selector.NumberSelectorConfig(min=0.5, max=24, step=0.5, mode="slider")
+            ),
+            vol.Optional(CONF_ENABLE_ANOMALY_DETECTION, default=self.config_entry.options.get(CONF_ENABLE_ANOMALY_DETECTION, False)): cv.boolean,
+            
+            # Notifications
+            vol.Optional(CONF_NOTIFICATION_SERVICES, default=self.config_entry.options.get(CONF_NOTIFICATION_SERVICES, DEFAULT_NOTIFICATION_SERVICES)): selector.SelectSelector(
+                selector.SelectSelectorConfig(options=NOTIFICATION_SERVICES, multiple=True, mode=selector.SelectSelectorMode.LIST, translation_key="notification_service")
+            ),
+            vol.Optional(CONF_NOTIFICATION_TYPES, default=self.config_entry.options.get(CONF_NOTIFICATION_TYPES, DEFAULT_NOTIFICATION_TYPES)): selector.SelectSelector(
+                selector.SelectSelectorConfig(options=NOTIFICATION_TYPES, multiple=True, mode=selector.SelectSelectorMode.LIST, translation_key="notification_type")
+            ),
+            
+            # Advanced Settings
+            vol.Optional(CONF_UNPLUGGED_TIMEOUT_MINUTES, default=unplugged_timeout_minutes): selector.NumberSelector(
+                selector.NumberSelectorConfig(min=1, max=60, mode="slider")
+            ),
+            vol.Optional(CONF_CUSTOM_NOTIFY_SERVICE, default=self.config_entry.options.get(CONF_CUSTOM_NOTIFY_SERVICE, "")): str,
+            vol.Optional(CONF_ENABLE_AUTO_SHUTDOWN, default=self.config_entry.options.get(CONF_ENABLE_AUTO_SHUTDOWN, False)): cv.boolean,
+            vol.Optional(CONF_AUTO_SHUTDOWN_DELAY_MINUTES, default=auto_shutdown_delay_minutes): selector.NumberSelector(
+                selector.NumberSelectorConfig(min=5, max=60, mode="slider")
+            ),
+            vol.Optional(CONF_AUTO_SHUTDOWN_ENTITY, default=self.config_entry.options.get(CONF_AUTO_SHUTDOWN_ENTITY, "")): selector.EntitySelector(
+                selector.EntitySelectorConfig(domain=["switch", "light"])
+            ),
+
+            # Energy Management
+            vol.Optional(CONF_ENABLE_ENERGY_LIMITS, default=self.config_entry.options.get(CONF_ENABLE_ENERGY_LIMITS, False)): cv.boolean,
+            vol.Optional(CONF_ENERGY_LIMIT_CYCLE, default=self.config_entry.options.get(CONF_ENERGY_LIMIT_CYCLE, 0)): selector.NumberSelector(
+                selector.NumberSelectorConfig(min=0, max=100, step=0.1, mode="box")
+            ),
+            vol.Optional(CONF_ENERGY_LIMIT_DAILY, default=self.config_entry.options.get(CONF_ENERGY_LIMIT_DAILY, 0)): selector.NumberSelector(
+                selector.NumberSelectorConfig(min=0, max=500, step=0.1, mode="box")
+            ),
+            vol.Optional(CONF_ENERGY_LIMIT_MONTHLY, default=self.config_entry.options.get(CONF_ENERGY_LIMIT_MONTHLY, 0)): selector.NumberSelector(
+                selector.NumberSelectorConfig(min=0, max=10000, step=1, mode="box")
+            ),
+            vol.Optional(CONF_COST_BUDGET_MONTHLY, default=self.config_entry.options.get(CONF_COST_BUDGET_MONTHLY, 0)): selector.NumberSelector(
+                selector.NumberSelectorConfig(min=0, max=1000, step=1, mode="box")
+            ),
+
+            # Scheduling
+            vol.Optional(CONF_ENABLE_SCHEDULING, default=self.config_entry.options.get(CONF_ENABLE_SCHEDULING, False)): cv.boolean,
+            vol.Optional(CONF_ALLOWED_HOURS_START, default=self.config_entry.options.get(CONF_ALLOWED_HOURS_START, "00:00")): selector.TimeSelector(),
+            vol.Optional(CONF_ALLOWED_HOURS_END, default=self.config_entry.options.get(CONF_ALLOWED_HOURS_END, "23:59")): selector.TimeSelector(),
+            vol.Optional(CONF_BLOCKED_DAYS, default=self.config_entry.options.get(CONF_BLOCKED_DAYS, [])): selector.SelectSelector(
+                selector.SelectSelectorConfig(options=DAYS_OF_WEEK, multiple=True, mode=selector.SelectSelectorMode.LIST, translation_key="day_of_week")
+            ),
+            vol.Optional(CONF_SCHEDULING_MODE, default=self.config_entry.options.get(CONF_SCHEDULING_MODE, DEFAULT_SCHEDULING_MODE)): selector.SelectSelector(
+                selector.SelectSelectorConfig(options=[SCHEDULING_MODE_NOTIFICATION, SCHEDULING_MODE_STRICT], translation_key="scheduling_mode")
+            ),
+
+            # Dashboard Visibility
+            vol.Optional(CONF_DASHBOARD_SHOW_STATUS, default=current_sections.get(CONF_DASHBOARD_SHOW_STATUS, True)): cv.boolean,
+            vol.Optional(CONF_DASHBOARD_SHOW_STATISTICS_BASIC, default=current_sections.get(CONF_DASHBOARD_SHOW_STATISTICS_BASIC, True)): cv.boolean,
+            vol.Optional(CONF_DASHBOARD_SHOW_STATISTICS_ADVANCED, default=current_sections.get(CONF_DASHBOARD_SHOW_STATISTICS_ADVANCED, True)): cv.boolean,
+            vol.Optional(CONF_DASHBOARD_SHOW_CURRENT_CYCLE, default=current_sections.get(CONF_DASHBOARD_SHOW_CURRENT_CYCLE, True)): cv.boolean,
+            vol.Optional(CONF_DASHBOARD_SHOW_POWER_GRAPH, default=current_sections.get(CONF_DASHBOARD_SHOW_POWER_GRAPH, True)): cv.boolean,
+            vol.Optional(CONF_DASHBOARD_SHOW_CONTROLS, default=current_sections.get(CONF_DASHBOARD_SHOW_CONTROLS, True)): cv.boolean,
+            vol.Optional(CONF_DASHBOARD_SHOW_AI_ACTIONS, default=current_sections.get(CONF_DASHBOARD_SHOW_AI_ACTIONS, True)): cv.boolean,
+            vol.Optional(CONF_DASHBOARD_SHOW_SERVICES, default=current_sections.get(CONF_DASHBOARD_SHOW_SERVICES, True)): cv.boolean,
+        })
 
         return self.async_show_form(
             step_id="init",
-            data_schema=options_schema,
-        )
-
-    async def async_step_delays(
-        self, user_input: dict[str, Any] | None = None
-    ) -> FlowResult:
-        """Step 2: Detection delays and alert duration."""
-        if user_input is not None:
-            # Convertir les minutes en secondes pour start_delay et stop_delay
-            if "start_delay_minutes" in user_input:
-                self._options[CONF_START_DELAY] = user_input["start_delay_minutes"] * 60
-            if "stop_delay_minutes" in user_input:
-                self._options[CONF_STOP_DELAY] = user_input["stop_delay_minutes"] * 60
-            
-            # Convertir les heures en secondes pour alert_duration
-            if "alert_duration_hours" in user_input:
-                self._options[CONF_ALERT_DURATION] = int(user_input["alert_duration_hours"] * 3600)
-            
-            # Sauvegarder enable_alert_duration, enable_anomaly_detection
-            self._options[CONF_ENABLE_ALERT_DURATION] = user_input.get(CONF_ENABLE_ALERT_DURATION, False)
-            self._options[CONF_ENABLE_ANOMALY_DETECTION] = user_input.get(CONF_ENABLE_ANOMALY_DETECTION, False)
-            
-            # Si mode avancé (energy/scheduling) activé
-            if user_input.get("configure_advanced", False):
-                return await self.async_step_energy_management()
-            # Si mode expert activé, aller à l'étape expert
-            elif user_input.get("expert_mode", False):
-                self._options["expert_mode"] = True
-                return await self.async_step_expert()
-            else:
-                self._options["expert_mode"] = False
-                # Passer à l'étape notifications
-                return await self.async_step_notifications()
-
-        # Récupérer le profil de l'appareil pour les valeurs par défaut
-        appliance_type = self.config_entry.data.get(CONF_APPLIANCE_TYPE, "other")
-        profile = APPLIANCE_PROFILES.get(appliance_type, APPLIANCE_PROFILES["other"])
-
-        # Convertir les secondes en minutes/heures pour l'affichage
-        start_delay_minutes = self.config_entry.options.get(
-            CONF_START_DELAY, profile["start_delay"]
-        ) / 60
-        stop_delay_minutes = self.config_entry.options.get(
-            CONF_STOP_DELAY, profile["stop_delay"]
-        ) / 60
-        alert_duration_hours = self.config_entry.options.get(
-            CONF_ALERT_DURATION, profile["alert_duration"]
-        ) / 3600
-
-        options_schema = vol.Schema(
-            {
-                vol.Optional(
-                    "start_delay_minutes",
-                    default=start_delay_minutes,
-                ): vol.All(vol.Coerce(float), vol.Range(min=0.5, max=10)),
-                vol.Optional(
-                    "stop_delay_minutes",
-                    default=stop_delay_minutes,
-                ): vol.All(vol.Coerce(float), vol.Range(min=0.5, max=30)),
-                vol.Optional(
-                    CONF_ENABLE_ALERT_DURATION,
-                    default=self.config_entry.options.get(
-                        CONF_ENABLE_ALERT_DURATION, False
-                    ),
-                ): cv.boolean,
-                vol.Optional(
-                    "alert_duration_hours",
-                    default=alert_duration_hours,
-                ): vol.All(vol.Coerce(float), vol.Range(min=0.5, max=24)),
-                vol.Optional(
-                    CONF_ENABLE_ANOMALY_DETECTION,
-                    default=self.config_entry.options.get(
-                        CONF_ENABLE_ANOMALY_DETECTION, False
-                    ),
-                ): cv.boolean,
-                vol.Optional(
-                    "configure_advanced",
-                    default=False,
-                ): cv.boolean,
-                vol.Optional(
-                    "expert_mode",
-                    default=False,
-                ): cv.boolean,
-            }
-        )
-
-        return self.async_show_form(
-            step_id="delays",
-            data_schema=options_schema,
-        )
-
-    async def async_step_notifications(
-        self, user_input: dict[str, Any] | None = None
-    ) -> FlowResult:
-        """Step 3: Notification settings."""
-        if user_input is not None:
-            # Sauvegarder les options de notifications
-            self._options[CONF_NOTIFICATION_SERVICES] = user_input.get(
-                CONF_NOTIFICATION_SERVICES, DEFAULT_NOTIFICATION_SERVICES
-            )
-            self._options[CONF_NOTIFICATION_TYPES] = user_input.get(
-                CONF_NOTIFICATION_TYPES, DEFAULT_NOTIFICATION_TYPES
-            )
-            
-            # Si l'utilisateur veut configurer le dashboard
-            if user_input.get("configure_dashboard", False):
-                return await self.async_step_dashboard_config()
-            
-            # Sinon, nettoyer expert_mode de la configuration finale
-            self._options.pop("expert_mode", None)
-            
-            # Créer l'entrée finale
-            return self.async_create_entry(title="", data=self._options)
-
-        options_schema = vol.Schema(
-            {
-                vol.Optional(
-                    CONF_NOTIFICATION_SERVICES,
-                    default=self.config_entry.options.get(
-                        CONF_NOTIFICATION_SERVICES, DEFAULT_NOTIFICATION_SERVICES
-                    ),
-                ): selector.SelectSelector(
-                    selector.SelectSelectorConfig(
-                        options=NOTIFICATION_SERVICES,
-                        multiple=True,
-                        mode=selector.SelectSelectorMode.LIST,
-                        translation_key="notification_service",
-                    )
-                ),
-                vol.Optional(
-                    CONF_NOTIFICATION_TYPES,
-                    default=self.config_entry.options.get(
-                        CONF_NOTIFICATION_TYPES, DEFAULT_NOTIFICATION_TYPES
-                    ),
-                ): selector.SelectSelector(
-                    selector.SelectSelectorConfig(
-                        options=NOTIFICATION_TYPES,
-                        multiple=True,
-                        mode=selector.SelectSelectorMode.LIST,
-                        translation_key="notification_type",
-                    )
-                ),
-                vol.Optional(
-                    "configure_dashboard",
-                    default=False,
-                ): cv.boolean,
-            }
-        )
-
-        return self.async_show_form(
-            step_id="notifications",
-            data_schema=options_schema,
-        )
-
-    async def async_step_expert(
-        self, user_input: dict[str, Any] | None = None
-    ) -> FlowResult:
-        """Step 4: Expert settings (optional)."""
-        if user_input is not None:
-            # Convertir les minutes en secondes pour unplugged_timeout
-            if "unplugged_timeout_minutes" in user_input:
-                self._options[CONF_UNPLUGGED_TIMEOUT] = user_input["unplugged_timeout_minutes"] * 60
-            
-            # Auto-shutdown
-            self._options[CONF_ENABLE_AUTO_SHUTDOWN] = user_input.get(CONF_ENABLE_AUTO_SHUTDOWN, False)
-            if "auto_shutdown_delay_minutes" in user_input:
-                self._options[CONF_AUTO_SHUTDOWN_DELAY] = user_input["auto_shutdown_delay_minutes"] * 60
-            self._options[CONF_AUTO_SHUTDOWN_ENTITY] = user_input.get(CONF_AUTO_SHUTDOWN_ENTITY, "")
-            
-            # Sauvegarder le service personnalisé
-            self._options[CONF_CUSTOM_NOTIFY_SERVICE] = user_input.get(
-                CONF_CUSTOM_NOTIFY_SERVICE, ""
-            )
-            
-            # Passer à l'étape notifications
-            return await self.async_step_notifications()
-
-        # Convertir les secondes en minutes pour l'affichage
-        unplugged_timeout_minutes = self.config_entry.options.get(
-            CONF_UNPLUGGED_TIMEOUT, DEFAULT_UNPLUGGED_TIMEOUT
-        ) / 60
-        auto_shutdown_delay_minutes = self.config_entry.options.get(
-            CONF_AUTO_SHUTDOWN_DELAY, DEFAULT_AUTO_SHUTDOWN_DELAY
-        ) / 60
-
-        options_schema = vol.Schema(
-            {
-                vol.Optional(
-                    "unplugged_timeout_minutes",
-                    default=unplugged_timeout_minutes,
-                ): vol.All(vol.Coerce(float), vol.Range(min=1, max=60)),
-                vol.Optional(
-                    CONF_CUSTOM_NOTIFY_SERVICE,
-                    default=self.config_entry.options.get(CONF_CUSTOM_NOTIFY_SERVICE, ""),
-                ): str,
-                vol.Optional(
-                    CONF_ENABLE_AUTO_SHUTDOWN,
-                    default=self.config_entry.options.get(CONF_ENABLE_AUTO_SHUTDOWN, False),
-                ): cv.boolean,
-                vol.Optional(
-                    "auto_shutdown_delay_minutes",
-                    default=auto_shutdown_delay_minutes,
-                ): vol.All(vol.Coerce(float), vol.Range(min=5, max=60)),
-                vol.Optional(
-                    CONF_AUTO_SHUTDOWN_ENTITY,
-                    default=self.config_entry.options.get(CONF_AUTO_SHUTDOWN_ENTITY, ""),
-                ): selector.EntitySelector(
-                    selector.EntitySelectorConfig(
-                        domain=["switch", "light"],
-                    )
-                ),
-            }
-        )
-
-        return self.async_show_form(
-            step_id="expert",
-            data_schema=options_schema,
-        )
-
-    async def async_step_energy_management(
-        self, user_input: dict[str, Any] | None = None
-    ) -> FlowResult:
-        """Step: Energy Management (optional)."""
-        if user_input is not None:
-            # Sauvegarder les options de gestion énergétique
-            self._options[CONF_ENABLE_ENERGY_LIMITS] = user_input.get(CONF_ENABLE_ENERGY_LIMITS, False)
-            self._options[CONF_ENERGY_LIMIT_CYCLE] = user_input.get(CONF_ENERGY_LIMIT_CYCLE, 0)
-            self._options[CONF_ENERGY_LIMIT_DAILY] = user_input.get(CONF_ENERGY_LIMIT_DAILY, 0)
-            self._options[CONF_ENERGY_LIMIT_MONTHLY] = user_input.get(CONF_ENERGY_LIMIT_MONTHLY, 0)
-            self._options[CONF_COST_BUDGET_MONTHLY] = user_input.get(CONF_COST_BUDGET_MONTHLY, 0)
-            
-            # Passer à l'étape scheduling
-            return await self.async_step_scheduling()
-
-        options_schema = vol.Schema(
-            {
-                vol.Optional(
-                    CONF_ENABLE_ENERGY_LIMITS,
-                    default=self.config_entry.options.get(CONF_ENABLE_ENERGY_LIMITS, False),
-                ): cv.boolean,
-                vol.Optional(
-                    CONF_ENERGY_LIMIT_CYCLE,
-                    default=self.config_entry.options.get(CONF_ENERGY_LIMIT_CYCLE, 0),
-                ): vol.All(vol.Coerce(float), vol.Range(min=0, max=100)),
-                vol.Optional(
-                    CONF_ENERGY_LIMIT_DAILY,
-                    default=self.config_entry.options.get(CONF_ENERGY_LIMIT_DAILY, 0),
-                ): vol.All(vol.Coerce(float), vol.Range(min=0, max=500)),
-                vol.Optional(
-                    CONF_ENERGY_LIMIT_MONTHLY,
-                    default=self.config_entry.options.get(CONF_ENERGY_LIMIT_MONTHLY, 0),
-                ): vol.All(vol.Coerce(float), vol.Range(min=0, max=10000)),
-                vol.Optional(
-                    CONF_COST_BUDGET_MONTHLY,
-                    default=self.config_entry.options.get(CONF_COST_BUDGET_MONTHLY, 0),
-                ): vol.All(vol.Coerce(float), vol.Range(min=0, max=1000)),
-            }
-        )
-
-        return self.async_show_form(
-            step_id="energy_management",
-            data_schema=options_schema,
-        )
-
-    async def async_step_scheduling(
-        self, user_input: dict[str, Any] | None = None
-    ) -> FlowResult:
-        """Step: Scheduling (optional)."""
-        if user_input is not None:
-            # Sauvegarder les options de planification
-            self._options[CONF_ENABLE_SCHEDULING] = user_input.get(CONF_ENABLE_SCHEDULING, False)
-            self._options[CONF_ALLOWED_HOURS_START] = user_input.get(CONF_ALLOWED_HOURS_START, "00:00")
-            self._options[CONF_ALLOWED_HOURS_END] = user_input.get(CONF_ALLOWED_HOURS_END, "23:59")
-            self._options[CONF_BLOCKED_DAYS] = user_input.get(CONF_BLOCKED_DAYS, [])
-            self._options[CONF_SCHEDULING_MODE] = user_input.get(CONF_SCHEDULING_MODE, DEFAULT_SCHEDULING_MODE)
-            
-            # Si mode expert était activé, aller à l'étape expert, sinon notifications
-            if self._options.get("expert_mode", False):
-                return await self.async_step_expert()
-            else:
-                return await self.async_step_notifications()
-
-        options_schema = vol.Schema(
-            {
-                vol.Optional(
-                    CONF_ENABLE_SCHEDULING,
-                    default=self.config_entry.options.get(CONF_ENABLE_SCHEDULING, False),
-                ): cv.boolean,
-                vol.Optional(
-                    CONF_ALLOWED_HOURS_START,
-                    default=self.config_entry.options.get(CONF_ALLOWED_HOURS_START, "00:00"),
-                ): str,
-                vol.Optional(
-                    CONF_ALLOWED_HOURS_END,
-                    default=self.config_entry.options.get(CONF_ALLOWED_HOURS_END, "23:59"),
-                ): str,
-                vol.Optional(
-                    CONF_BLOCKED_DAYS,
-                    default=self.config_entry.options.get(CONF_BLOCKED_DAYS, []),
-                ): selector.SelectSelector(
-                    selector.SelectSelectorConfig(
-                        options=DAYS_OF_WEEK,
-                        multiple=True,
-                        mode=selector.SelectSelectorMode.LIST,
-                        translation_key="day_of_week",
-                    )
-                ),
-                vol.Optional(
-                    CONF_SCHEDULING_MODE,
-                    default=self.config_entry.options.get(CONF_SCHEDULING_MODE, DEFAULT_SCHEDULING_MODE),
-                ): selector.SelectSelector(
-                    selector.SelectSelectorConfig(
-                        options=[SCHEDULING_MODE_NOTIFICATION, SCHEDULING_MODE_STRICT],
-                        translation_key="scheduling_mode",
-                    )
-                ),
-            }
-        )
-
-        return self.async_show_form(
-            step_id="scheduling",
-            data_schema=options_schema,
-        )
-
-    async def async_step_dashboard_config(
-        self, user_input: dict[str, Any] | None = None
-    ) -> FlowResult:
-        """Step: Dashboard card visibility configuration."""
-        if user_input is not None:
-            # Sauvegarder la configuration du dashboard
-            dashboard_sections = {
-                "status": user_input.get("show_status", True),
-                "statistics_basic": user_input.get("show_statistics_basic", True),
-                "statistics_advanced": user_input.get("show_statistics_advanced", True),
-                "current_cycle": user_input.get("show_current_cycle", True),
-                "power_graph": user_input.get("show_power_graph", True),
-                "controls": user_input.get("show_controls", True),
-                "ai_actions": user_input.get("show_ai_actions", True),
-                "services": user_input.get("show_services", True),
-            }
-            
-            self._options["dashboard_sections_visible"] = dashboard_sections
-            
-            # Nettoyer expert_mode de la configuration finale
-            self._options.pop("expert_mode", None)
-            
-            # Créer l'entrée finale
-            return self.async_create_entry(title="", data=self._options)
-
-        # Get current config or defaults
-        current_sections = self.config_entry.options.get("dashboard_sections_visible", {})
-        
-        options_schema = vol.Schema(
-            {
-                vol.Optional(
-                    "show_status",
-                    default=current_sections.get("status", True),
-                ): cv.boolean,
-                vol.Optional(
-                    "show_statistics_basic",
-                    default=current_sections.get("statistics_basic", True),
-                ): cv.boolean,
-                vol.Optional(
-                    "show_statistics_advanced",
-                    default=current_sections.get("statistics_advanced", True),
-                ): cv.boolean,
-                vol.Optional(
-                    "show_current_cycle",
-                    default=current_sections.get("current_cycle", True),
-                ): cv.boolean,
-                vol.Optional(
-                    "show_power_graph",
-                    default=current_sections.get("power_graph", True),
-                ): cv.boolean,
-                vol.Optional(
-                    "show_controls",
-                    default=current_sections.get("controls", True),
-                ): cv.boolean,
-                vol.Optional(
-                    "show_ai_actions",
-                    default=current_sections.get("ai_actions", True),
-                ): cv.boolean,
-                vol.Optional(
-                    "show_services",
-                    default=current_sections.get("services", True),
-                ): cv.boolean,
-            }
-        )
-
-        return self.async_show_form(
-            step_id="dashboard_config",
             data_schema=options_schema,
         )
 
